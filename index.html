@@ -3,34 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatGPT Chat Interface</title>
+    <title>AI Чат с защитой от блокировок</title>
     <style>
         :root {
-            --primary-color: #007bff;
-            --error-color: #dc3545;
-            --user-message: #e3f2fd;
-            --bot-message: #f8f9fa;
+            --primary: #2ecc71;
+            --error: #e74c3c;
+            --user-bg: #ecf0f1;
+            --bot-bg: #3498db;
+            --text: #2c3e50;
         }
 
         body {
             margin: 0;
             padding: 20px;
-            font-family: Arial, sans-serif;
-            background-color: #f1f3f4;
+            font-family: 'Segoe UI', system-ui;
+            background: #f8f9fa;
+            color: var(--text);
         }
 
         .chat-container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: var(--primary);
+            padding: 20px;
+            color: white;
+            text-align: center;
+            font-size: 1.2em;
         }
 
         .chat-messages {
-            height: 70vh;
-            overflow-y: auto;
+            height: 65vh;
             padding: 20px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -38,36 +49,39 @@
 
         .message {
             max-width: 80%;
-            padding: 12px 18px;
-            border-radius: 15px;
+            padding: 15px 20px;
+            border-radius: 20px;
             line-height: 1.5;
             position: relative;
+            animation: fadeIn 0.3s ease;
         }
 
         .user-message {
-            background: var(--user-message);
+            background: var(--user-bg);
             margin-left: auto;
-            border-bottom-right-radius: 3px;
+            border-bottom-right-radius: 5px;
         }
 
         .bot-message {
-            background: var(--bot-message);
+            background: var(--bot-bg);
+            color: white;
             margin-right: auto;
-            border-bottom-left-radius: 3px;
+            border-bottom-left-radius: 5px;
         }
 
         .error-message {
-            background: var(--error-color);
+            background: var(--error);
             color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
             text-align: center;
-            padding: 10px;
-            margin: 10px 20px;
-            border-radius: 5px;
+            margin: 10px auto;
+            width: fit-content;
         }
 
         .input-container {
             padding: 20px;
-            border-top: 1px solid #ddd;
+            border-top: 2px solid #eee;
             display: flex;
             gap: 10px;
             position: relative;
@@ -75,30 +89,33 @@
 
         input {
             flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 30px;
             font-size: 16px;
-            outline: none;
+            transition: all 0.3s ease;
         }
 
         input:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
         }
 
         button {
-            padding: 12px 25px;
-            background: var(--primary-color);
+            padding: 15px 30px;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 30px;
             cursor: pointer;
-            transition: background 0.2s;
+            font-weight: bold;
+            transition: all 0.3s ease;
         }
 
         button:hover {
-            background: #0056b3;
+            background: #27ae60;
+            transform: translateY(-1px);
         }
 
         .loading-indicator {
@@ -111,33 +128,43 @@
             font-size: 14px;
         }
 
-        .timestamp {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 5px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .chat-messages { height: 60vh; }
+            button { padding: 12px 20px; }
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
+        <div class="chat-header">
+            🤖 Защищенный чат с ИИ (Anti-Block System)
+        </div>
         <div id="chat-messages" class="chat-messages"></div>
         <div class="input-container">
-            <input type="text" id="user-input" placeholder="Введите ваше сообщение..." autocomplete="off">
+            <input type="text" id="user-input" 
+                   placeholder="Напишите сообщение..." 
+                   autocomplete="off"
+                   aria-label="Поле ввода сообщения">
             <button onclick="sendMessage()">Отправить</button>
             <div class="loading-indicator" id="loading">ИИ думает...</div>
         </div>
     </div>
 
     <script>
-        // Замените на ваш URL Cloudflare Worker
+        // URL вашего Cloudflare Worker
         const API_ENDPOINT = 'https://test.egorspirin10.workers.dev/';
         let isProcessing = false;
 
         async function sendMessage() {
             if (isProcessing) return;
             
-            const inputField = document.getElementById('user-input');
-            const message = inputField.value.trim();
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
             
             if (!message) {
                 showError('Пожалуйста, введите сообщение');
@@ -147,33 +174,66 @@
             try {
                 isProcessing = true;
                 toggleLoading(true);
+                input.disabled = true;
+                
                 addMessage(message, 'user');
-                inputField.value = '';
+                input.value = '';
 
-                const response = await fetch(API_ENDPOINT, {
+                // Отправка запроса с тремя попытками
+                const response = await fetchWithRetry({
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Request-Source': 'github-pages'
                     },
-                    body: JSON.stringify({ message })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Ошибка сервера');
-                }
+                    body: JSON.stringify({
+                        model: "gpt-3.5-turbo",
+                        messages: [{ role: "user", content: message }],
+                        temperature: 0.7
+                    })
+                }, 3);
 
                 const data = await response.json();
-                if (!data.reply) throw new Error('Пустой ответ от ИИ');
                 
-                addMessage(data.reply, 'bot');
+                if (!data?.choices?.[0]?.message?.content) {
+                    throw new Error('Некорректный формат ответа');
+                }
+
+                addMessage(data.choices[0].message.content, 'bot');
 
             } catch (error) {
                 console.error('Ошибка:', error);
                 showError(`Ошибка: ${error.message}`);
             } finally {
                 isProcessing = false;
+                input.disabled = false;
                 toggleLoading(false);
+            }
+        }
+
+        async function fetchWithRetry(options, retries) {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                    const response = await fetch(API_ENDPOINT, {
+                        ...options,
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                    }
+
+                    return response;
+                } catch (error) {
+                    if (attempt === retries) throw error;
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                }
             }
         }
 
@@ -181,7 +241,7 @@
             const messagesDiv = document.getElementById('chat-messages');
             const messageDiv = document.createElement('div');
             
-            messageDiv.classList.add('message', `${sender}-message`);
+            messageDiv.className = `message ${sender}-message`;
             messageDiv.innerHTML = `
                 <div>${text}</div>
                 <div class="timestamp">${new Date().toLocaleTimeString()}</div>
@@ -192,11 +252,11 @@
         }
 
         function showError(text) {
+            const messagesDiv = document.getElementById('chat-messages');
             const errorDiv = document.createElement('div');
-            errorDiv.classList.add('error-message');
+            errorDiv.className = 'error-message';
             errorDiv.textContent = text;
             
-            const messagesDiv = document.getElementById('chat-messages');
             messagesDiv.appendChild(errorDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
@@ -205,8 +265,8 @@
             document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
 
-        // Обработка нажатия Enter
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
+        // Обработчики событий
+        document.getElementById('user-input').addEventListener('keypress', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
