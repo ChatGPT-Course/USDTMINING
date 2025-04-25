@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="chat"></div>
+  <input id="input" placeholder="Ваш вопрос...">
+  <button onclick="sendQuestion()">Отправить</button>
+
+  <script>
+    async function sendQuestion() {
+      const input = document.getElementById("input").value;
+      const response = await fetch("https://ваш-worker.ваш-username.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: input }]
+        })
+      });
+      const data = await response.json();
+      document.getElementById("chat").innerHTML += `<p>${data.choices[0].message.content}</p>`;
+    }
+  </script>
+</body>
+</html>
