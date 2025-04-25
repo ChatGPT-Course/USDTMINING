@@ -2,108 +2,224 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>DeepSeek Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroChat</title>
     <style>
+        :root {
+            --primary: #FF6B35;
+            --primary-dark: #D45A2B;
+            --bg: #1A1A1A;
+            --text: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .chat-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
-        #chat-output {
-            height: 500px;
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .neuro-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
             overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: #fafafa;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
         .message {
-            margin: 10px 0;
-            padding: 8px 12px;
-            border-radius: 15px;
             max-width: 80%;
+            padding: 1rem;
+            border-radius: 1rem;
+            animation: fadeIn 0.3s ease;
         }
 
         .user-message {
-            background: #007bff;
-            color: white;
-            margin-left: auto;
+            background: var(--primary);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
         }
 
         .bot-message {
-            background: #e9ecef;
-            color: #333;
-            margin-right: auto;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
         }
 
-        #input-container {
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2rem;
+            width: fit-content;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .input-container {
             display: flex;
-            gap: 10px;
+            gap: 0.5rem;
+            padding: 1rem 0;
         }
 
         #user-input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
+            flex-grow: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 2rem;
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+            font-size: 1rem;
             outline: none;
+            transition: 0.3s;
+        }
+
+        #user-input:focus {
+            box-shadow: 0 0 0 2px var(--primary);
         }
 
         button {
-            padding: 12px 25px;
-            background: #007bff;
-            color: white;
+            padding: 1rem 2rem;
             border: none;
-            border-radius: 25px;
+            border-radius: 2rem;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: 0.3s;
         }
 
         button:hover {
-            background: #0056b3;
+            background: var(--primary-dark);
+            transform: translateY(-1px);
         }
 
-        .loading {
-            display: none;
-            color: #666;
-            font-style: italic;
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                padding: 0.5rem;
+            }
+
+            .message {
+                max-width: 90%;
+                font-size: 0.9rem;
+            }
+
+            #user-input {
+                padding: 0.8rem;
+            }
+
+            button {
+                padding: 0.8rem 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <div id="chat-output"></div>
-        <div id="input-container">
-            <input type="text" id="user-input" placeholder="Введите сообщение..." autocomplete="off">
+        <div class="chat-header">
+            <div class="neuro-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <h1>NeuroChat</h1>
+        </div>
+
+        <div class="chat-messages" id="chat-output"></div>
+
+        <div class="typing-indicator" id="typing">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Напишите сообщение..." autocomplete="off">
             <button onclick="sendMessage()">Отправить</button>
         </div>
-        <div id="loading" class="loading">ИИ думает...</div>
     </div>
 
     <script>
-        const API_ENDPOINT = 'https://openai-proxy.egorspirin10.workers.dev/'; // Заменить на свой Worker URL
+        const API_ENDPOINT = 'https://openai-proxy.egorspirin10.workers.dev/';
         const chatOutput = document.getElementById('chat-output');
         const userInput = document.getElementById('user-input');
-        const loading = document.getElementById('loading');
+        const typingIndicator = document.getElementById('typing');
 
-        function addMessage(message, isUser = true) {
+        function createMessageElement(text, isUser) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            messageDiv.textContent = `${isUser ? 'Вы: ' : 'ИИ: '}${message}`;
-            chatOutput.appendChild(messageDiv);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+            messageDiv.textContent = text;
+            return messageDiv;
         }
 
         async function sendMessage() {
@@ -111,26 +227,29 @@
             if (!message) return;
 
             userInput.value = '';
-            addMessage(message);
-            loading.style.display = 'block';
+            chatOutput.appendChild(createMessageElement(message, true));
+            
+            // Показать индикатор набора
+            typingIndicator.style.display = 'flex';
+            chatOutput.scrollTop = chatOutput.scrollHeight;
 
             try {
                 const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message })
                 });
 
                 if (!response.ok) throw new Error('Ошибка сервера');
                 
                 const data = await response.json();
-                addMessage(data.reply, false);
+                chatOutput.appendChild(createMessageElement(data.reply, false));
+                
             } catch (error) {
-                addMessage(`Ошибка: ${error.message}`, false);
+                chatOutput.appendChild(createMessageElement(`Ошибка: ${error.message}`, false));
             } finally {
-                loading.style.display = 'none';
+                typingIndicator.style.display = 'none';
+                chatOutput.scrollTop = chatOutput.scrollHeight;
             }
         }
 
@@ -138,6 +257,9 @@
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
+
+        // Автофокус на поле ввода
+        userInput.focus();
     </script>
 </body>
 </html>
