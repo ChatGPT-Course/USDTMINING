@@ -3,263 +3,615 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroChat</title>
+    <title>Морской бой | Telegram</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --primary: #FF6B35;
-            --primary-dark: #D45A2B;
-            --bg: #1A1A1A;
-            --text: #FFFFFF;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: 'Arial', sans-serif;
         }
-
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            height: 100vh;
+            background-color: #f5f5f5;
+            color: #333;
             display: flex;
             flex-direction: column;
-        }
-
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 1rem;
-            flex-grow: 1;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-header {
-            display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 2px solid var(--primary);
-            margin-bottom: 1rem;
+            min-height: 100vh;
+            padding: 20px;
         }
-
-        .neuro-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--primary);
-            border-radius: 50%;
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .game-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .game-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .game-status {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        
+        .join-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        
+        .join-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .join-btn.leave {
+            background-color: #e74c3c;
+        }
+        
+        .join-btn.leave:hover {
+            background-color: #c0392b;
+        }
+        
+        .join-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .game-area {
+            display: none;
+            width: 100%;
+        }
+        
+        .boards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .board-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .board-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 1px;
+            background-color: #3498db;
+            border: 2px solid #2980b9;
+            border-radius: 4px;
+        }
+        
+        .cell {
+            aspect-ratio: 1/1;
+            background-color: rgba(255, 255, 255, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: pulse 2s infinite;
-        }
-
-        .chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 1rem;
-            border-radius: 1rem;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .user-message {
-            background: var(--primary);
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-
-        .bot-message {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid var(--primary);
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-
-        .typing-indicator {
-            display: none;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 2rem;
-            width: fit-content;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            animation: bounce 1.4s infinite;
-        }
-
-        .dot:nth-child(2) { animation-delay: 0.2s; }
-        .dot:nth-child(3) { animation-delay: 0.4s; }
-
-        .input-container {
-            display: flex;
-            gap: 0.5rem;
-            padding: 1rem 0;
-        }
-
-        #user-input {
-            flex-grow: 1;
-            padding: 1rem;
-            border: none;
-            border-radius: 2rem;
-            background: rgba(255,255,255,0.1);
-            color: var(--text);
-            font-size: 1rem;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        #user-input:focus {
-            box-shadow: 0 0 0 2px var(--primary);
-        }
-
-        button {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 2rem;
-            background: var(--primary);
-            color: white;
-            font-weight: bold;
             cursor: pointer;
-            transition: 0.3s;
+            position: relative;
         }
-
-        button:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
+        
+        .cell.ship {
+            background-color: #95a5a6;
         }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        
+        .cell.hit::before {
+            content: '✖';
+            color: #e74c3c;
+            font-size: 18px;
         }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
+        
+        .cell.miss::before {
+            content: '○';
+            color: #7f8c8d;
+            font-size: 14px;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        
+        .cell.ship.hit {
+            background-color: #e74c3c;
         }
-
-        @media (max-width: 600px) {
-            .chat-container {
-                padding: 0.5rem;
-            }
-
-            .message {
-                max-width: 90%;
-                font-size: 0.9rem;
-            }
-
-            #user-input {
-                padding: 0.8rem;
-            }
-
-            button {
-                padding: 0.8rem 1.5rem;
+        
+        .turn-indicator {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f1c40f;
+            color: #2c3e50;
+            display: none;
+        }
+        
+        .game-over {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #2ecc71;
+            color: white;
+            display: none;
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 400px) {
+            .board {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <div class="neuro-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
+    <div class="container">
+        <div class="game-card" id="lobby-card">
+            <div class="game-title">Морской бой</div>
+            <div class="game-status" id="game-status">Ожидание игроков</div>
+            <button class="join-btn" id="join-btn">Вступить</button>
+        </div>
+        
+        <div class="game-area" id="game-area">
+            <div class="turn-indicator" id="turn-indicator">Ваш ход!</div>
+            <div class="game-over" id="game-over"></div>
+            
+            <div class="boards-container">
+                <div class="board-wrapper">
+                    <div class="board-title">Ваше поле</div>
+                    <div class="board" id="player-board"></div>
+                </div>
+                
+                <div class="board-wrapper">
+                    <div class="board-title">Поле противника</div>
+                    <div class="board" id="enemy-board"></div>
+                </div>
             </div>
-            <h1>NeuroChat</h1>
-        </div>
-
-        <div class="chat-messages" id="chat-output"></div>
-
-        <div class="typing-indicator" id="typing">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
-
-        <div class="input-container">
-            <input type="text" id="user-input" placeholder="Напишите сообщение..." autocomplete="off">
-            <button onclick="sendMessage()">Отправить</button>
         </div>
     </div>
 
     <script>
-        const API_ENDPOINT = 'https://openai-proxy.egorspirin10.workers.dev/';
-        const chatOutput = document.getElementById('chat-output');
-        const userInput = document.getElementById('user-input');
-        const typingIndicator = document.getElementById('typing');
-
-        function createMessageElement(text, isUser) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            messageDiv.textContent = text;
-            return messageDiv;
-        }
-
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (!message) return;
-
-            userInput.value = '';
-            chatOutput.appendChild(createMessageElement(message, true));
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+            authDomain: "vrot-x-7a48f.firebaseapp.com",
+            databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+            projectId: "vrot-x-7a48f",
+            storageBucket: "vrot-x-7a48f.firebasestorage.app",
+            messagingSenderId: "622297225288",
+            appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+        };
+        
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Получаем ID пользователя из Telegram
+        const userId = tg.initDataUnsafe.user?.id.toString() || 'unknown_' + Math.random().toString(36).substring(2, 9);
+        const userName = tg.initDataUnsafe.user?.first_name || 'Игрок';
+        
+        // Состояние игры
+        let gameState = {
+            players: {},
+            status: 'waiting',
+            currentPlayer: null,
+            boards: {},
+            ships: {}
+        };
+        
+        // Ссылки на элементы DOM
+        const lobbyCard = document.getElementById('lobby-card');
+        const gameArea = document.getElementById('game-area');
+        const gameStatus = document.getElementById('game-status');
+        const joinBtn = document.getElementById('join-btn');
+        const turnIndicator = document.getElementById('turn-indicator');
+        const gameOver = document.getElementById('game-over');
+        const playerBoard = document.getElementById('player-board');
+        const enemyBoard = document.getElementById('enemy-board');
+        
+        // Ссылки на Firebase
+        const gameRef = database.ref('seaBattle/game1');
+        
+        // Размеры поля
+        const BOARD_SIZE = 10;
+        
+        // Корабли для расстановки
+        const SHIPS = [
+            { size: 4, count: 1 },
+            { size: 3, count: 2 },
+            { size: 2, count: 3 },
+            { size: 1, count: 4 }
+        ];
+        
+        // Инициализация игры
+        function initGame() {
+            // Обработчик кнопки входа/выхода
+            joinBtn.addEventListener('click', toggleJoinGame);
             
-            // Показать индикатор набора
-            typingIndicator.style.display = 'flex';
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-
-            try {
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+            // Слушаем изменения в Firebase
+            gameRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    gameState = data;
+                    updateUI();
+                }
+            });
+            
+            // Инициализируем UI
+            updateUI();
+        }
+        
+        // Вход/выход из игры
+        function toggleJoinGame() {
+            if (gameState.players[userId]) {
+                // Выход из игры
+                gameRef.child('players').child(userId).remove();
+                joinBtn.textContent = 'Вступить';
+                joinBtn.classList.remove('leave');
+            } else {
+                // Вход в игру
+                gameRef.child('players').child(userId).set({
+                    name: userName,
+                    ready: false
                 });
-
-                if (!response.ok) throw new Error('Ошибка сервера');
                 
-                const data = await response.json();
-                chatOutput.appendChild(createMessageElement(data.reply, false));
+                // Если игрок первый, инициализируем игру
+                if (Object.keys(gameState.players).length === 0) {
+                    gameRef.update({
+                        status: 'waiting',
+                        currentPlayer: null,
+                        boards: {},
+                        ships: {}
+                    });
+                }
                 
-            } catch (error) {
-                chatOutput.appendChild(createMessageElement(`Ошибка: ${error.message}`, false));
-            } finally {
-                typingIndicator.style.display = 'none';
-                chatOutput.scrollTop = chatOutput.scrollHeight;
+                joinBtn.textContent = 'Выйти';
+                joinBtn.classList.add('leave');
             }
         }
-
-        // Обработка Enter
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        // Автофокус на поле ввода
-        userInput.focus();
+        
+        // Обновление интерфейса
+        function updateUI() {
+            const playersCount = Object.keys(gameState.players).length;
+            
+            // Обновляем статус игры
+            if (gameState.status === 'waiting') {
+                gameStatus.textContent = `Ожидание игроков (${playersCount}/2)`;
+                
+                // Если игроков 2, начинаем игру
+                if (playersCount === 2) {
+                    startGame();
+                }
+            } else if (gameState.status === 'playing') {
+                gameStatus.textContent = 'Игра идет';
+            } else if (gameState.status === 'finished') {
+                gameStatus.textContent = 'Игра завершена';
+            }
+            
+            // Показываем/скрываем лобби или игровую область
+            if (gameState.status === 'waiting' || !gameState.players[userId]) {
+                lobbyCard.style.display = 'block';
+                gameArea.style.display = 'none';
+                
+                // Блокируем кнопку, если игроков уже 2
+                joinBtn.disabled = playersCount >= 2 && !gameState.players[userId];
+            } else {
+                lobbyCard.style.display = 'none';
+                gameArea.style.display = 'block';
+                
+                // Если игра началась, рисуем поля
+                if (gameState.status === 'playing' || gameState.status === 'finished') {
+                    renderBoards();
+                    updateTurnIndicator();
+                }
+            }
+        }
+        
+        // Начало игры
+        function startGame() {
+            // Устанавливаем статус игры
+            gameRef.update({
+                status: 'playing',
+                currentPlayer: Object.keys(gameState.players)[0] // Первый игрок ходит первым
+            });
+            
+            // Инициализируем поля для обоих игроков
+            const players = Object.keys(gameState.players);
+            
+            players.forEach(playerId => {
+                // Создаем пустые поля
+                const board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
+                const ships = placeShipsOnBoard(board);
+                
+                // Сохраняем в Firebase
+                gameRef.child('boards').child(playerId).set(board);
+                gameRef.child('ships').child(playerId).set(ships);
+                gameRef.child('players').child(playerId).update({ ready: true });
+            });
+        }
+        
+        // Расстановка кораблей на поле
+        function placeShipsOnBoard(board) {
+            const ships = [];
+            
+            SHIPS.forEach(shipType => {
+                for (let i = 0; i < shipType.count; i++) {
+                    let placed = false;
+                    
+                    while (!placed) {
+                        const isHorizontal = Math.random() > 0.5;
+                        let row, col;
+                        
+                        if (isHorizontal) {
+                            row = Math.floor(Math.random() * BOARD_SIZE);
+                            col = Math.floor(Math.random() * (BOARD_SIZE - shipType.size + 1));
+                        } else {
+                            row = Math.floor(Math.random() * (BOARD_SIZE - shipType.size + 1));
+                            col = Math.floor(Math.random() * BOARD_SIZE);
+                        }
+                        
+                        // Проверяем, можно ли разместить корабль здесь
+                        let canPlace = true;
+                        
+                        for (let j = 0; j < shipType.size; j++) {
+                            const checkRow = isHorizontal ? row : row + j;
+                            const checkCol = isHorizontal ? col + j : col;
+                            
+                            // Проверяем саму клетку и соседние
+                            for (let r = Math.max(0, checkRow - 1); r <= Math.min(BOARD_SIZE - 1, checkRow + 1); r++) {
+                                for (let c = Math.max(0, checkCol - 1); c <= Math.min(BOARD_SIZE - 1, checkCol + 1); c++) {
+                                    if (board[r][c] === 1) {
+                                        canPlace = false;
+                                        break;
+                                    }
+                                }
+                                if (!canPlace) break;
+                            }
+                            if (!canPlace) break;
+                        }
+                        
+                        // Размещаем корабль
+                        if (canPlace) {
+                            const shipCells = [];
+                            
+                            for (let j = 0; j < shipType.size; j++) {
+                                const shipRow = isHorizontal ? row : row + j;
+                                const shipCol = isHorizontal ? col + j : col;
+                                
+                                board[shipRow][shipCol] = 1;
+                                shipCells.push({ row: shipRow, col: shipCol });
+                            }
+                            
+                            ships.push({
+                                size: shipType.size,
+                                cells: shipCells,
+                                sunk: false
+                            });
+                            
+                            placed = true;
+                        }
+                    }
+                }
+            });
+            
+            return ships;
+        }
+        
+        // Отрисовка игровых полей
+        function renderBoards() {
+            // Очищаем поля
+            playerBoard.innerHTML = '';
+            enemyBoard.innerHTML = '';
+            
+            // Получаем ID противника
+            const enemyId = Object.keys(gameState.players).find(id => id !== userId);
+            
+            // Отрисовываем свое поле
+            if (gameState.boards[userId]) {
+                for (let row = 0; row < BOARD_SIZE; row++) {
+                    for (let col = 0; col < BOARD_SIZE; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // Показываем свои корабли и выстрелы
+                        if (gameState.boards[userId][row][col] === 1) {
+                            cell.classList.add('ship');
+                        }
+                        if (gameState.boards[userId][row][col] === 2) {
+                            cell.classList.add('hit');
+                        }
+                        if (gameState.boards[userId][row][col] === 3) {
+                            cell.classList.add('miss');
+                        }
+                        
+                        playerBoard.appendChild(cell);
+                    }
+                }
+            }
+            
+            // Отрисовываем поле противника
+            if (gameState.boards[enemyId]) {
+                for (let row = 0; row < BOARD_SIZE; row++) {
+                    for (let col = 0; col < BOARD_SIZE; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // Показываем только выстрелы
+                        if (gameState.boards[enemyId][row][col] === 2) {
+                            cell.classList.add('hit');
+                        }
+                        if (gameState.boards[enemyId][row][col] === 3) {
+                            cell.classList.add('miss');
+                        }
+                        
+                        // Добавляем обработчик клика, если это наш ход
+                        if (gameState.status === 'playing' && 
+                            gameState.currentPlayer === userId && 
+                            gameState.boards[enemyId][row][col] === 0) {
+                            cell.addEventListener('click', () => makeMove(row, col, enemyId));
+                        }
+                        
+                        enemyBoard.appendChild(cell);
+                    }
+                }
+            }
+        }
+        
+        // Сделать ход
+        function makeMove(row, col, enemyId) {
+            // Проверяем, можно ли сделать ход
+            if (gameState.status !== 'playing' || gameState.currentPlayer !== userId) return;
+            
+            // Получаем текущее состояние поля противника
+            const enemyBoard = [...gameState.boards[enemyId]];
+            
+            // Проверяем, не стреляли ли уже в эту клетку
+            if (enemyBoard[row][col] > 1) return;
+            
+            // Проверяем попадание
+            const isHit = enemyBoard[row][col] === 1;
+            
+            // Обновляем поле противника
+            enemyBoard[row][col] = isHit ? 2 : 3;
+            
+            // Обновляем в Firebase
+            gameRef.child('boards').child(enemyId).set(enemyBoard);
+            
+            // Проверяем, потоплен ли корабль
+            if (isHit) {
+                checkSunkShip(row, col, enemyId);
+            }
+            
+            // Проверяем условие победы
+            checkWinCondition(enemyId);
+            
+            // Передаем ход другому игроку, если игра не закончилась
+            if (gameState.status === 'playing') {
+                gameRef.update({
+                    currentPlayer: enemyId
+                });
+            }
+        }
+        
+        // Проверка, потоплен ли корабль
+        function checkSunkShip(row, col, enemyId) {
+            const ships = [...gameState.ships[enemyId]];
+            
+            for (let i = 0; i < ships.length; i++) {
+                const ship = ships[i];
+                
+                // Ищем корабль, содержащий эту клетку
+                const hitCellIndex = ship.cells.findIndex(cell => cell.row === row && cell.col === col);
+                
+                if (hitCellIndex !== -1) {
+                    // Проверяем, все ли клетки корабля подбиты
+                    const isSunk = ship.cells.every(cell => {
+                        return gameState.boards[enemyId][cell.row][cell.col] === 2;
+                    });
+                    
+                    if (isSunk && !ship.sunk) {
+                        // Помечаем корабль как потопленный
+                        ships[i].sunk = true;
+                        gameRef.child('ships').child(enemyId).set(ships);
+                        
+                        // Можно добавить визуальное обозначение потопленного корабля
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        
+        // Проверка условия победы
+        function checkWinCondition(enemyId) {
+            const ships = gameState.ships[enemyId];
+            const allSunk = ships.every(ship => ship.sunk);
+            
+            if (allSunk) {
+                // Игра окончена, текущий игрок победил
+                gameRef.update({
+                    status: 'finished',
+                    winner: userId
+                });
+                
+                // Показываем сообщение о победе
+                if (userId === tg.initDataUnsafe.user?.id.toString()) {
+                    gameOver.textContent = 'Вы победили!';
+                    gameOver.style.display = 'block';
+                    gameOver.style.backgroundColor = '#2ecc71';
+                } else {
+                    gameOver.textContent = 'Вы проиграли!';
+                    gameOver.style.display = 'block';
+                    gameOver.style.backgroundColor = '#e74c3c';
+                }
+            }
+        }
+        
+        // Обновление индикатора хода
+        function updateTurnIndicator() {
+            if (gameState.status === 'finished') {
+                turnIndicator.style.display = 'none';
+            } else if (gameState.currentPlayer === userId) {
+                turnIndicator.textContent = 'Ваш ход!';
+                turnIndicator.style.display = 'block';
+                turnIndicator.style.backgroundColor = '#f1c40f';
+            } else {
+                turnIndicator.textContent = 'Ход противника...';
+                turnIndicator.style.display = 'block';
+                turnIndicator.style.backgroundColor = '#bdc3c7';
+            }
+        }
+        
+        // Запуск игры при загрузке страницы
+        window.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>
 </html>
