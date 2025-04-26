@@ -177,6 +177,20 @@
             font-size: 14px;
         }
         
+        .coordinates {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
+        .coordinate {
+            width: calc(100% / 10);
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
         @media (max-width: 400px) {
             .board {
                 width: 100%;
@@ -188,7 +202,7 @@
     <div class="container">
         <div class="game-card" id="lobby-card">
             <div class="game-title">Морской бой</div>
-            <div class="game-status" id="game-status">Ожидание игроков</div>
+            <div class="game-status" id="game-status">Ожидание игроков (0/2)</div>
             <button class="join-btn" id="join-btn">Вступить</button>
         </div>
         
@@ -199,11 +213,35 @@
             <div class="boards-container">
                 <div class="board-wrapper">
                     <div class="board-title">Ваше поле</div>
+                    <div class="coordinates">
+                        <div class="coordinate">1</div>
+                        <div class="coordinate">2</div>
+                        <div class="coordinate">3</div>
+                        <div class="coordinate">4</div>
+                        <div class="coordinate">5</div>
+                        <div class="coordinate">6</div>
+                        <div class="coordinate">7</div>
+                        <div class="coordinate">8</div>
+                        <div class="coordinate">9</div>
+                        <div class="coordinate">10</div>
+                    </div>
                     <div class="board" id="player-board"></div>
                 </div>
                 
                 <div class="board-wrapper">
                     <div class="board-title">Поле противника</div>
+                    <div class="coordinates">
+                        <div class="coordinate">1</div>
+                        <div class="coordinate">2</div>
+                        <div class="coordinate">3</div>
+                        <div class="coordinate">4</div>
+                        <div class="coordinate">5</div>
+                        <div class="coordinate">6</div>
+                        <div class="coordinate">7</div>
+                        <div class="coordinate">8</div>
+                        <div class="coordinate">9</div>
+                        <div class="coordinate">10</div>
+                    </div>
                     <div class="board" id="enemy-board"></div>
                 </div>
             </div>
@@ -259,18 +297,32 @@
         // Размеры поля
         const BOARD_SIZE = 10;
         
-        // Корабли для расстановки
-        const SHIPS = [
-            { size: 4, count: 1 },
-            { size: 3, count: 2 },
-            { size: 2, count: 3 },
-            { size: 1, count: 4 }
+        // Предопределенные расстановки кораблей (для простоты используем одну расстановку)
+        const PREDEFINED_SHIPS = [
+            // 4-палубный
+            [{row: 2, col: 2}, {row: 2, col: 3}, {row: 2, col: 4}, {row: 2, col: 5}],
+            // 3-палубные
+            [{row: 5, col: 1}, {row: 5, col: 2}, {row: 5, col: 3}],
+            [{row: 7, col: 7}, {row: 8, col: 7}, {row: 9, col: 7}],
+            // 2-палубные
+            [{row: 0, col: 0}, {row: 1, col: 0}],
+            [{row: 3, col: 8}, {row: 3, col: 9}],
+            [{row: 9, col: 0}, {row: 9, col: 1}],
+            // 1-палубные
+            [{row: 0, col: 9}],
+            [{row: 4, col: 6}],
+            [{row: 6, col: 4}],
+            [{row: 8, col: 2}]
         ];
         
         // Инициализация игры
         function initGame() {
             // Обработчик кнопки входа/выхода
             joinBtn.addEventListener('click', toggleJoinGame);
+            
+            // Обработчик закрытия приложения
+            tg.onEvent('viewportChanged', handleViewportChanged);
+            window.addEventListener('beforeunload', handleBeforeUnload);
             
             // Слушаем изменения в Firebase
             gameRef.on('value', (snapshot) => {
@@ -289,29 +341,47 @@
         function toggleJoinGame() {
             if (gameState.players[userId]) {
                 // Выход из игры
-                gameRef.child('players').child(userId).remove();
-                joinBtn.textContent = 'Вступить';
-                joinBtn.classList.remove('leave');
+                leaveGame();
             } else {
                 // Вход в игру
-                gameRef.child('players').child(userId).set({
-                    name: userName,
-                    ready: false
-                });
-                
-                // Если игрок первый, инициализируем игру
-                if (Object.keys(gameState.players).length === 0) {
-                    gameRef.update({
-                        status: 'waiting',
-                        currentPlayer: null,
-                        boards: {},
-                        ships: {}
-                    });
-                }
-                
-                joinBtn.textContent = 'Выйти';
-                joinBtn.classList.add('leave');
+                joinGame();
             }
+        }
+        
+        // Вход в игру
+        function joinGame() {
+            gameRef.child('players').child(userId).set({
+                name: userName,
+                ready: false,
+                lastActive: Date.now()
+            });
+            
+            joinBtn.textContent = 'Выйти';
+            joinBtn.classList.add('leave');
+        }
+        
+        // Выход из игры
+        function leaveGame() {
+            gameRef.child('players').child(userId).remove();
+            
+            // Если игрок был в игре, очищаем его данные
+            gameRef.child('boards').child(userId).remove();
+            gameRef.child('ships').child(userId).remove();
+            
+            joinBtn.textContent = 'Вступить';
+            joinBtn.classList.remove('leave');
+        }
+        
+        // Обработчик изменения viewport (закрытие мини-аппа)
+        function handleViewportChanged() {
+            if (tg.isClosingConfirmationEnabled) {
+                leaveGame();
+            }
+        }
+        
+        // Обработчик перед закрытием страницы
+        function handleBeforeUnload() {
+            leaveGame();
         }
         
         // Обновление интерфейса
@@ -365,7 +435,7 @@
             players.forEach(playerId => {
                 // Создаем пустые поля
                 const board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
-                const ships = placeShipsOnBoard(board);
+                const ships = createPredefinedShips(board);
                 
                 // Сохраняем в Firebase
                 gameRef.child('boards').child(playerId).set(board);
@@ -374,68 +444,22 @@
             });
         }
         
-        // Расстановка кораблей на поле
-        function placeShipsOnBoard(board) {
+        // Создание предопределенных кораблей
+        function createPredefinedShips(board) {
             const ships = [];
             
-            SHIPS.forEach(shipType => {
-                for (let i = 0; i < shipType.count; i++) {
-                    let placed = false;
-                    
-                    while (!placed) {
-                        const isHorizontal = Math.random() > 0.5;
-                        let row, col;
-                        
-                        if (isHorizontal) {
-                            row = Math.floor(Math.random() * BOARD_SIZE);
-                            col = Math.floor(Math.random() * (BOARD_SIZE - shipType.size + 1));
-                        } else {
-                            row = Math.floor(Math.random() * (BOARD_SIZE - shipType.size + 1));
-                            col = Math.floor(Math.random() * BOARD_SIZE);
-                        }
-                        
-                        // Проверяем, можно ли разместить корабль здесь
-                        let canPlace = true;
-                        
-                        for (let j = 0; j < shipType.size; j++) {
-                            const checkRow = isHorizontal ? row : row + j;
-                            const checkCol = isHorizontal ? col + j : col;
-                            
-                            // Проверяем саму клетку и соседние
-                            for (let r = Math.max(0, checkRow - 1); r <= Math.min(BOARD_SIZE - 1, checkRow + 1); r++) {
-                                for (let c = Math.max(0, checkCol - 1); c <= Math.min(BOARD_SIZE - 1, checkCol + 1); c++) {
-                                    if (board[r][c] === 1) {
-                                        canPlace = false;
-                                        break;
-                                    }
-                                }
-                                if (!canPlace) break;
-                            }
-                            if (!canPlace) break;
-                        }
-                        
-                        // Размещаем корабль
-                        if (canPlace) {
-                            const shipCells = [];
-                            
-                            for (let j = 0; j < shipType.size; j++) {
-                                const shipRow = isHorizontal ? row : row + j;
-                                const shipCol = isHorizontal ? col + j : col;
-                                
-                                board[shipRow][shipCol] = 1;
-                                shipCells.push({ row: shipRow, col: shipCol });
-                            }
-                            
-                            ships.push({
-                                size: shipType.size,
-                                cells: shipCells,
-                                sunk: false
-                            });
-                            
-                            placed = true;
-                        }
-                    }
-                }
+            PREDEFINED_SHIPS.forEach(shipCells => {
+                // Размещаем корабль на поле
+                shipCells.forEach(cell => {
+                    board[cell.row][cell.col] = 1;
+                });
+                
+                // Добавляем информацию о корабле
+                ships.push({
+                    size: shipCells.length,
+                    cells: shipCells,
+                    sunk: false
+                });
             });
             
             return ships;
@@ -561,8 +585,6 @@
                         // Помечаем корабль как потопленный
                         ships[i].sunk = true;
                         gameRef.child('ships').child(enemyId).set(ships);
-                        
-                        // Можно добавить визуальное обозначение потопленного корабля
                     }
                     
                     break;
