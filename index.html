@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Морской бой онлайн</title>
+  <title>Морской бой</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,11 +15,15 @@
       --main-accent: #1976d2;
       --main-accent-light: #42a5f5;
       --main-accent-dark: #0d47a1;
-      --cell-size: 32px;
+      --cell-size: 8vw;
+      --cell-size-max: 38px;
       --cell-gap: 2px;
-      --cell-radius: 6px;
+      --cell-radius: 7px;
       --font-main: 'Segoe UI', 'Arial', sans-serif;
       --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --enemy-active: #fff;
+      --enemy-inactive: #e3f2fd;
+      --enemy-inactive-opacity: 0.45;
     }
     html, body {
       margin: 0; padding: 0;
@@ -30,16 +33,21 @@
       color: #222;
     }
     #app-container {
-      max-width: 900px;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 0 8px 32px 8px;
+      padding: 0 0 32px 0;
     }
     h1 {
-      margin-top: 24px;
-      font-size: 2.2em;
+      margin: 0;
+      font-size: 2em;
       color: var(--main-accent-dark);
       letter-spacing: 1px;
-      text-shadow: 0 2px 8px #fff8;
+      text-align: center;
+      padding: 18px 0 8px 0;
+      font-weight: 700;
+      background: #fff;
+      border-bottom: 1.5px solid #e3f2fd;
+      box-shadow: 0 2px 8px #1976d210;
     }
     .card {
       background: #fff;
@@ -47,12 +55,8 @@
       box-shadow: var(--shadow);
       padding: 24px 18px;
       margin: 24px auto;
-      max-width: 420px;
-      transition: box-shadow 0.2s;
-    }
-    .card.lobby {
       max-width: 340px;
-      margin-top: 40px;
+      transition: box-shadow 0.2s;
     }
     .btn {
       background: var(--main-accent);
@@ -99,7 +103,7 @@
       border: 2px solid var(--main-accent-light);
     }
     .player-avatar {
-      width: 48px; height: 48px;
+      width: 44px; height: 44px;
       border-radius: 50%;
       background: #b3e5fc;
       margin-bottom: 6px;
@@ -131,20 +135,22 @@
     }
     .boards-container {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 32px;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
       margin: 0 auto;
-      max-width: 800px;
+      max-width: 100vw;
     }
     .board-block {
       background: #f5faff;
       border-radius: 16px;
       box-shadow: 0 1px 8px #1976d210;
-      padding: 16px 10px 10px 10px;
-      min-width: 340px;
-      margin-bottom: 18px;
+      padding: 12px 6px 10px 6px;
+      min-width: 0;
+      width: 98vw;
+      max-width: 420px;
       position: relative;
+      margin-bottom: 0;
     }
     .board-title {
       font-size: 1.1em;
@@ -155,7 +161,7 @@
     }
     .ships-counter {
       position: absolute;
-      right: 18px; top: 16px;
+      right: 18px; top: 12px;
       font-size: 0.98em;
       color: #1976d2;
       background: #e3f2fd;
@@ -164,17 +170,48 @@
       font-weight: 600;
       box-shadow: 0 1px 4px #1976d210;
     }
+    .ships-list {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 8px 0;
+      justify-content: center;
+      font-size: 1.05em;
+    }
+    .ship-icon {
+      display: flex; align-items: center; gap: 2px;
+      background: #e3f2fd;
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-weight: 600;
+      color: #1976d2;
+      box-shadow: 0 1px 4px #1976d210;
+    }
+    .ship-icon .ship-shape {
+      display: inline-block;
+      width: 18px; height: 10px;
+      background: #1976d2;
+      border-radius: 4px;
+      margin-right: 2px;
+      vertical-align: middle;
+    }
+    .ship-icon.s4 .ship-shape { width: 32px; }
+    .ship-icon.s3 .ship-shape { width: 26px; }
+    .ship-icon.s2 .ship-shape { width: 20px; }
+    .ship-icon.s1 .ship-shape { width: 12px; }
     .board-grid {
       display: grid;
-      grid-template-columns: repeat(10, var(--cell-size));
-      grid-template-rows: repeat(10, var(--cell-size));
+      grid-template-columns: repeat(10, minmax(0, var(--cell-size)));
+      grid-template-rows: repeat(10, minmax(0, var(--cell-size)));
       gap: var(--cell-gap);
       margin: 0 auto;
       user-select: none;
+      width: 100vw;
+      max-width: 98vw;
+      justify-content: center;
     }
     .cell {
-      width: var(--cell-size);
-      height: var(--cell-size);
+      width: min(var(--cell-size), var(--cell-size-max));
+      height: min(var(--cell-size), var(--cell-size-max));
       border-radius: var(--cell-radius);
       background: #e0f7fa;
       border: 1.5px solid #b3e5fc;
@@ -184,9 +221,10 @@
       font-size: 1.25em;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s;
+      transition: background 0.15s, box-shadow 0.15s, opacity 0.2s;
       box-shadow: 0 1px 2px #1976d210;
       position: relative;
+      z-index: 1;
     }
     .cell.ship {
       background: #90caf9;
@@ -211,7 +249,12 @@
     }
     .cell.enemy.disabled {
       pointer-events: none;
-      opacity: 0.5;
+      opacity: 0.45;
+    }
+    .cell.enemy.active {
+      background: #fff;
+      box-shadow: 0 0 0 2px #1976d2;
+      opacity: 1;
     }
     .cell.enemy:hover:not(.disabled):not(.hit):not(.miss) {
       background: #bbdefb;
@@ -268,8 +311,8 @@
   </style>
 </head>
 <body>
+  <h1>Морской бой</h1>
   <div id="app-container">
-    <h1>Морской бой онлайн</h1>
     <div id="main"></div>
   </div>
   <div id="modal-root"></div>
@@ -309,7 +352,8 @@
     getTelegramUser();
 
     // --- State ---
-    let roomId = null;
+    const ROOM_ID = "main";
+    let roomId = ROOM_ID;
     let enemyId = null;
     let enemyName = "Противник";
     let enemyPhoto = null;
@@ -317,8 +361,8 @@
     let enemyField = null;
     let myTurn = false;
     let gameStarted = false;
-    let myShips = 0;
-    let enemyShips = 0;
+    let myShips = {};
+    let enemyShips = {};
     let unsubRoom = null;
     let unsubTurn = null;
     let unsubShotsMe = null;
@@ -383,6 +427,11 @@
       players.forEach(p => {
         el.innerHTML += playerCard(p.id, p.name, p.photo, p.id === playerId);
       });
+      // Если я один — показать кнопку выхода
+      if (players.length === 1 && players[0].id === playerId) {
+        document.getElementById('waitMsg').innerHTML = `<button class="btn secondary" id="leaveBtn">Выйти из комнаты</button>`;
+        document.getElementById('leaveBtn').onclick = leaveRoom;
+      }
     }
 
     // --- Game UI ---
@@ -392,12 +441,12 @@
         <div class="boards-container">
           <div class="board-block">
             <div class="board-title">Ваше поле</div>
-            <div class="ships-counter" id="myShipsCounter">Кораблей: ${myShips}</div>
+            <div class="ships-list" id="myShipsList"></div>
             <div class="board-grid" id="myBoard"></div>
           </div>
           <div class="board-block">
             <div class="board-title">Поле противника</div>
-            <div class="ships-counter" id="enemyShipsCounter">Кораблей: ${enemyShips}</div>
+            <div class="ships-list" id="enemyShipsList"></div>
             <div class="board-grid" id="enemyBoard"></div>
           </div>
         </div>
@@ -405,11 +454,7 @@
           ${playerCard(playerId, playerName, playerPhoto, true)}
           ${playerCard(enemyId, enemyName, enemyPhoto, false)}
         </div>
-        <div style="margin:18px 0 0 0;">
-          <button class="btn secondary" id="leaveBtn">Покинуть комнату</button>
-        </div>
       `;
-      document.getElementById('leaveBtn').onclick = leaveRoom;
       drawBoards();
     }
 
@@ -434,6 +479,7 @@
           let cls = 'cell enemy';
           if (enemyField[y][x] === 2) cls += ' hit disabled';
           if (enemyField[y][x] === 3) cls += ' miss disabled';
+          if (myTurn && !gameOver) cls += ' active';
           if (!myTurn || gameOver) cls += ' disabled';
           html += `<div class="${cls}" data-x="${x}" data-y="${y}">${enemyField[y][x]===2?'✖':enemyField[y][x]===3?'•':''}</div>`;
         }
@@ -447,8 +493,23 @@
           shoot(x, y);
         };
       });
-      document.getElementById('myShipsCounter').textContent = 'Кораблей: ' + myShips;
-      document.getElementById('enemyShipsCounter').textContent = 'Кораблей: ' + enemyShips;
+
+      // Визуализация хода
+      document.getElementById('enemyBoard').style.opacity = myTurn && !gameOver ? "1" : "0.45";
+      document.getElementById('enemyBoard').style.filter = myTurn && !gameOver ? "none" : "grayscale(0.5)";
+
+      // Счетчик кораблей
+      document.getElementById('myShipsList').innerHTML = shipsListHtml(myShips);
+      document.getElementById('enemyShipsList').innerHTML = shipsListHtml(enemyShips);
+    }
+
+    function shipsListHtml(ships) {
+      return `
+        <span class="ship-icon s4"><span class="ship-shape"></span> ${ships[4]||0}</span>
+        <span class="ship-icon s3"><span class="ship-shape"></span> ${ships[3]||0}</span>
+        <span class="ship-icon s2"><span class="ship-shape"></span> ${ships[2]||0}</span>
+        <span class="ship-icon s1"><span class="ship-shape"></span> ${ships[1]||0}</span>
+      `;
     }
 
     function setStatus(msg) {
@@ -458,34 +519,12 @@
 
     // --- Room logic ---
     function joinRoom() {
-      showModal('Поиск комнаты...', {loader:true});
-      // Найти комнату с 1 игроком или создать новую
-      db.ref('rooms').once('value', snap => {
-        let found = false;
-        let foundRoomId = null;
-        snap.forEach(room => {
-          const players = room.child('players').val() || {};
-          if (Object.keys(players).length < 2 && !found) {
-            found = true;
-            foundRoomId = room.key;
-          }
-        });
-        if (found) {
-          roomId = foundRoomId;
-          db.ref(`rooms/${roomId}/players/${playerId}`).set({
-            name: playerName,
-            photo: playerPhoto
-          });
-          waitForPlayers();
-        } else {
-          // Создать новую комнату
-          roomId = 'room_' + Math.random().toString(36).substr(2, 9);
-          db.ref(`rooms/${roomId}/players/${playerId}`).set({
-            name: playerName,
-            photo: playerPhoto
-          });
-          waitForPlayers();
-        }
+      showModal('Присоединяемся к комнате...', {loader:true});
+      db.ref(`rooms/${roomId}/players/${playerId}`).set({
+        name: playerName,
+        photo: playerPhoto
+      }).then(() => {
+        waitForPlayers();
       });
     }
 
@@ -523,13 +562,12 @@
         db.ref(`rooms/${roomId}/turn`).remove();
         setTimeout(() => {
           cleanupListeners();
-          roomId = null;
           enemyId = null;
           gameStarted = false;
           myField = null;
           enemyField = null;
-          myShips = 0;
-          enemyShips = 0;
+          myShips = {};
+          enemyShips = {};
           gameOver = false;
           renderLobby(1, [{id:playerId, name:playerName, photo:playerPhoto}]);
           hideModal();
@@ -549,13 +587,11 @@
     function startGame() {
       gameStarted = true;
       gameOver = false;
-      // Расставить корабли случайно (1x4, 2x3, 3x2, 4x1)
       myField = randomShips();
-      myShips = 20;
+      myShips = countShips(myField);
       enemyField = emptyField();
-      enemyShips = 20;
+      enemyShips = {4:1,3:2,2:3,1:4};
       db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
-      // Первый ход — у того, кто раньше вошел
       db.ref(`rooms/${roomId}/players`).once('value', snap => {
         const ids = Object.keys(snap.val());
         myTurn = (ids[0] === playerId);
@@ -567,33 +603,32 @@
     }
 
     function listenGame() {
-      // Слушаем чей ход
       if (unsubTurn) db.ref(`rooms/${roomId}/turn`).off();
       unsubTurn = db.ref(`rooms/${roomId}/turn`).on('value', snap => {
         myTurn = (snap.val() === playerId);
         if (!gameOver) setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
         drawBoards();
       });
-      // Слушаем выстрелы по мне
       if (unsubShotsMe) db.ref(`rooms/${roomId}/shots/${playerId}`).off();
       unsubShotsMe = db.ref(`rooms/${roomId}/shots/${playerId}`).on('child_added', snap => {
         const [y, x] = snap.key.split('_').map(Number);
         if (myField[y][x] === 1) {
           myField[y][x] = 2; // hit
-          myShips--;
         } else if (myField[y][x] === 0) {
           myField[y][x] = 3; // miss
         }
+        // Проверка уничтожения корабля
+        let destroyed = markDestroyedShips(myField, y, x);
+        myShips = countShips(myField);
         db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
         drawBoards();
-        if (myShips === 0 && !gameOver) {
+        if (Object.values(myShips).reduce((a,b)=>a+b,0) === 0 && !gameOver) {
           setStatus('Вы проиграли!');
           showModal('<div class="game-over">Вы проиграли!</div>', {button:'Ок', onClose:leaveRoom});
           gameOver = true;
           cleanupListeners();
         }
       });
-      // Слушаем выстрелы по врагу (чтобы обновлять enemyField)
       if (unsubShotsEnemy) db.ref(`rooms/${roomId}/shots/${enemyId}`).off();
       unsubShotsEnemy = db.ref(`rooms/${roomId}/shots/${enemyId}`).on('child_added', snap => {
         const [y, x] = snap.key.split('_').map(Number);
@@ -605,12 +640,11 @@
           } else {
             enemyField[y][x] = 3; // miss
           }
-          // Пересчитать корабли врага
-          let hits = 0;
-          for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
-          enemyShips = 20 - hits;
+          // Проверка уничтожения корабля
+          let destroyed = markDestroyedShips(enemyField, y, x);
+          enemyShips = countShips(enemyField);
           drawBoards();
-          if (enemyShips === 0 && !gameOver) {
+          if (Object.values(enemyShips).reduce((a,b)=>a+b,0) === 0 && !gameOver) {
             setStatus('Вы победили!');
             showModal('<div class="game-over" style="color:#388e3c;">Вы победили!</div>', {button:'Ок', onClose:leaveRoom});
             gameOver = true;
@@ -618,14 +652,11 @@
           }
         });
       });
-      // Слушаем поле врага (для обновления счетчика кораблей)
       if (unsubEnemyField) db.ref(`rooms/${roomId}/fields/${enemyId}`).off();
       unsubEnemyField = db.ref(`rooms/${roomId}/fields/${enemyId}`).on('value', snap => {
         const field = snap.val();
         if (!field) return;
-        let hits = 0;
-        for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
-        enemyShips = 20 - hits;
+        enemyShips = countShips(field);
         drawBoards();
       });
     }
@@ -633,20 +664,17 @@
     function shoot(x, y) {
       if (!myTurn || gameOver) return;
       if (enemyField[y][x] === 2 || enemyField[y][x] === 3) return;
-      // Отправить выстрел
       db.ref(`rooms/${roomId}/shots/${enemyId}/${y}_${x}`).set(true);
-      // Проверить попадание
       db.ref(`rooms/${roomId}/fields/${enemyId}`).once('value', snap => {
         const field = snap.val();
         if (!field) return;
         if (field[y][x] === 1) {
           enemyField[y][x] = 2; // hit
           setStatus('Попадание! Ходите еще.');
-          // Проверить победу
-          let hits = 0;
-          for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
-          enemyShips = 20 - hits;
-          if (enemyShips === 0 && !gameOver) {
+          // Проверка уничтожения корабля
+          let destroyed = markDestroyedShips(enemyField, y, x);
+          enemyShips = countShips(enemyField);
+          if (Object.values(enemyShips).reduce((a,b)=>a+b,0) === 0 && !gameOver) {
             setStatus('Вы победили!');
             showModal('<div class="game-over" style="color:#388e3c;">Вы победили!</div>', {button:'Ок', onClose:leaveRoom});
             gameOver = true;
@@ -662,12 +690,11 @@
       });
     }
 
-    // --- Ships placement ---
+    // --- Ships placement and logic ---
     function emptyField() {
       return Array(10).fill(0).map(() => Array(10).fill(0));
     }
     function randomShips() {
-      // 1x4, 2x3, 3x2, 4x1
       let field = emptyField();
       let ships = [4,3,3,2,2,2,1,1,1,1];
       for (let s of ships) {
@@ -682,7 +709,6 @@
           for (let i=0;i<s;i++) {
             let xx = x + (dir==='h'?i:0), yy = y + (dir==='v'?i:0);
             if (field[yy][xx] !== 0) ok = false;
-            // Проверка на соседство
             for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++) {
               let nx=xx+dx, ny=yy+dy;
               if (nx>=0&&nx<10&&ny>=0&&ny<10&&field[ny][nx]===1) ok=false;
@@ -696,11 +722,96 @@
             placed = true;
           }
         }
-        if (!placed) { // fallback
+        if (!placed) {
           for (let y=0;y<10;y++) for (let x=0;x<10;x++) if (field[y][x]===0) { field[y][x]=1; placed=true; break; }
         }
       }
       return field;
+    }
+
+    // Подсчет кораблей по размерам
+    function countShips(field) {
+      let visited = Array(10).fill(0).map(()=>Array(10).fill(false));
+      let ships = {4:0,3:0,2:0,1:0};
+      for (let y=0;y<10;y++) for (let x=0;x<10;x++) {
+        if (field[y][x]===1 && !visited[y][x]) {
+          let size = getShipSize(field, x, y, visited);
+          if (size>=1 && size<=4) ships[size]++;
+        }
+      }
+      return ships;
+    }
+    function getShipSize(field, x, y, visited) {
+      let size = 0;
+      let stack = [[x,y]];
+      let dir = null;
+      while (stack.length) {
+        let [cx,cy] = stack.pop();
+        if (cx<0||cy<0||cx>=10||cy>=10) continue;
+        if (visited[cy][cx]) continue;
+        if (field[cy][cx]!==1) continue;
+        visited[cy][cx]=true;
+        size++;
+        // Определяем направление
+        if (dir===null) {
+          if (cx+1<10 && field[cy][cx+1]===1) dir='h';
+          else if (cy+1<10 && field[cy+1][cx]===1) dir='v';
+        }
+        if (dir==='h') {
+          stack.push([cx+1,cy]);
+          stack.push([cx-1,cy]);
+        } else if (dir==='v') {
+          stack.push([cx,cy+1]);
+          stack.push([cx,cy-1]);
+        } else {
+          stack.push([cx+1,cy]);
+          stack.push([cx-1,cy]);
+          stack.push([cx,cy+1]);
+          stack.push([cx,cy-1]);
+        }
+      }
+      return size;
+    }
+
+    // Проверка уничтожения корабля и обводка вокруг
+    function markDestroyedShips(field, y, x) {
+      let shipCells = getShipCells(field, x, y, [2]);
+      if (!shipCells.length) return false;
+      // Проверяем, все ли клетки корабля подбиты
+      let destroyed = shipCells.every(([xx,yy])=>field[yy][xx]===2);
+      if (destroyed) {
+        // Обводим вокруг корабля промахами
+        for (let [xx,yy] of shipCells) {
+          for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++) {
+            let nx=xx+dx, ny=yy+dy;
+            if (nx>=0&&nx<10&&ny>=0&&ny<10) {
+              if (field[ny][nx]===0) field[ny][nx]=3;
+            }
+          }
+        }
+      }
+      return destroyed;
+    }
+    // Получить все клетки корабля (по координате)
+    function getShipCells(field, x, y, allowed=[1,2]) {
+      let res = [];
+      let visited = Array(10).fill(0).map(()=>Array(10).fill(false));
+      let val = field[y][x];
+      if (!allowed.includes(val)) return [];
+      let stack = [[x,y]];
+      while (stack.length) {
+        let [cx,cy] = stack.pop();
+        if (cx<0||cy<0||cx>=10||cy>=10) continue;
+        if (visited[cy][cx]) continue;
+        if (!allowed.includes(field[cy][cx])) continue;
+        visited[cy][cx]=true;
+        res.push([cx,cy]);
+        stack.push([cx+1,cy]);
+        stack.push([cx-1,cy]);
+        stack.push([cx,cy+1]);
+        stack.push([cx,cy-1]);
+      }
+      return res;
     }
 
     // --- Initial render ---
