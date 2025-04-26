@@ -1,234 +1,320 @@
+
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Морской бой</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-        }
-
-        .container {
-            text-align: center;
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        .game-boards {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .board {
-            border: 2px solid #333;
-            padding: 10px;
-        }
-
-        .row {
-            display: flex;
-        }
-
-        .cell {
-            width: 30px;
-            height: 30px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-        }
-
-        .cell.hit {
-            background-color: #ff4444;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 10px;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        button.leave {
-            background-color: #f44336;
-        }
-
-        button.leave:hover {
-            background-color: #d32f2f;
-        }
-
-        h1, h2, h3 {
-            color: #333;
-        }
-
-        .waiting-message {
-            color: #666;
-            font-style: italic;
-            margin: 10px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Морской бой онлайн</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    .board { display: inline-block; margin: 10px; }
+    .row { display: flex; }
+    .cell {
+      width: 28px; height: 28px; border: 1px solid #888;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px;
+      background: #e0f7fa;
+    }
+    .cell.ship { background: #90caf9; }
+    .cell.hit { background: #ef9a9a; }
+    .cell.miss { background: #bdbdbd; }
+    .cell.enemy { cursor: pointer; }
+    .cell.disabled { pointer-events: none; opacity: 0.5; }
+    .status { margin: 10px; font-weight: bold; }
+    button { font-size: 18px; padding: 8px 20px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div id="app">
-            <h1>Морской бой</h1>
-            <div id="lobby">
-                <button id="joinButton">Присоединиться к игре</button>
-                <p id="playerCount">Игроков в комнате: 0/2</p>
-                <p id="waitingMessage" class="waiting-message" style="display: none;">Ожидание второго игрока...</p>
-            </div>
-            <div id="game" style="display: none;">
-                <h2>Игра началась!</h2>
-                <div class="game-boards">
-                    <div class="board">
-                        <h3>Мое поле</h3>
-                        <div id="myBoard"></div>
-                    </div>
-                    <div class="board">
-                        <h3>Поле противника</h3>
-                        <div id="enemyBoard"></div>
-                    </div>
-                </div>
-            </div>
+  <h1>Морской бой онлайн</h1>
+  <div id="main"></div>
+  <script>
+    // --- Firebase config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+      authDomain: "vrot-x-7a48f.firebaseapp.com",
+      databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+      projectId: "vrot-x-7a48f",
+      storageBucket: "vrot-x-7a48f.firebasestorage.app",
+      messagingSenderId: "622297225288",
+      appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- Utils ---
+    function genId() {
+      return Math.random().toString(36).substr(2, 9);
+    }
+    function emptyField() {
+      return Array(10).fill(0).map(() => Array(10).fill(0));
+    }
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    // --- Main logic ---
+    let playerId = localStorage.getItem('sea_playerId') || genId();
+    localStorage.setItem('sea_playerId', playerId);
+    let roomId = null;
+    let enemyId = null;
+    let myField = emptyField();
+    let enemyField = emptyField();
+    let myTurn = false;
+    let gameStarted = false;
+    let myShips = 0;
+    let enemyShips = 0;
+
+    const main = document.getElementById('main');
+
+    function renderLobby(playersCount) {
+      main.innerHTML = `
+        <button id="joinBtn">Присоединиться к комнате</button>
+        <div style="margin:10px;">
+          <span>Игроков в комнате: <b id="playersCount">${playersCount||0}</b></span>
         </div>
-    </div>
+        <div id="waitMsg"></div>
+      `;
+      document.getElementById('joinBtn').onclick = joinRoom;
+    }
 
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
-            authDomain: "vrot-x-7a48f.firebaseapp.com",
-            databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
-            projectId: "vrot-x-7a48f",
-            storageBucket: "vrot-x-7a48f.firebasestorage.app",
-            messagingSenderId: "622297225288",
-            appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+    function renderGame() {
+      main.innerHTML = `
+        <div class="status" id="status"></div>
+        <div>
+          <div class="board" id="myBoard"></div>
+          <div class="board" id="enemyBoard"></div>
+        </div>
+        <div style="margin:10px;">
+          <button id="leaveBtn">Покинуть комнату</button>
+        </div>
+      `;
+      document.getElementById('leaveBtn').onclick = leaveRoom;
+      drawBoards();
+    }
+
+    function drawBoards() {
+      // Мое поле
+      let html = '<div>Ваше поле</div>';
+      for (let y = 0; y < 10; y++) {
+        html += '<div class="row">';
+        for (let x = 0; x < 10; x++) {
+          let cls = 'cell';
+          if (myField[y][x] === 1) cls += ' ship';
+          if (myField[y][x] === 2) cls += ' hit';
+          if (myField[y][x] === 3) cls += ' miss';
+          html += `<div class="${cls}">${myField[y][x]===2?'✖':myField[y][x]===3?'•':''}</div>`;
+        }
+        html += '</div>';
+      }
+      document.getElementById('myBoard').innerHTML = html;
+
+      // Поле противника
+      html = '<div>Поле противника</div>';
+      for (let y = 0; y < 10; y++) {
+        html += '<div class="row">';
+        for (let x = 0; x < 10; x++) {
+          let cls = 'cell enemy';
+          if (enemyField[y][x] === 2) cls += ' hit disabled';
+          if (enemyField[y][x] === 3) cls += ' miss disabled';
+          if (!myTurn) cls += ' disabled';
+          html += `<div class="${cls}" data-x="${x}" data-y="${y}">${enemyField[y][x]===2?'✖':enemyField[y][x]===3?'•':''}</div>`;
+        }
+        html += '</div>';
+      }
+      document.getElementById('enemyBoard').innerHTML = html;
+      // Навесить обработчик
+      document.querySelectorAll('#enemyBoard .cell.enemy').forEach(cell => {
+        cell.onclick = (e) => {
+          if (cell.classList.contains('disabled')) return;
+          const x = +cell.dataset.x, y = +cell.dataset.y;
+          shoot(x, y);
         };
+      });
+    }
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
 
-        let roomId = '';
-        let players = [];
-        let gameStarted = false;
-        let myBoard = Array(10).fill().map(() => Array(10).fill(0));
-        let enemyBoard = Array(10).fill().map(() => Array(10).fill(0));
-        let currentPlayer = null;
-        let myPlayerId = null;
-
-        function createBoard(container, board, isEnemy = false) {
-            container.innerHTML = '';
-            board.forEach((row, i) => {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'row';
-                row.forEach((cell, j) => {
-                    const cellDiv = document.createElement('div');
-                    cellDiv.className = `cell ${cell === 1 ? 'hit' : ''}`;
-                    if (isEnemy) {
-                        cellDiv.addEventListener('click', () => makeMove(i, j));
-                    }
-                    rowDiv.appendChild(cellDiv);
-                });
-                container.appendChild(rowDiv);
-            });
+    // --- Room logic ---
+    function joinRoom() {
+      setStatus('Поиск комнаты...');
+      // Найти комнату с 1 игроком или создать новую
+      db.ref('rooms').once('value', snap => {
+        let found = false;
+        snap.forEach(room => {
+          const players = room.child('players').val() || {};
+          if (Object.keys(players).length < 2 && !found) {
+            found = true;
+            roomId = room.key;
+            db.ref(`rooms/${roomId}/players/${playerId}`).set(true);
+            waitForPlayers();
+          }
+        });
+        if (!found) {
+          // Создать новую комнату
+          roomId = genId();
+          db.ref(`rooms/${roomId}/players/${playerId}`).set(true);
+          waitForPlayers();
         }
+      });
+    }
 
-        function joinRoom() {
-            roomId = Math.random().toString(36).substring(7);
-            myPlayerId = Math.random().toString(36).substring(7);
-            database.ref(`rooms/${roomId}/players/${myPlayerId}`).set({
-                id: myPlayerId,
-                name: `Player ${players.length + 1}`,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            });
-            
-            const joinButton = document.getElementById('joinButton');
-            joinButton.textContent = 'Выйти';
-            joinButton.classList.add('leave');
-            joinButton.onclick = leaveRoom;
-            
-            document.getElementById('waitingMessage').style.display = 'block';
+    function waitForPlayers() {
+      setStatus('Ожидание второго игрока...');
+      db.ref(`rooms/${roomId}/players`).on('value', snap => {
+        const players = snap.val() || {};
+        const ids = Object.keys(players);
+        document.getElementById('playersCount').textContent = ids.length;
+        if (ids.length === 2) {
+          enemyId = ids.find(id => id !== playerId);
+          startGame();
         }
+      });
+      document.getElementById('waitMsg').textContent = 'Ожидание второго игрока...';
+    }
 
-        function leaveRoom() {
-            if (roomId && myPlayerId) {
-                database.ref(`rooms/${roomId}/players/${myPlayerId}`).remove();
-                roomId = '';
-                myPlayerId = null;
-                
-                const joinButton = document.getElementById('joinButton');
-                joinButton.textContent = 'Присоединиться к игре';
-                joinButton.classList.remove('leave');
-                joinButton.onclick = joinRoom;
-                
-                document.getElementById('waitingMessage').style.display = 'none';
-                document.getElementById('playerCount').textContent = 'Игроков в комнате: 0/2';
+    function leaveRoom() {
+      if (roomId) {
+        db.ref(`rooms/${roomId}/players/${playerId}`).remove();
+        db.ref(`rooms/${roomId}/fields/${playerId}`).remove();
+        db.ref(`rooms/${roomId}/shots`).remove();
+        db.ref(`rooms/${roomId}/turn`).remove();
+        roomId = null;
+        enemyId = null;
+        gameStarted = false;
+        myField = emptyField();
+        enemyField = emptyField();
+        renderLobby(0);
+      }
+    }
+
+    // --- Game logic ---
+    function startGame() {
+      gameStarted = true;
+      document.getElementById('waitMsg').textContent = '';
+      // Расставить корабли случайно (1x4, 2x3, 3x2, 4x1)
+      myField = randomShips();
+      myShips = 20;
+      db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
+      // Первый ход — у того, кто раньше вошел
+      db.ref(`rooms/${roomId}/players`).once('value', snap => {
+        const ids = Object.keys(snap.val());
+        myTurn = (ids[0] === playerId);
+        if (myTurn) db.ref(`rooms/${roomId}/turn`).set(playerId);
+        renderGame();
+        setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
+        listenGame();
+      });
+    }
+
+    function listenGame() {
+      // Слушаем чей ход
+      db.ref(`rooms/${roomId}/turn`).on('value', snap => {
+        myTurn = (snap.val() === playerId);
+        setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
+        drawBoards();
+      });
+      // Слушаем выстрелы по мне
+      db.ref(`rooms/${roomId}/shots/${playerId}`).on('child_added', snap => {
+        const [y, x] = snap.key.split('_').map(Number);
+        if (myField[y][x] === 1) {
+          myField[y][x] = 2; // hit
+          myShips--;
+        } else if (myField[y][x] === 0) {
+          myField[y][x] = 3; // miss
+        }
+        db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
+        drawBoards();
+        if (myShips === 0) {
+          setStatus('Вы проиграли!');
+          db.ref(`rooms/${roomId}/turn`).off();
+          db.ref(`rooms/${roomId}/shots/${playerId}`).off();
+        }
+      });
+      // Слушаем выстрелы по врагу (чтобы обновлять enemyField)
+      db.ref(`rooms/${roomId}/shots/${enemyId}`).on('child_added', snap => {
+        const [y, x] = snap.key.split('_').map(Number);
+        db.ref(`rooms/${roomId}/fields/${enemyId}`).once('value', s => {
+          const field = s.val();
+          if (!field) return;
+          if (field[y][x] === 1) {
+            enemyField[y][x] = 2; // hit
+          } else {
+            enemyField[y][x] = 3; // miss
+          }
+          drawBoards();
+        });
+      });
+    }
+
+    function shoot(x, y) {
+      if (!myTurn) return;
+      if (enemyField[y][x] === 2 || enemyField[y][x] === 3) return;
+      // Отправить выстрел
+      db.ref(`rooms/${roomId}/shots/${enemyId}/${y}_${x}`).set(true);
+      // Проверить попадание
+      db.ref(`rooms/${roomId}/fields/${enemyId}`).once('value', snap => {
+        const field = snap.val();
+        if (!field) return;
+        if (field[y][x] === 1) {
+          enemyField[y][x] = 2; // hit
+          setStatus('Попадание! Ходите еще.');
+          // Проверить победу
+          let hits = 0;
+          for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
+          if (hits === 20) {
+            setStatus('Вы победили!');
+            db.ref(`rooms/${roomId}/turn`).off();
+            db.ref(`rooms/${roomId}/shots/${enemyId}`).off();
+            return;
+          }
+        } else {
+          enemyField[y][x] = 3; // miss
+          setStatus('Мимо! Ход противника...');
+          db.ref(`rooms/${roomId}/turn`).set(enemyId);
+        }
+        drawBoards();
+      });
+    }
+
+    // --- Ships placement ---
+    function randomShips() {
+      // 1x4, 2x3, 3x2, 4x1
+      let field = emptyField();
+      let ships = [4,3,3,2,2,2,1,1,1,1];
+      for (let s of ships) {
+        let placed = false;
+        while (!placed) {
+          let dir = Math.random() < 0.5 ? 'h' : 'v';
+          let x = Math.floor(Math.random() * (dir==='h'?10-s+1:10));
+          let y = Math.floor(Math.random() * (dir==='v'?10-s+1:10));
+          let ok = true;
+          for (let i=0;i<s;i++) {
+            let xx = x + (dir==='h'?i:0), yy = y + (dir==='v'?i:0);
+            if (field[yy][xx] !== 0) ok = false;
+            // Проверка на соседство
+            for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++) {
+              let nx=xx+dx, ny=yy+dy;
+              if (nx>=0&&nx<10&&ny>=0&&ny<10&&field[ny][nx]===1) ok=false;
             }
-        }
-
-        function startGame() {
-            if (players.length === 2) {
-                database.ref(`rooms/${roomId}`).set({
-                    gameStarted: true,
-                    currentPlayer: players[0].id,
-                    boards: {
-                        player1: myBoard,
-                        player2: enemyBoard
-                    }
-                });
+          }
+          if (ok) {
+            for (let i=0;i<s;i++) {
+              let xx = x + (dir==='h'?i:0), yy = y + (dir==='v'?i:0);
+              field[yy][xx]=1;
             }
+            placed = true;
+          }
         }
+      }
+      return field;
+    }
 
-        function makeMove(x, y) {
-            if (currentPlayer === myPlayerId) {
-                enemyBoard[x][y] = 1;
-                database.ref(`rooms/${roomId}/boards/player2`).set(enemyBoard);
-                database.ref(`rooms/${roomId}/currentPlayer`).set(players.find(p => p.id !== myPlayerId).id);
-            }
-        }
-
-        // Event Listeners
-        document.getElementById('joinButton').addEventListener('click', joinRoom);
-
-        // Firebase listeners
-        if (roomId) {
-            database.ref(`rooms/${roomId}`).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    players = Object.values(data.players || {});
-                    document.getElementById('playerCount').textContent = `Игроков в комнате: ${players.length}/2`;
-
-                    if (data.gameStarted) {
-                        document.getElementById('lobby').style.display = 'none';
-                        document.getElementById('game').style.display = 'block';
-                        myBoard = data.boards?.player1 || Array(10).fill().map(() => Array(10).fill(0));
-                        enemyBoard = data.boards?.player2 || Array(10).fill().map(() => Array(10).fill(0));
-                        currentPlayer = data.currentPlayer;
-                        createBoard(document.getElementById('myBoard'), myBoard);
-                        createBoard(document.getElementById('enemyBoard'), enemyBoard, true);
-                    }
-                }
-            });
-        }
-    </script>
+    // --- Initial render ---
+    renderLobby(0);
+  </script>
 </body>
 </html>
-
-
