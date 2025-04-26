@@ -439,6 +439,11 @@
       }
       myBet = bet;
       myAutoCashout = auto;
+      // --- Списываем баланс сразу при ставке ---
+      balance -= bet;
+      localStorage.setItem('crash_balance_' + userId, balance);
+      updateBalanceUI();
+      // ---
       betAmountInput.disabled = true;
       autoCashoutInput.disabled = true;
       autoCashoutSwitch.disabled = true;
@@ -723,18 +728,14 @@
       });
       // КД 10 секунд
       setTimeout(() => {
+        // Сразу стартуем раунд!
         db.ref('crash/state').update({
-          status: 'waiting'
+          status: 'started',
+          startTime: Date.now(),
+          multiplier: 1.0
         });
-        setTimeout(() => {
-          db.ref('crash/state').update({
-            status: 'started',
-            startTime: Date.now(),
-            multiplier: 1.0
-          });
-          runCrash(roundId, parseFloat(crashAt));
-        }, 1000);
-      }, 9000);
+        runCrash(roundId, parseFloat(crashAt));
+      }, 10000);
     }
     function runCrash(roundId, crashAt) {
       let running = true;
