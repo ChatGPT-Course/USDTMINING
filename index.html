@@ -1,458 +1,116 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Морской бой | Telegram</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Морской бой</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            user-select: none;
-        }
-        
         body {
-            background-color: #17212b;
-            color: #fff;
+            font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            margin: 0;
+            background-color: #f0f0f0;
         }
-        
+
         .container {
-            width: 100%;
-            max-width: 500px;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .game-card {
-            background-color: #242f3d;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            padding: 25px;
-            margin-bottom: 20px;
             text-align: center;
-            border: 1px solid #2b5278;
-            transition: all 0.3s ease;
-        }
-        
-        .game-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-        }
-        
-        .game-title {
-            font-size: 26px;
-            font-weight: bold;
-            margin-bottom: 12px;
-            color: #6ab3f3;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        
-        .game-status {
-            font-size: 18px;
-            color: #a8b8c5;
-            margin-bottom: 25px;
-            min-height: 24px;
-        }
-        
-        .players-count {
-            font-weight: bold;
-            color: #6ab3f3;
-        }
-        
-        .join-btn {
-            background: linear-gradient(135deg, #3a7bd5, #00d2ff);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 14px 28px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .join-btn::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .join-btn:hover::after {
-            opacity: 1;
-        }
-        
-        .join-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(58, 123, 213, 0.4);
-        }
-        
-        .join-btn:active {
-            transform: translateY(0);
-        }
-        
-        .join-btn.leave {
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
-            box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3);
-        }
-        
-        .join-btn.leave:hover {
-            box-shadow: 0 6px 16px rgba(255, 65, 108, 0.4);
-        }
-        
-        .join-btn:disabled {
-            background: #3d4a57;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-        
-        .game-area {
-            display: none;
-            width: 100%;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .boards-container {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-        
-        .board-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        
-        .board-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        
-        .board-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #6ab3f3;
-        }
-        
-        .board {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            grid-template-rows: repeat(10, 1fr);
-            gap: 2px;
-            background-color: #1e2a38;
-            border: 2px solid #2b5278;
-            border-radius: 8px;
-            padding: 3px;
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .cell {
-            aspect-ratio: 1/1;
-            background-color: rgba(42, 67, 101, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: relative;
-            border-radius: 3px;
-            transition: all 0.2s ease;
-        }
-        
-        .cell:hover {
-            background-color: rgba(42, 67, 101, 0.7);
-        }
-        
-        .cell.ship {
-            background-color: rgba(74, 110, 154, 0.7);
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
-        }
-        
-        .cell.hit {
-            background-color: rgba(255, 71, 87, 0.2);
-            animation: hitAnimation 0.3s ease;
-        }
-        
-        .cell.hit::before {
-            content: '✖';
-            color: #ff4757;
-            font-size: 20px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            animation: scaleIn 0.3s ease;
-        }
-        
-        .cell.miss {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .cell.miss::before {
-            content: '○';
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            animation: scaleIn 0.3s ease;
-        }
-        
-        .cell.ship.hit {
-            background-color: rgba(255, 71, 87, 0.4);
-        }
-        
-        .cell.ship.sunk {
-            background-color: rgba(255, 71, 87, 0.6);
-        }
-        
-        @keyframes hitAnimation {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        .turn-indicator {
-            text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-            margin: 25px 0;
-            padding: 15px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(58, 123, 213, 0.2), rgba(0, 210, 255, 0.2));
-            color: #6ab3f3;
-            display: none;
-            border: 1px solid rgba(106, 179, 243, 0.3);
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(106, 179, 243, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(106, 179, 243, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(106, 179, 243, 0); }
-        }
-        
-        .game-over {
-            text-align: center;
-            font-size: 26px;
-            font-weight: bold;
-            margin: 25px 0;
+            background-color: white;
             padding: 20px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(46, 204, 113, 0.8), rgba(39, 174, 96, 0.8));
-            color: white;
-            display: none;
-            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-            animation: bounceIn 0.5s ease;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        
-        .game-over.lost {
-            background: linear-gradient(135deg, rgba(231, 76, 60, 0.8), rgba(192, 57, 43, 0.8));
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-        }
-        
-        @keyframes bounceIn {
-            0% { transform: scale(0.9); opacity: 0; }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .coordinates {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            width: 100%;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        
-        .coordinate {
-            font-size: 12px;
-            color: #6ab3f3;
-            opacity: 0.7;
-        }
-        
-        .player-info {
+
+        .game-boards {
             display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        
-        .player-name {
-            color: #6ab3f3;
-            font-weight: bold;
-        }
-        
-        .player-status {
-            color: #a8b8c5;
-        }
-        
-        .back-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: #a8b8c5;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
+            gap: 20px;
             margin-top: 20px;
-            display: none;
         }
-        
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
+
+        .board {
+            border: 2px solid #333;
+            padding: 10px;
         }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #6ab3f3;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
+
+        .row {
+            display: flex;
         }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            cursor: pointer;
         }
-        
-        @media (max-width: 400px) {
-            .game-title {
-                font-size: 22px;
-            }
-            
-            .game-status {
-                font-size: 16px;
-            }
-            
-            .join-btn {
-                padding: 12px 24px;
-                font-size: 16px;
-            }
-            
-            .board-title {
-                font-size: 16px;
-            }
-            
-            .turn-indicator {
-                font-size: 18px;
-                padding: 12px;
-            }
-            
-            .game-over {
-                font-size: 22px;
-                padding: 16px;
-            }
+
+        .cell.hit {
+            background-color: #ff4444;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button.leave {
+            background-color: #f44336;
+        }
+
+        button.leave:hover {
+            background-color: #d32f2f;
+        }
+
+        h1, h2, h3 {
+            color: #333;
+        }
+
+        .waiting-message {
+            color: #666;
+            font-style: italic;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="game-card" id="lobby-card">
-            <div class="game-title">Морской бой</div>
-            <div class="game-status" id="game-status">
-                <span id="status-text">Ожидание игроков</span>
-                <span class="players-count" id="players-count">(0/2)</span>
-                <span id="loading" class="loading" style="display: none;"></span>
+        <div id="app">
+            <h1>Морской бой</h1>
+            <div id="lobby">
+                <button id="joinButton">Присоединиться к игре</button>
+                <p id="playerCount">Игроков в комнате: 0/2</p>
+                <p id="waitingMessage" class="waiting-message" style="display: none;">Ожидание второго игрока...</p>
             </div>
-            <button class="join-btn" id="join-btn">Вступить</button>
-        </div>
-        
-        <div class="game-area" id="game-area">
-            <div class="player-info">
-                <div>
-                    <span class="player-name" id="player-name"></span>
-                    <span class="player-status" id="player-status"></span>
-                </div>
-                <div>
-                    <span class="player-name" id="enemy-name"></span>
-                    <span class="player-status" id="enemy-status"></span>
-                </div>
-            </div>
-            
-            <div class="turn-indicator" id="turn-indicator">Ваш ход!</div>
-            <div class="game-over" id="game-over"></div>
-            
-            <div class="boards-container">
-                <div class="board-wrapper">
-                    <div class="board-header">
-                        <div class="board-title">Ваше поле</div>
-                        <div id="player-ships-count"></div>
+            <div id="game" style="display: none;">
+                <h2>Игра началась!</h2>
+                <div class="game-boards">
+                    <div class="board">
+                        <h3>Мое поле</h3>
+                        <div id="myBoard"></div>
                     </div>
-                    <div class="coordinates">
-                        <div class="coordinate">1</div>
-                        <div class="coordinate">2</div>
-                        <div class="coordinate">3</div>
-                        <div class="coordinate">4</div>
-                        <div class="coordinate">5</div>
-                        <div class="coordinate">6</div>
-                        <div class="coordinate">7</div>
-                        <div class="coordinate">8</div>
-                        <div class="coordinate">9</div>
-                        <div class="coordinate">10</div>
+                    <div class="board">
+                        <h3>Поле противника</h3>
+                        <div id="enemyBoard"></div>
                     </div>
-                    <div class="board" id="player-board"></div>
-                </div>
-                
-                <div class="board-wrapper">
-                    <div class="board-header">
-                        <div class="board-title">Поле противника</div>
-                        <div id="enemy-ships-count"></div>
-                    </div>
-                    <div class="coordinates">
-                        <div class="coordinate">1</div>
-                        <div class="coordinate">2</div>
-                        <div class="coordinate">3</div>
-                        <div class="coordinate">4</div>
-                        <div class="coordinate">5</div>
-                        <div class="coordinate">6</div>
-                        <div class="coordinate">7</div>
-                        <div class="coordinate">8</div>
-                        <div class="coordinate">9</div>
-                        <div class="coordinate">10</div>
-                    </div>
-                    <div class="board" id="enemy-board"></div>
                 </div>
             </div>
-            
-            <button class="back-btn" id="back-btn">Выйти из игры</button>
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js"></script>
     <script>
-        // Инициализация Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
             authDomain: "vrot-x-7a48f.firebaseapp.com",
@@ -462,509 +120,115 @@
             messagingSenderId: "622297225288",
             appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
         };
-        
-        // Инициализация Firebase
-        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.enableClosingConfirmation();
-        
-        // Получаем ID пользователя из Telegram
-        const userId = tg.initDataUnsafe.user?.id.toString() || 'unknown_' + Math.random().toString(36).substring(2, 9);
-        const userName = tg.initDataUnsafe.user?.first_name || 'Игрок';
-        
-        // Состояние игры
-        let gameState = {
-            players: {},
-            status: 'waiting',
-            currentPlayer: null,
-            boards: {},
-            ships: {},
-            lastActivity: Date.now()
-        };
-        
-        // Ссылки на элементы DOM
-        const lobbyCard = document.getElementById('lobby-card');
-        const gameArea = document.getElementById('game-area');
-        const statusText = document.getElementById('status-text');
-        const playersCount = document.getElementById('players-count');
-        const joinBtn = document.getElementById('join-btn');
-        const loading = document.getElementById('loading');
-        const turnIndicator = document.getElementById('turn-indicator');
-        const gameOver = document.getElementById('game-over');
-        const playerBoard = document.getElementById('player-board');
-        const enemyBoard = document.getElementById('enemy-board');
-        const backBtn = document.getElementById('back-btn');
-        const playerName = document.getElementById('player-name');
-        const enemyName = document.getElementById('enemy-name');
-        const playerStatus = document.getElementById('player-status');
-        const enemyStatus = document.getElementById('enemy-status');
-        const playerShipsCount = document.getElementById('player-ships-count');
-        const enemyShipsCount = document.getElementById('enemy-ships-count');
-        
-        // Ссылки на Firebase
-        const gameRef = database.ref('seaBattle/game1');
-        
-        // Размеры поля
-        const BOARD_SIZE = 10;
-        
-        // Предопределенные расстановки кораблей (10 кораблей)
-        const PREDEFINED_SHIPS = [
-            // 4-палубный
-            [{row: 2, col: 2}, {row: 2, col: 3}, {row: 2, col: 4}, {row: 2, col: 5}],
-            // 3-палубные
-            [{row: 5, col: 1}, {row: 5, col: 2}, {row: 5, col: 3}],
-            [{row: 7, col: 7}, {row: 8, col: 7}, {row: 9, col: 7}],
-            // 2-палубные
-            [{row: 0, col: 0}, {row: 1, col: 0}],
-            [{row: 3, col: 8}, {row: 3, col: 9}],
-            [{row: 9, col: 0}, {row: 9, col: 1}],
-            // 1-палубные
-            [{row: 0, col: 9}],
-            [{row: 4, col: 6}],
-            [{row: 6, col: 4}],
-            [{row: 8, col: 2}]
-        ];
-        
-        // Инициализация игры
-        function initGame() {
-            // Обработчик кнопки входа/выхода
-            joinBtn.addEventListener('click', toggleJoinGame);
-            backBtn.addEventListener('click', leaveGame);
+
+        let roomId = '';
+        let players = [];
+        let gameStarted = false;
+        let myBoard = Array(10).fill().map(() => Array(10).fill(0));
+        let enemyBoard = Array(10).fill().map(() => Array(10).fill(0));
+        let currentPlayer = null;
+        let myPlayerId = null;
+
+        function createBoard(container, board, isEnemy = false) {
+            container.innerHTML = '';
+            board.forEach((row, i) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                row.forEach((cell, j) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = `cell ${cell === 1 ? 'hit' : ''}`;
+                    if (isEnemy) {
+                        cellDiv.addEventListener('click', () => makeMove(i, j));
+                    }
+                    rowDiv.appendChild(cellDiv);
+                });
+                container.appendChild(rowDiv);
+            });
+        }
+
+        function joinRoom() {
+            roomId = Math.random().toString(36).substring(7);
+            myPlayerId = Math.random().toString(36).substring(7);
+            database.ref(`rooms/${roomId}/players/${myPlayerId}`).set({
+                id: myPlayerId,
+                name: `Player ${players.length + 1}`,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
+            });
             
-            // Обработчик закрытия приложения
-            tg.onEvent('viewportChanged', handleViewportChanged);
-            window.addEventListener('beforeunload', handleBeforeUnload);
+            const joinButton = document.getElementById('joinButton');
+            joinButton.textContent = 'Выйти';
+            joinButton.classList.add('leave');
+            joinButton.onclick = leaveRoom;
             
-            // Слушаем изменения в Firebase
-            gameRef.on('value', (snapshot) => {
+            document.getElementById('waitingMessage').style.display = 'block';
+        }
+
+        function leaveRoom() {
+            if (roomId && myPlayerId) {
+                database.ref(`rooms/${roomId}/players/${myPlayerId}`).remove();
+                roomId = '';
+                myPlayerId = null;
+                
+                const joinButton = document.getElementById('joinButton');
+                joinButton.textContent = 'Присоединиться к игре';
+                joinButton.classList.remove('leave');
+                joinButton.onclick = joinRoom;
+                
+                document.getElementById('waitingMessage').style.display = 'none';
+                document.getElementById('playerCount').textContent = 'Игроков в комнате: 0/2';
+            }
+        }
+
+        function startGame() {
+            if (players.length === 2) {
+                database.ref(`rooms/${roomId}`).set({
+                    gameStarted: true,
+                    currentPlayer: players[0].id,
+                    boards: {
+                        player1: myBoard,
+                        player2: enemyBoard
+                    }
+                });
+            }
+        }
+
+        function makeMove(x, y) {
+            if (currentPlayer === myPlayerId) {
+                enemyBoard[x][y] = 1;
+                database.ref(`rooms/${roomId}/boards/player2`).set(enemyBoard);
+                database.ref(`rooms/${roomId}/currentPlayer`).set(players.find(p => p.id !== myPlayerId).id);
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('joinButton').addEventListener('click', joinRoom);
+
+        // Firebase listeners
+        if (roomId) {
+            database.ref(`rooms/${roomId}`).on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    gameState = data;
-                    updateUI();
-                }
-            });
-            
-            // Проверяем неактивных игроков каждые 10 секунд
-            setInterval(checkInactivePlayers, 10000);
-            
-            // Инициализируем UI
-            updateUI();
-        }
-        
-        // Проверка неактивных игроков
-        function checkInactivePlayers() {
-            if (gameState.status !== 'waiting') return;
-            
-            const now = Date.now();
-            const inactiveTime = 30000; // 30 секунд
-            
-            Object.keys(gameState.players).forEach(playerId => {
-                if (now - (gameState.players[playerId].lastActive || 0) > inactiveTime) {
-                    gameRef.child('players').child(playerId).remove();
-                }
-            });
-        }
-        
-        // Вход/выход из игры
-        function toggleJoinGame() {
-            if (gameState.players[userId]) {
-                leaveGame();
-            } else {
-                joinGame();
-            }
-        }
-        
-        // Вход в игру
-        function joinGame() {
-            loading.style.display = 'inline-block';
-            joinBtn.disabled = true;
-            
-            gameRef.child('players').child(userId).set({
-                name: userName,
-                ready: false,
-                lastActive: Date.now()
-            })
-            .then(() => {
-                loading.style.display = 'none';
-                joinBtn.textContent = 'Выйти';
-                joinBtn.classList.add('leave');
-                joinBtn.disabled = false;
-            })
-            .catch(error => {
-                console.error('Ошибка при входе в игру:', error);
-                loading.style.display = 'none';
-                joinBtn.disabled = false;
-            });
-        }
-        
-        // Выход из игры
-        function leaveGame() {
-            gameRef.child('players').child(userId).remove();
-            
-            // Если игрок был в игре, очищаем его данные
-            if (gameState.status === 'playing' || gameState.status === 'finished') {
-                gameRef.child('boards').child(userId).remove();
-                gameRef.child('ships').child(userId).remove();
-                
-                // Если игра была в процессе, завершаем ее
-                if (gameState.status === 'playing') {
-                    const enemyId = Object.keys(gameState.players).find(id => id !== userId);
-                    if (enemyId) {
-                        gameRef.update({
-                            status: 'finished',
-                            winner: enemyId
-                        });
+                    players = Object.values(data.players || {});
+                    document.getElementById('playerCount').textContent = `Игроков в комнате: ${players.length}/2`;
+
+                    if (data.gameStarted) {
+                        document.getElementById('lobby').style.display = 'none';
+                        document.getElementById('game').style.display = 'block';
+                        myBoard = data.boards?.player1 || Array(10).fill().map(() => Array(10).fill(0));
+                        enemyBoard = data.boards?.player2 || Array(10).fill().map(() => Array(10).fill(0));
+                        currentPlayer = data.currentPlayer;
+                        createBoard(document.getElementById('myBoard'), myBoard);
+                        createBoard(document.getElementById('enemyBoard'), enemyBoard, true);
                     }
                 }
-            }
-            
-            joinBtn.textContent = 'Вступить';
-            joinBtn.classList.remove('leave');
-            backBtn.style.display = 'none';
-        }
-        
-        // Обработчик изменения viewport (закрытие мини-аппа)
-        function handleViewportChanged() {
-            if (tg.isClosingConfirmationEnabled) {
-                leaveGame();
-            }
-        }
-        
-        // Обработчик перед закрытием страницы
-        function handleBeforeUnload() {
-            leaveGame();
-        }
-        
-        // Обновление интерфейса
-        function updateUI() {
-            const players = gameState.players;
-            const playersCountValue = Object.keys(players).length;
-            
-            // Обновляем статус игры в лобби
-            if (gameState.status === 'waiting') {
-                if (playersCountValue === 0) {
-                    statusText.textContent = 'Ожидание игроков';
-                } else if (playersCountValue === 1) {
-                    statusText.textContent = 'Ожидаем последнего';
-                }
-                playersCount.textContent = `(${playersCountValue}/2)`;
-            }
-            
-            // Показываем/скрываем лобби или игровую область
-            if (gameState.status === 'waiting' || !players[userId]) {
-                lobbyCard.style.display = 'block';
-                gameArea.style.display = 'none';
-                
-                // Блокируем кнопку, если игроков уже 2
-                joinBtn.disabled = playersCountValue >= 2 && !players[userId];
-            } else {
-                lobbyCard.style.display = 'none';
-                gameArea.style.display = 'block';
-                backBtn.style.display = 'block';
-                
-                // Если игра началась, рисуем поля
-                if (gameState.status === 'playing' || gameState.status === 'finished') {
-                    renderBoards();
-                    updatePlayerInfo();
-                    updateTurnIndicator();
-                }
-            }
-        }
-        
-        // Начало игры
-        function startGame() {
-            // Устанавливаем статус игры
-            gameRef.update({
-                status: 'playing',
-                currentPlayer: Object.keys(gameState.players)[0], // Первый игрок ходит первым
-                lastActivity: Date.now()
-            });
-            
-            // Инициализируем поля для обоих игроков
-            const players = Object.keys(gameState.players);
-            
-            players.forEach(playerId => {
-                // Создаем пустые поля
-                const board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(0));
-                const ships = createPredefinedShips(board);
-                
-                // Сохраняем в Firebase
-                gameRef.child('boards').child(playerId).set(board);
-                gameRef.child('ships').child(playerId).set(ships);
-                gameRef.child('players').child(playerId).update({ 
-                    ready: true,
-                    lastActive: Date.now()
-                });
             });
         }
-        
-        // Создание предопределенных кораблей
-        function createPredefinedShips(board) {
-            const ships = [];
-            
-            PREDEFINED_SHIPS.forEach(shipCells => {
-                // Размещаем корабль на поле
-                shipCells.forEach(cell => {
-                    board[cell.row][cell.col] = 1;
-                });
-                
-                // Добавляем информацию о корабле
-                ships.push({
-                    size: shipCells.length,
-                    cells: shipCells,
-                    sunk: false
-                });
-            });
-            
-            return ships;
-        }
-        
-        // Отрисовка игровых полей
-        function renderBoards() {
-            // Очищаем поля
-            playerBoard.innerHTML = '';
-            enemyBoard.innerHTML = '';
-            
-            // Получаем ID противника
-            const enemyId = Object.keys(gameState.players).find(id => id !== userId);
-            
-            // Отрисовываем свое поле
-            if (gameState.boards[userId]) {
-                for (let row = 0; row < BOARD_SIZE; row++) {
-                    for (let col = 0; col < BOARD_SIZE; col++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'cell';
-                        cell.dataset.row = row;
-                        cell.dataset.col = col;
-                        
-                        // Показываем свои корабли и выстрелы
-                        if (gameState.boards[userId][row][col] === 1) {
-                            cell.classList.add('ship');
-                        }
-                        if (gameState.boards[userId][row][col] === 2) {
-                            cell.classList.add('hit');
-                        }
-                        if (gameState.boards[userId][row][col] === 3) {
-                            cell.classList.add('miss');
-                        }
-                        
-                        // Помечаем потопленные корабли
-                        if (gameState.ships[userId]) {
-                            gameState.ships[userId].forEach(ship => {
-                                if (ship.sunk && ship.cells.some(c => c.row === row && c.col === col)) {
-                                    cell.classList.add('sunk');
-                                }
-                            });
-                        }
-                        
-                        playerBoard.appendChild(cell);
-                    }
-                }
-            }
-            
-            // Отрисовываем поле противника
-            if (gameState.boards[enemyId]) {
-                for (let row = 0; row < BOARD_SIZE; row++) {
-                    for (let col = 0; col < BOARD_SIZE; col++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'cell';
-                        cell.dataset.row = row;
-                        cell.dataset.col = col;
-                        
-                        // Показываем только выстрелы
-                        if (gameState.boards[enemyId][row][col] === 2) {
-                            cell.classList.add('hit');
-                        }
-                        if (gameState.boards[enemyId][row][col] === 3) {
-                            cell.classList.add('miss');
-                        }
-                        
-                        // Добавляем обработчик клика, если это наш ход
-                        if (gameState.status === 'playing' && 
-                            gameState.currentPlayer === userId && 
-                            gameState.boards[enemyId][row][col] === 0) {
-                            cell.addEventListener('click', () => makeMove(row, col, enemyId));
-                        }
-                        
-                        enemyBoard.appendChild(cell);
-                    }
-                }
-            }
-        }
-        
-        // Обновление информации об игроках
-        function updatePlayerInfo() {
-            const enemyId = Object.keys(gameState.players).find(id => id !== userId);
-            
-            // Устанавливаем имена игроков
-            playerName.textContent = gameState.players[userId]?.name || 'Вы';
-            enemyName.textContent = gameState.players[enemyId]?.name || 'Противник';
-            
-            // Обновляем статусы
-            if (gameState.status === 'finished') {
-                if (gameState.winner === userId) {
-                    playerStatus.textContent = 'Победитель!';
-                    playerStatus.style.color = '#2ecc71';
-                    enemyStatus.textContent = 'Проиграл';
-                    enemyStatus.style.color = '#e74c3c';
-                } else {
-                    playerStatus.textContent = 'Проиграл';
-                    playerStatus.style.color = '#e74c3c';
-                    enemyStatus.textContent = 'Победитель!';
-                    enemyStatus.style.color = '#2ecc71';
-                }
-            } else {
-                playerStatus.textContent = '';
-                enemyStatus.textContent = '';
-            }
-            
-            // Обновляем счетчики кораблей
-            updateShipsCount();
-        }
-        
-        // Обновление счетчиков кораблей
-        function updateShipsCount() {
-            const enemyId = Object.keys(gameState.players).find(id => id !== userId);
-            
-            if (gameState.ships[userId]) {
-                const totalShips = gameState.ships[userId].length;
-                const sunkShips = gameState.ships[userId].filter(ship => ship.sunk).length;
-                playerShipsCount.textContent = `Корабли: ${totalShips - sunkShips}/${totalShips}`;
-                playerShipsCount.style.color = sunkShips > 0 ? '#e74c3c' : '#6ab3f3';
-            }
-            
-            if (gameState.ships[enemyId]) {
-                const totalShips = gameState.ships[enemyId].length;
-                const sunkShips = gameState.ships[enemyId].filter(ship => ship.sunk).length;
-                enemyShipsCount.textContent = `Корабли: ${totalShips - sunkShips}/${totalShips}`;
-                enemyShipsCount.style.color = sunkShips > 0 ? '#2ecc71' : '#6ab3f3';
-            }
-        }
-        
-        // Сделать ход
-        function makeMove(row, col, enemyId) {
-            // Проверяем, можно ли сделать ход
-            if (gameState.status !== 'playing' || gameState.currentPlayer !== userId) return;
-            
-            // Получаем текущее состояние поля противника
-            const enemyBoard = [...gameState.boards[enemyId]];
-            
-            // Проверяем, не стреляли ли уже в эту клетку
-            if (enemyBoard[row][col] > 1) return;
-            
-            // Проверяем попадание
-            const isHit = enemyBoard[row][col] === 1;
-            
-            // Обновляем поле противника
-            enemyBoard[row][col] = isHit ? 2 : 3;
-            
-            // Обновляем в Firebase
-            gameRef.child('boards').child(enemyId).set(enemyBoard);
-            gameRef.update({ lastActivity: Date.now() });
-            
-            // Проверяем, потоплен ли корабль
-            if (isHit) {
-                checkSunkShip(row, col, enemyId);
-            }
-            
-            // Проверяем условие победы
-            checkWinCondition(enemyId);
-            
-            // Передаем ход другому игроку, если игра не закончилась
-            if (gameState.status === 'playing') {
-                gameRef.update({
-                    currentPlayer: enemyId,
-                    lastActivity: Date.now()
-                });
-            }
-        }
-        
-        // Проверка, потоплен ли корабль
-        function checkSunkShip(row, col, enemyId) {
-            const ships = [...gameState.ships[enemyId]];
-            
-            for (let i = 0; i < ships.length; i++) {
-                const ship = ships[i];
-                
-                // Ищем корабль, содержащий эту клетку
-                const hitCellIndex = ship.cells.findIndex(cell => cell.row === row && cell.col === col);
-                
-                if (hitCellIndex !== -1) {
-                    // Проверяем, все ли клетки корабля подбиты
-                    const isSunk = ship.cells.every(cell => {
-                        return gameState.boards[enemyId][cell.row][cell.col] === 2;
-                    });
-                    
-                    if (isSunk && !ship.sunk) {
-                        // Помечаем корабль как потопленный
-                        ships[i].sunk = true;
-                        gameRef.child('ships').child(enemyId).set(ships);
-                        
-                        // Обновляем счетчик кораблей
-                        updateShipsCount();
-                    }
-                    
-                    break;
-                }
-            }
-        }
-        
-        // Проверка условия победы
-        function checkWinCondition(enemyId) {
-            const ships = gameState.ships[enemyId];
-            const allSunk = ships.every(ship => ship.sunk);
-            
-            if (allSunk) {
-                // Игра окончена, текущий игрок победил
-                gameRef.update({
-                    status: 'finished',
-                    winner: userId,
-                    lastActivity: Date.now()
-                });
-                
-                // Показываем сообщение о победе
-                gameOver.textContent = 'Вы победили!';
-                gameOver.style.display = 'block';
-                gameOver.classList.remove('lost');
-                
-                // Вибрация в Telegram при победе
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('heavy');
-                }
-            }
-        }
-        
-        // Обновление индикатора хода
-        function updateTurnIndicator() {
-            if (gameState.status === 'finished') {
-                turnIndicator.style.display = 'none';
-                
-                // Показываем сообщение о поражении, если мы проиграли
-                if (gameState.winner !== userId) {
-                    gameOver.textContent = 'Вы проиграли!';
-                    gameOver.style.display = 'block';
-                    gameOver.classList.add('lost');
-                }
-            } else if (gameState.currentPlayer === userId) {
-                turnIndicator.textContent = 'Ваш ход!';
-                turnIndicator.style.display = 'block';
-                
-                // Вибрация в Telegram при нашем ходе
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('light');
-                }
-            } else {
-                turnIndicator.textContent = 'Ход противника...';
-                turnIndicator.style.display = 'block';
-            }
-        }
-        
-        // Запуск игры при загрузке страницы
-        window.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>
 </html>
+
+
