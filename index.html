@@ -1,34 +1,278 @@
 
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Морской бой онлайн</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Telegram WebApp -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; }
-    .board { display: inline-block; margin: 10px; }
-    .row { display: flex; }
-    .cell {
-      width: 28px; height: 28px; border: 1px solid #888;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 18px;
-      background: #e0f7fa;
+    :root {
+      --main-bg: #e3f2fd;
+      --main-accent: #1976d2;
+      --main-accent-light: #42a5f5;
+      --main-accent-dark: #0d47a1;
+      --cell-size: 32px;
+      --cell-gap: 2px;
+      --cell-radius: 6px;
+      --font-main: 'Segoe UI', 'Arial', sans-serif;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    .cell.ship { background: #90caf9; }
-    .cell.hit { background: #ef9a9a; }
-    .cell.miss { background: #bdbdbd; }
-    .cell.enemy { cursor: pointer; }
-    .cell.disabled { pointer-events: none; opacity: 0.5; }
-    .status { margin: 10px; font-weight: bold; }
-    button { font-size: 18px; padding: 8px 20px; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--main-bg);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      color: #222;
+    }
+    #app-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 8px 32px 8px;
+    }
+    h1 {
+      margin-top: 24px;
+      font-size: 2.2em;
+      color: var(--main-accent-dark);
+      letter-spacing: 1px;
+      text-shadow: 0 2px 8px #fff8;
+    }
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 24px 18px;
+      margin: 24px auto;
+      max-width: 420px;
+      transition: box-shadow 0.2s;
+    }
+    .card.lobby {
+      max-width: 340px;
+      margin-top: 40px;
+    }
+    .btn {
+      background: var(--main-accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 12px 0;
+      box-shadow: 0 2px 8px #1976d220;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .btn:active {
+      background: var(--main-accent-dark);
+      box-shadow: 0 1px 4px #1976d220;
+    }
+    .btn.secondary {
+      background: #fff;
+      color: var(--main-accent);
+      border: 2px solid var(--main-accent);
+    }
+    .players-list {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin: 18px 0 0 0;
+    }
+    .player-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 80px;
+      max-width: 120px;
+      padding: 8px 0;
+      border-radius: 12px;
+      background: #f5faff;
+      box-shadow: 0 1px 4px #1976d210;
+      font-size: 0.98em;
+    }
+    .player-card.me {
+      background: #e3f2fd;
+      border: 2px solid var(--main-accent-light);
+    }
+    .player-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #b3e5fc;
+      margin-bottom: 6px;
+      object-fit: cover;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px #1976d210;
+    }
+    .player-name {
+      font-weight: 600;
+      color: var(--main-accent-dark);
+      margin-bottom: 2px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 90px;
+      white-space: nowrap;
+    }
+    .player-id {
+      font-size: 0.85em;
+      color: #888;
+    }
+    .status-bar {
+      margin: 18px 0 8px 0;
+      font-size: 1.15em;
+      font-weight: 500;
+      color: var(--main-accent-dark);
+      min-height: 28px;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    .boards-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+      margin: 0 auto;
+      max-width: 800px;
+    }
+    .board-block {
+      background: #f5faff;
+      border-radius: 16px;
+      box-shadow: 0 1px 8px #1976d210;
+      padding: 16px 10px 10px 10px;
+      min-width: 340px;
+      margin-bottom: 18px;
+      position: relative;
+    }
+    .board-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: var(--main-accent);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .ships-counter {
+      position: absolute;
+      right: 18px; top: 16px;
+      font-size: 0.98em;
+      color: #1976d2;
+      background: #e3f2fd;
+      border-radius: 8px;
+      padding: 2px 10px;
+      font-weight: 600;
+      box-shadow: 0 1px 4px #1976d210;
+    }
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(10, var(--cell-size));
+      grid-template-rows: repeat(10, var(--cell-size));
+      gap: var(--cell-gap);
+      margin: 0 auto;
+      user-select: none;
+    }
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-radius: var(--cell-radius);
+      background: #e0f7fa;
+      border: 1.5px solid #b3e5fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      box-shadow: 0 1px 2px #1976d210;
+      position: relative;
+    }
+    .cell.ship {
+      background: #90caf9;
+      border-color: #1976d2;
+    }
+    .cell.hit {
+      background: #ef9a9a;
+      border-color: #d32f2f;
+      color: #b71c1c;
+      animation: hitAnim 0.3s;
+    }
+    .cell.miss {
+      background: #bdbdbd;
+      border-color: #757575;
+      color: #616161;
+      animation: missAnim 0.3s;
+    }
+    .cell.enemy {
+      cursor: pointer;
+      background: #e3f2fd;
+      border-color: #90caf9;
+    }
+    .cell.enemy.disabled {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .cell.enemy:hover:not(.disabled):not(.hit):not(.miss) {
+      background: #bbdefb;
+      box-shadow: 0 0 0 2px #1976d2;
+    }
+    @keyframes hitAnim {
+      0% { background: #fff; }
+      100% { background: #ef9a9a; }
+    }
+    @keyframes missAnim {
+      0% { background: #fff; }
+      100% { background: #bdbdbd; }
+    }
+    .game-over {
+      font-size: 1.5em;
+      color: #d32f2f;
+      font-weight: 700;
+      margin: 24px 0 0 0;
+      text-shadow: 0 2px 8px #fff8;
+    }
+    .modal-bg {
+      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+      background: #0008;
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.2s;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 32px #0003;
+      padding: 32px 24px;
+      min-width: 260px;
+      max-width: 90vw;
+      text-align: center;
+      font-size: 1.1em;
+      animation: popIn 0.2s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+    .loader {
+      border: 4px solid #e3f2fd;
+      border-top: 4px solid #1976d2;
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      animation: spin 1s linear infinite;
+      margin: 24px auto;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .boards-container { flex-direction: column; gap: 12px; }
+      .board-block { min-width: 0; width: 98vw; }
+    }
   </style>
 </head>
 <body>
-  <h1>Морской бой онлайн</h1>
-  <div id="main"></div>
+  <div id="app-container">
+    <h1>Морской бой онлайн</h1>
+    <div id="main"></div>
+  </div>
+  <div id="modal-root"></div>
   <script>
     // --- Firebase config ---
     const firebaseConfig = {
@@ -43,51 +287,126 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- Utils ---
-    function genId() {
-      return Math.random().toString(36).substr(2, 9);
+    // --- Telegram user info ---
+    let tgUser = null;
+    let playerId = null;
+    let playerName = "Гость";
+    let playerPhoto = null;
+    function getTelegramUser() {
+      try {
+        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+          tgUser = Telegram.WebApp.initDataUnsafe.user;
+          playerId = String(tgUser.id);
+          playerName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+          playerPhoto = tgUser.photo_url || null;
+        }
+      } catch (e) {}
+      if (!playerId) {
+        playerId = 'guest_' + Math.random().toString(36).substr(2, 9);
+        playerName = "Гость";
+      }
     }
-    function emptyField() {
-      return Array(10).fill(0).map(() => Array(10).fill(0));
-    }
-    function clone(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    }
+    getTelegramUser();
 
-    // --- Main logic ---
-    let playerId = localStorage.getItem('sea_playerId') || genId();
-    localStorage.setItem('sea_playerId', playerId);
+    // --- State ---
     let roomId = null;
     let enemyId = null;
-    let myField = emptyField();
-    let enemyField = emptyField();
+    let enemyName = "Противник";
+    let enemyPhoto = null;
+    let myField = null;
+    let enemyField = null;
     let myTurn = false;
     let gameStarted = false;
     let myShips = 0;
     let enemyShips = 0;
+    let unsubRoom = null;
+    let unsubTurn = null;
+    let unsubShotsMe = null;
+    let unsubShotsEnemy = null;
+    let unsubEnemyField = null;
+    let gameOver = false;
 
     const main = document.getElementById('main');
+    const modalRoot = document.getElementById('modal-root');
 
-    function renderLobby(playersCount) {
-      main.innerHTML = `
-        <button id="joinBtn">Присоединиться к комнате</button>
-        <div style="margin:10px;">
-          <span>Игроков в комнате: <b id="playersCount">${playersCount||0}</b></span>
+    // --- UI helpers ---
+    function showModal(msg, opts={}) {
+      modalRoot.innerHTML = `
+        <div class="modal-bg">
+          <div class="modal">
+            <div>${msg}</div>
+            ${opts.loader ? '<div class="loader"></div>' : ''}
+            ${opts.button ? `<button class="btn" id="modalBtn">${opts.button}</button>` : ''}
+          </div>
         </div>
-        <div id="waitMsg"></div>
       `;
-      document.getElementById('joinBtn').onclick = joinRoom;
+      if (opts.button) {
+        document.getElementById('modalBtn').onclick = () => {
+          modalRoot.innerHTML = '';
+          if (opts.onClose) opts.onClose();
+        };
+      }
+    }
+    function hideModal() { modalRoot.innerHTML = ''; }
+
+    function playerCard(id, name, photo, isMe) {
+      return `
+        <div class="player-card${isMe ? ' me' : ''}">
+          <img class="player-avatar" src="${photo ? photo : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" alt="avatar">
+          <div class="player-name">${name ? name : 'Игрок'}</div>
+          <div class="player-id">${id}</div>
+        </div>
+      `;
     }
 
+    // --- Lobby ---
+    function renderLobby(playersCount=1, players=[]) {
+      main.innerHTML = `
+        <div class="card lobby">
+          <div style="font-size:1.2em; font-weight:600; margin-bottom:10px;">Добро пожаловать, ${playerName}!</div>
+          <button class="btn" id="joinBtn">Присоединиться к комнате</button>
+          <div style="margin:10px 0 0 0; font-size:1.05em;">
+            Игроков в комнате: <b id="playersCount">${playersCount}</b>
+          </div>
+          <div class="players-list" id="playersList"></div>
+          <div id="waitMsg" style="margin-top:10px; color:#888;"></div>
+        </div>
+      `;
+      document.getElementById('joinBtn').onclick = joinRoom;
+      updatePlayersList(players);
+    }
+
+    function updatePlayersList(players) {
+      const el = document.getElementById('playersList');
+      if (!el) return;
+      el.innerHTML = '';
+      players.forEach(p => {
+        el.innerHTML += playerCard(p.id, p.name, p.photo, p.id === playerId);
+      });
+    }
+
+    // --- Game UI ---
     function renderGame() {
       main.innerHTML = `
-        <div class="status" id="status"></div>
-        <div>
-          <div class="board" id="myBoard"></div>
-          <div class="board" id="enemyBoard"></div>
+        <div class="status-bar" id="statusBar"></div>
+        <div class="boards-container">
+          <div class="board-block">
+            <div class="board-title">Ваше поле</div>
+            <div class="ships-counter" id="myShipsCounter">Кораблей: ${myShips}</div>
+            <div class="board-grid" id="myBoard"></div>
+          </div>
+          <div class="board-block">
+            <div class="board-title">Поле противника</div>
+            <div class="ships-counter" id="enemyShipsCounter">Кораблей: ${enemyShips}</div>
+            <div class="board-grid" id="enemyBoard"></div>
+          </div>
         </div>
-        <div style="margin:10px;">
-          <button id="leaveBtn">Покинуть комнату</button>
+        <div class="players-list" style="margin-top:18px;">
+          ${playerCard(playerId, playerName, playerPhoto, true)}
+          ${playerCard(enemyId, enemyName, enemyPhoto, false)}
+        </div>
+        <div style="margin:18px 0 0 0;">
+          <button class="btn secondary" id="leaveBtn">Покинуть комнату</button>
         </div>
       `;
       document.getElementById('leaveBtn').onclick = leaveRoom;
@@ -96,9 +415,8 @@
 
     function drawBoards() {
       // Мое поле
-      let html = '<div>Ваше поле</div>';
+      let html = '';
       for (let y = 0; y < 10; y++) {
-        html += '<div class="row">';
         for (let x = 0; x < 10; x++) {
           let cls = 'cell';
           if (myField[y][x] === 1) cls += ' ship';
@@ -106,22 +424,19 @@
           if (myField[y][x] === 3) cls += ' miss';
           html += `<div class="${cls}">${myField[y][x]===2?'✖':myField[y][x]===3?'•':''}</div>`;
         }
-        html += '</div>';
       }
       document.getElementById('myBoard').innerHTML = html;
 
       // Поле противника
-      html = '<div>Поле противника</div>';
+      html = '';
       for (let y = 0; y < 10; y++) {
-        html += '<div class="row">';
         for (let x = 0; x < 10; x++) {
           let cls = 'cell enemy';
           if (enemyField[y][x] === 2) cls += ' hit disabled';
           if (enemyField[y][x] === 3) cls += ' miss disabled';
-          if (!myTurn) cls += ' disabled';
+          if (!myTurn || gameOver) cls += ' disabled';
           html += `<div class="${cls}" data-x="${x}" data-y="${y}">${enemyField[y][x]===2?'✖':enemyField[y][x]===3?'•':''}</div>`;
         }
-        html += '</div>';
       }
       document.getElementById('enemyBoard').innerHTML = html;
       // Навесить обработчик
@@ -132,44 +447,67 @@
           shoot(x, y);
         };
       });
+      document.getElementById('myShipsCounter').textContent = 'Кораблей: ' + myShips;
+      document.getElementById('enemyShipsCounter').textContent = 'Кораблей: ' + enemyShips;
     }
 
     function setStatus(msg) {
-      document.getElementById('status').textContent = msg;
+      const el = document.getElementById('statusBar');
+      if (el) el.textContent = msg;
     }
 
     // --- Room logic ---
     function joinRoom() {
-      setStatus('Поиск комнаты...');
+      showModal('Поиск комнаты...', {loader:true});
       // Найти комнату с 1 игроком или создать новую
       db.ref('rooms').once('value', snap => {
         let found = false;
+        let foundRoomId = null;
         snap.forEach(room => {
           const players = room.child('players').val() || {};
           if (Object.keys(players).length < 2 && !found) {
             found = true;
-            roomId = room.key;
-            db.ref(`rooms/${roomId}/players/${playerId}`).set(true);
-            waitForPlayers();
+            foundRoomId = room.key;
           }
         });
-        if (!found) {
+        if (found) {
+          roomId = foundRoomId;
+          db.ref(`rooms/${roomId}/players/${playerId}`).set({
+            name: playerName,
+            photo: playerPhoto
+          });
+          waitForPlayers();
+        } else {
           // Создать новую комнату
-          roomId = genId();
-          db.ref(`rooms/${roomId}/players/${playerId}`).set(true);
+          roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+          db.ref(`rooms/${roomId}/players/${playerId}`).set({
+            name: playerName,
+            photo: playerPhoto
+          });
           waitForPlayers();
         }
       });
     }
 
     function waitForPlayers() {
-      setStatus('Ожидание второго игрока...');
-      db.ref(`rooms/${roomId}/players`).on('value', snap => {
+      hideModal();
+      showModal('Ожидание второго игрока...', {loader:true});
+      if (unsubRoom) unsubRoom();
+      unsubRoom = db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const ids = Object.keys(players);
         document.getElementById('playersCount').textContent = ids.length;
+        let playersArr = ids.map(id => ({
+          id,
+          name: players[id].name || 'Игрок',
+          photo: players[id].photo || null
+        }));
+        updatePlayersList(playersArr);
         if (ids.length === 2) {
           enemyId = ids.find(id => id !== playerId);
+          enemyName = players[enemyId].name || "Противник";
+          enemyPhoto = players[enemyId].photo || null;
+          hideModal();
           startGame();
         }
       });
@@ -177,27 +515,45 @@
     }
 
     function leaveRoom() {
+      showModal('Покидаем комнату...', {loader:true});
       if (roomId) {
         db.ref(`rooms/${roomId}/players/${playerId}`).remove();
         db.ref(`rooms/${roomId}/fields/${playerId}`).remove();
-        db.ref(`rooms/${roomId}/shots`).remove();
+        db.ref(`rooms/${roomId}/shots/${playerId}`).remove();
         db.ref(`rooms/${roomId}/turn`).remove();
-        roomId = null;
-        enemyId = null;
-        gameStarted = false;
-        myField = emptyField();
-        enemyField = emptyField();
-        renderLobby(0);
+        setTimeout(() => {
+          cleanupListeners();
+          roomId = null;
+          enemyId = null;
+          gameStarted = false;
+          myField = null;
+          enemyField = null;
+          myShips = 0;
+          enemyShips = 0;
+          gameOver = false;
+          renderLobby(1, [{id:playerId, name:playerName, photo:playerPhoto}]);
+          hideModal();
+        }, 500);
       }
+    }
+
+    function cleanupListeners() {
+      if (unsubRoom) { db.ref(`rooms/${roomId}/players`).off(); unsubRoom = null; }
+      if (unsubTurn) { db.ref(`rooms/${roomId}/turn`).off(); unsubTurn = null; }
+      if (unsubShotsMe) { db.ref(`rooms/${roomId}/shots/${playerId}`).off(); unsubShotsMe = null; }
+      if (unsubShotsEnemy) { db.ref(`rooms/${roomId}/shots/${enemyId}`).off(); unsubShotsEnemy = null; }
+      if (unsubEnemyField) { db.ref(`rooms/${roomId}/fields/${enemyId}`).off(); unsubEnemyField = null; }
     }
 
     // --- Game logic ---
     function startGame() {
       gameStarted = true;
-      document.getElementById('waitMsg').textContent = '';
+      gameOver = false;
       // Расставить корабли случайно (1x4, 2x3, 3x2, 4x1)
       myField = randomShips();
       myShips = 20;
+      enemyField = emptyField();
+      enemyShips = 20;
       db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
       // Первый ход — у того, кто раньше вошел
       db.ref(`rooms/${roomId}/players`).once('value', snap => {
@@ -212,13 +568,15 @@
 
     function listenGame() {
       // Слушаем чей ход
-      db.ref(`rooms/${roomId}/turn`).on('value', snap => {
+      if (unsubTurn) db.ref(`rooms/${roomId}/turn`).off();
+      unsubTurn = db.ref(`rooms/${roomId}/turn`).on('value', snap => {
         myTurn = (snap.val() === playerId);
-        setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
+        if (!gameOver) setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
         drawBoards();
       });
       // Слушаем выстрелы по мне
-      db.ref(`rooms/${roomId}/shots/${playerId}`).on('child_added', snap => {
+      if (unsubShotsMe) db.ref(`rooms/${roomId}/shots/${playerId}`).off();
+      unsubShotsMe = db.ref(`rooms/${roomId}/shots/${playerId}`).on('child_added', snap => {
         const [y, x] = snap.key.split('_').map(Number);
         if (myField[y][x] === 1) {
           myField[y][x] = 2; // hit
@@ -228,14 +586,16 @@
         }
         db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
         drawBoards();
-        if (myShips === 0) {
+        if (myShips === 0 && !gameOver) {
           setStatus('Вы проиграли!');
-          db.ref(`rooms/${roomId}/turn`).off();
-          db.ref(`rooms/${roomId}/shots/${playerId}`).off();
+          showModal('<div class="game-over">Вы проиграли!</div>', {button:'Ок', onClose:leaveRoom});
+          gameOver = true;
+          cleanupListeners();
         }
       });
       // Слушаем выстрелы по врагу (чтобы обновлять enemyField)
-      db.ref(`rooms/${roomId}/shots/${enemyId}`).on('child_added', snap => {
+      if (unsubShotsEnemy) db.ref(`rooms/${roomId}/shots/${enemyId}`).off();
+      unsubShotsEnemy = db.ref(`rooms/${roomId}/shots/${enemyId}`).on('child_added', snap => {
         const [y, x] = snap.key.split('_').map(Number);
         db.ref(`rooms/${roomId}/fields/${enemyId}`).once('value', s => {
           const field = s.val();
@@ -245,13 +605,33 @@
           } else {
             enemyField[y][x] = 3; // miss
           }
+          // Пересчитать корабли врага
+          let hits = 0;
+          for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
+          enemyShips = 20 - hits;
           drawBoards();
+          if (enemyShips === 0 && !gameOver) {
+            setStatus('Вы победили!');
+            showModal('<div class="game-over" style="color:#388e3c;">Вы победили!</div>', {button:'Ок', onClose:leaveRoom});
+            gameOver = true;
+            cleanupListeners();
+          }
         });
+      });
+      // Слушаем поле врага (для обновления счетчика кораблей)
+      if (unsubEnemyField) db.ref(`rooms/${roomId}/fields/${enemyId}`).off();
+      unsubEnemyField = db.ref(`rooms/${roomId}/fields/${enemyId}`).on('value', snap => {
+        const field = snap.val();
+        if (!field) return;
+        let hits = 0;
+        for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
+        enemyShips = 20 - hits;
+        drawBoards();
       });
     }
 
     function shoot(x, y) {
-      if (!myTurn) return;
+      if (!myTurn || gameOver) return;
       if (enemyField[y][x] === 2 || enemyField[y][x] === 3) return;
       // Отправить выстрел
       db.ref(`rooms/${roomId}/shots/${enemyId}/${y}_${x}`).set(true);
@@ -265,10 +645,12 @@
           // Проверить победу
           let hits = 0;
           for (let row of enemyField) for (let cell of row) if (cell === 2) hits++;
-          if (hits === 20) {
+          enemyShips = 20 - hits;
+          if (enemyShips === 0 && !gameOver) {
             setStatus('Вы победили!');
-            db.ref(`rooms/${roomId}/turn`).off();
-            db.ref(`rooms/${roomId}/shots/${enemyId}`).off();
+            showModal('<div class="game-over" style="color:#388e3c;">Вы победили!</div>', {button:'Ок', onClose:leaveRoom});
+            gameOver = true;
+            cleanupListeners();
             return;
           }
         } else {
@@ -281,13 +663,18 @@
     }
 
     // --- Ships placement ---
+    function emptyField() {
+      return Array(10).fill(0).map(() => Array(10).fill(0));
+    }
     function randomShips() {
       // 1x4, 2x3, 3x2, 4x1
       let field = emptyField();
       let ships = [4,3,3,2,2,2,1,1,1,1];
       for (let s of ships) {
         let placed = false;
-        while (!placed) {
+        let tries = 0;
+        while (!placed && tries < 100) {
+          tries++;
           let dir = Math.random() < 0.5 ? 'h' : 'v';
           let x = Math.floor(Math.random() * (dir==='h'?10-s+1:10));
           let y = Math.floor(Math.random() * (dir==='v'?10-s+1:10));
@@ -309,12 +696,15 @@
             placed = true;
           }
         }
+        if (!placed) { // fallback
+          for (let y=0;y<10;y++) for (let x=0;x<10;x++) if (field[y][x]===0) { field[y][x]=1; placed=true; break; }
+        }
       }
       return field;
     }
 
     // --- Initial render ---
-    renderLobby(0);
+    renderLobby(1, [{id:playerId, name:playerName, photo:playerPhoto}]);
   </script>
 </body>
 </html>
