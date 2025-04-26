@@ -1,821 +1,718 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Морской бой</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Firebase -->
+  <title>Crash Game</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <!-- Telegram WebApp -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --main-bg: #e3f2fd;
-      --main-accent: #1976d2;
-      --main-accent-light: #42a5f5;
-      --main-accent-dark: #0d47a1;
-      --cell-size: 8vw;
-      --cell-size-max: 38px;
-      --cell-gap: 2px;
-      --cell-radius: 7px;
-      --font-main: 'Segoe UI', 'Arial', sans-serif;
-      --shadow: 0 2px 8px rgba(0,0,0,0.08);
-      --enemy-active: #fff;
-      --enemy-inactive: #e3f2fd;
-      --enemy-inactive-opacity: 0.45;
+      --main-bg: #181c27;
+      --panel-bg: #23283a;
+      --accent: #ffb300;
+      --danger: #ff3b3b;
+      --success: #4caf50;
+      --text: #fff;
+      --text-muted: #b0b8d1;
+      --border: #2c3145;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3);
+      --radius: 18px;
+      --transition: 0.2s cubic-bezier(.4,0,.2,1);
     }
-    html, body {
-      margin: 0; padding: 0;
-      background: var(--main-bg);
-      font-family: var(--font-main);
-      min-height: 100vh;
-      color: #222;
-    }
-    #app-container {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 0 0 32px 0;
-    }
-    h1 {
+    * { box-sizing: border-box; }
+    body {
       margin: 0;
-      font-size: 2em;
-      color: var(--main-accent-dark);
-      letter-spacing: 1px;
-      text-align: center;
-      padding: 18px 0 8px 0;
-      font-weight: 700;
-      background: #fff;
-      border-bottom: 1.5px solid #e3f2fd;
-      box-shadow: 0 2px 8px #1976d210;
+      padding: 0;
+      background: var(--main-bg);
+      color: var(--text);
+      font-family: 'Montserrat', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .card {
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      padding: 24px 18px;
-      margin: 24px auto;
-      max-width: 340px;
-      transition: box-shadow 0.2s;
+    .centered {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
     .btn {
-      background: var(--main-accent);
-      color: #fff;
+      background: var(--accent);
+      color: #222;
       border: none;
-      border-radius: 8px;
-      padding: 12px 32px;
-      font-size: 1.1em;
-      font-weight: 600;
+      border-radius: var(--radius);
+      padding: 18px 48px;
+      font-size: 1.5rem;
+      font-weight: 700;
       cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background var(--transition), transform var(--transition);
       margin: 12px 0;
-      box-shadow: 0 2px 8px #1976d220;
-      transition: background 0.2s, box-shadow 0.2s;
     }
-    .btn:active {
-      background: var(--main-accent-dark);
-      box-shadow: 0 1px 4px #1976d220;
+    .btn:disabled {
+      background: #b0b8d1;
+      color: #444;
+      cursor: not-allowed;
+      opacity: 0.7;
     }
-    .btn.secondary {
-      background: #fff;
-      color: var(--main-accent);
-      border: 2px solid var(--main-accent);
+    .btn:hover:enabled {
+      background: #ffd54f;
+      transform: translateY(-2px) scale(1.03);
+    }
+    .game-container {
+      background: var(--panel-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px 24px 24px 24px;
+      max-width: 900px;
+      width: 100%;
+      margin: 32px auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .balance {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 18px;
+      letter-spacing: 1px;
+    }
+    .crash-graph {
+      width: 100%;
+      max-width: 700px;
+      height: 320px;
+      background: #1a1e2d;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .crash-multiplier {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-shadow: 0 2px 12px #000a;
+      z-index: 2;
+      letter-spacing: 2px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .bet-panel {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .bet-panel input[type="number"] {
+      background: #23283a;
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 18px;
+      font-size: 1.1rem;
+      width: 110px;
+      outline: none;
+      transition: border var(--transition);
+    }
+    .bet-panel input[type="number"]:focus {
+      border: 2px solid var(--accent);
+    }
+    .bet-panel .btn {
+      padding: 12px 28px;
+      font-size: 1.1rem;
+      margin: 0;
+    }
+    .auto-cashout {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .auto-cashout input[type="number"] {
+      width: 70px;
+      padding: 6px 10px;
+      font-size: 1rem;
     }
     .players-list {
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-      margin: 18px 0 0 0;
+      background: #23283a;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 12px 18px;
+      margin-top: 18px;
+      width: 100%;
+      max-width: 700px;
+      min-height: 80px;
     }
-    .player-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 80px;
-      max-width: 120px;
-      padding: 8px 0;
-      border-radius: 12px;
-      background: #f5faff;
-      box-shadow: 0 1px 4px #1976d210;
-      font-size: 0.98em;
+    .players-list-title {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 700;
     }
-    .player-card.me {
-      background: #e3f2fd;
-      border: 2px solid var(--main-accent-light);
+    .players-table {
+      width: 100%;
+      border-collapse: collapse;
     }
-    .player-avatar {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: #b3e5fc;
-      margin-bottom: 6px;
-      object-fit: cover;
-      border: 2px solid #fff;
-      box-shadow: 0 1px 4px #1976d210;
+    .players-table th, .players-table td {
+      padding: 6px 8px;
+      text-align: left;
+      font-size: 1rem;
     }
-    .player-name {
-      font-weight: 600;
-      color: var(--main-accent-dark);
-      margin-bottom: 2px;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      max-width: 90px;
-      white-space: nowrap;
+    .players-table th {
+      color: var(--text-muted);
+      font-weight: 700;
     }
-    .player-id {
-      font-size: 0.85em;
-      color: #888;
+    .players-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .players-table tr:last-child {
+      border-bottom: none;
     }
     .status-bar {
-      margin: 18px 0 8px 0;
-      font-size: 1.15em;
-      font-weight: 500;
-      color: var(--main-accent-dark);
+      margin: 12px 0 0 0;
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      text-align: center;
       min-height: 28px;
-      letter-spacing: 0.5px;
-      text-align: center;
     }
-    .boards-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 18px;
-      margin: 0 auto;
-      max-width: 100vw;
-    }
-    .board-block {
-      background: #f5faff;
-      border-radius: 16px;
-      box-shadow: 0 1px 8px #1976d210;
-      padding: 12px 6px 10px 6px;
-      min-width: 0;
-      width: 98vw;
-      max-width: 420px;
-      position: relative;
-      margin-bottom: 0;
-    }
-    .board-title {
-      font-size: 1.1em;
-      font-weight: 600;
-      color: var(--main-accent);
-      margin-bottom: 8px;
-      text-align: center;
-    }
-    .ships-counter {
-      position: absolute;
-      right: 18px; top: 12px;
-      font-size: 0.98em;
-      color: #1976d2;
-      background: #e3f2fd;
-      border-radius: 8px;
-      padding: 2px 10px;
-      font-weight: 600;
-      box-shadow: 0 1px 4px #1976d210;
-    }
-    .ships-list {
-      display: flex;
-      gap: 8px;
-      margin: 0 0 8px 0;
-      justify-content: center;
-      font-size: 1.05em;
-    }
-    .ship-icon {
-      display: flex; align-items: center; gap: 2px;
-      background: #e3f2fd;
-      border-radius: 6px;
-      padding: 2px 7px;
-      font-weight: 600;
-      color: #1976d2;
-      box-shadow: 0 1px 4px #1976d210;
-    }
-    .ship-icon .ship-shape {
-      display: inline-block;
-      width: 18px; height: 10px;
-      background: #1976d2;
-      border-radius: 4px;
-      margin-right: 2px;
-      vertical-align: middle;
-    }
-    .ship-icon.s4 .ship-shape { width: 32px; }
-    .ship-icon.s3 .ship-shape { width: 26px; }
-    .ship-icon.s2 .ship-shape { width: 20px; }
-    .ship-icon.s1 .ship-shape { width: 12px; }
-    .board-grid {
-      display: grid;
-      grid-template-columns: repeat(10, minmax(0, var(--cell-size)));
-      grid-template-rows: repeat(10, minmax(0, var(--cell-size)));
-      gap: var(--cell-gap);
-      margin: 0 auto;
-      user-select: none;
-      width: 100vw;
-      max-width: 98vw;
-      justify-content: center;
-    }
-    .cell {
-      width: min(var(--cell-size), var(--cell-size-max));
-      height: min(var(--cell-size), var(--cell-size-max));
-      border-radius: var(--cell-radius);
-      background: #e0f7fa;
-      border: 1.5px solid #b3e5fc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25em;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s, opacity 0.2s;
-      box-shadow: 0 1px 2px #1976d210;
-      position: relative;
-      z-index: 1;
-    }
-    .cell.ship {
-      background: #90caf9;
-      border-color: #1976d2;
-    }
-    .cell.hit {
-      background: #ef9a9a;
-      border-color: #d32f2f;
-      color: #b71c1c;
-      animation: hitAnim 0.3s;
-    }
-    .cell.miss {
-      background: #bdbdbd;
-      border-color: #757575;
-      color: #616161;
-      animation: missAnim 0.3s;
-    }
-    .cell.enemy {
-      cursor: pointer;
-      background: #e3f2fd;
-      border-color: #90caf9;
-    }
-    .cell.enemy.disabled {
-      pointer-events: none;
-      opacity: 0.45;
-    }
-    .cell.enemy.active {
-      background: #fff;
-      box-shadow: 0 0 0 2px #1976d2;
-      opacity: 1;
-    }
-    .cell.enemy:hover:not(.disabled):not(.hit):not(.miss) {
-      background: #bbdefb;
-      box-shadow: 0 0 0 2px #1976d2;
-    }
-    @keyframes hitAnim {
-      0% { background: #fff; }
-      100% { background: #ef9a9a; }
-    }
-    @keyframes missAnim {
-      0% { background: #fff; }
-      100% { background: #bdbdbd; }
-    }
-    .game-over {
-      font-size: 1.5em;
-      color: #d32f2f;
+    .crash {
+      color: var(--danger);
       font-weight: 700;
-      margin: 24px 0 0 0;
-      text-shadow: 0 2px 8px #fff8;
+      font-size: 2.2rem;
+      text-shadow: 0 2px 12px #000a;
+      margin-top: 12px;
+      animation: crash-pop 0.7s cubic-bezier(.4,0,.2,1);
     }
-    .modal-bg {
-      position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
-      background: #0008;
-      z-index: 1000;
-      display: flex; align-items: center; justify-content: center;
-      animation: fadeIn 0.2s;
-    }
-    .modal {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 32px #0003;
-      padding: 32px 24px;
-      min-width: 260px;
-      max-width: 90vw;
+    .waiting-round {
+      color: var(--accent);
+      font-size: 1.5rem;
+      font-weight: 700;
       text-align: center;
-      font-size: 1.1em;
-      animation: popIn 0.2s;
+      width: 100%;
+      padding: 60px 0;
+      letter-spacing: 1px;
     }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes popIn { from { transform: scale(0.9); } to { transform: scale(1); } }
-    .loader {
-      border: 4px solid #e3f2fd;
-      border-top: 4px solid #1976d2;
-      border-radius: 50%;
-      width: 36px; height: 36px;
-      animation: spin 1s linear infinite;
-      margin: 24px auto;
+    @keyframes crash-pop {
+      0% { transform: scale(0.7); opacity: 0; }
+      60% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
     }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    @media (max-width: 700px) {
-      .boards-container { flex-direction: column; gap: 12px; }
-      .board-block { min-width: 0; width: 98vw; }
+    @media (max-width: 900px) {
+      .game-container { max-width: 99vw; padding: 12px 2vw; }
+      .crash-graph, .players-list { max-width: 99vw; }
+    }
+    @media (max-width: 600px) {
+      .crash-graph { height: 180px; }
+      .crash-multiplier { font-size: 1.7rem; }
+      .bet-panel { flex-direction: column; gap: 10px; }
+      .players-list { padding: 8px; }
+    }
+    .you {
+      background: rgba(255, 179, 0, 0.08);
     }
   </style>
 </head>
 <body>
-  <h1>Морской бой</h1>
-  <div id="app-container">
-    <div id="main"></div>
+  <div id="main-menu" class="centered">
+    <h1 style="font-size:2.7rem; font-weight:800; margin-bottom:32px; letter-spacing:2px;">Crash Game</h1>
+    <button class="btn" id="play-btn">Играть в краш</button>
   </div>
-  <div id="modal-root"></div>
+  <div id="game" style="display:none;">
+    <div class="game-container">
+      <div class="balance" id="balance">Баланс: 100₽</div>
+      <div class="crash-graph" id="crash-graph">
+        <div class="crash-multiplier" id="multiplier">1.00x</div>
+        <canvas id="graph-canvas" width="700" height="320" style="width:100%;height:100%;position:absolute;top:0;left:0;"></canvas>
+        <div id="waiting-round" class="waiting-round" style="display:none;">Ожидание нового раунда</div>
+      </div>
+      <div class="bet-panel">
+        <input type="number" id="bet-amount" min="10" max="10000" step="1" value="10" placeholder="Ставка (₽)">
+        <div class="auto-cashout">
+          Автостоп:
+          <input type="number" id="auto-cashout" min="1.01" max="100" step="0.01" value="2.00">
+          x
+        </div>
+        <button class="btn" id="bet-btn">Сделать ставку</button>
+        <button class="btn" id="cashout-btn" style="display:none;background:var(--success);color:#fff;">Забрать</button>
+      </div>
+      <div class="status-bar" id="status-bar">Ожидание следующего раунда...</div>
+      <div id="crash-msg" class="crash" style="display:none;">CRASH!</div>
+      <div class="players-list">
+        <div class="players-list-title">Игроки онлайн и их ставки</div>
+        <table class="players-table" id="players-table">
+          <thead>
+            <tr>
+              <th>Игрок</th>
+              <th>Ставка</th>
+              <th>Автостоп</th>
+              <th>Статус</th>
+              <th>Выигрыш</th>
+            </tr>
+          </thead>
+          <tbody id="players-tbody">
+            <!-- Игроки будут добавляться динамически -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <script>
+    // --- Telegram mini app user ---
+    let tgUser = null;
+    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+      tgUser = Telegram.WebApp.initDataUnsafe.user;
+    }
+    // Fallback for local testing
+    if (!tgUser) {
+      tgUser = {
+        id: localStorage.getItem('tg_id') || 'tg_' + Math.floor(Math.random()*1000000),
+        username: localStorage.getItem('tg_username') || 'Гость_' + Math.floor(Math.random()*10000),
+        first_name: 'Гость'
+      };
+      localStorage.setItem('tg_id', tgUser.id);
+      localStorage.setItem('tg_username', tgUser.username);
+    }
+    const userId = String(tgUser.id);
+    const userName = tgUser.username ? '@' + tgUser.username : tgUser.first_name || 'Гость';
+
     // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
       authDomain: "vrot-x-7a48f.firebaseapp.com",
       databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
       projectId: "vrot-x-7a48f",
-      storageBucket: "vrot-x-7a48f.firebasestorage.app",
+      storageBucket: "vrot-x-7a48f.appspot.com",
       messagingSenderId: "622297225288",
       appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- Telegram user info ---
-    let tgUser = null;
-    let playerId = null;
-    let playerName = "Гость";
-    let playerPhoto = null;
-    function getTelegramUser() {
-      try {
-        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-          tgUser = Telegram.WebApp.initDataUnsafe.user;
-          playerId = String(tgUser.id);
-          playerName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
-          playerPhoto = tgUser.photo_url || null;
-        }
-      } catch (e) {}
-      if (!playerId) {
-        playerId = 'guest_' + Math.random().toString(36).substr(2, 9);
-        playerName = "Гость";
+    // --- Баланс ---
+    let balance = parseFloat(localStorage.getItem('crash_balance_' + userId));
+    if (isNaN(balance)) {
+      balance = 100;
+      localStorage.setItem('crash_balance_' + userId, balance);
+    }
+    function updateBalanceUI() {
+      document.getElementById('balance').textContent = `Баланс: ${balance.toFixed(2)}₽`;
+    }
+    updateBalanceUI();
+
+    // --- Main menu logic ---
+    document.getElementById('play-btn').onclick = () => {
+      document.getElementById('main-menu').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      joinOnline();
+    };
+
+    // --- Online players ---
+    function joinOnline() {
+      const onlineRef = db.ref('crash/online/' + userId);
+      onlineRef.set({
+        name: userName,
+        ts: firebase.database.ServerValue.TIMESTAMP
+      });
+      onlineRef.onDisconnect().remove();
+    }
+
+    // --- Game state ---
+    let gameState = {
+      status: 'waiting', // waiting | starting | started | crashed
+      startTime: 0,
+      crashAt: 0,
+      multiplier: 1.0,
+      roundId: '',
+      players: {},
+      nextStart: 0
+    };
+    let myBet = null;
+    let myAutoCashout = 2.00;
+    let myCashout = null;
+    let graphData = [];
+    let graphAnimId = null;
+    let joinedInRound = false;
+
+    // --- UI Elements ---
+    const multiplierEl = document.getElementById('multiplier');
+    const statusBar = document.getElementById('status-bar');
+    const crashMsg = document.getElementById('crash-msg');
+    const betBtn = document.getElementById('bet-btn');
+    const cashoutBtn = document.getElementById('cashout-btn');
+    const betAmountInput = document.getElementById('bet-amount');
+    const autoCashoutInput = document.getElementById('auto-cashout');
+    const playersTbody = document.getElementById('players-tbody');
+    const graphCanvas = document.getElementById('graph-canvas');
+    const ctx = graphCanvas.getContext('2d');
+    const waitingRoundDiv = document.getElementById('waiting-round');
+
+    // --- Bet logic ---
+    betBtn.onclick = () => {
+      const bet = parseFloat(betAmountInput.value);
+      const auto = parseFloat(autoCashoutInput.value);
+      if (isNaN(bet) || bet < 10 || bet > balance) {
+        alert('Некорректная сумма ставки!');
+        return;
       }
-    }
-    getTelegramUser();
-
-    // --- State ---
-    const ROOM_ID = "main";
-    let roomId = ROOM_ID;
-    let enemyId = null;
-    let enemyName = "Противник";
-    let enemyPhoto = null;
-    let myField = null;
-    let enemyField = null;
-    let myTurn = false;
-    let gameStarted = false;
-    let myShips = {};
-    let enemyShips = {};
-    let unsubRoom = null;
-    let unsubTurn = null;
-    let unsubShotsMe = null;
-    let unsubShotsEnemy = null;
-    let unsubEnemyField = null;
-    let gameOver = false;
-
-    const main = document.getElementById('main');
-    const modalRoot = document.getElementById('modal-root');
-
-    // --- UI helpers ---
-    function showModal(msg, opts={}) {
-      modalRoot.innerHTML = `
-        <div class="modal-bg">
-          <div class="modal">
-            <div>${msg}</div>
-            ${opts.loader ? '<div class="loader"></div>' : ''}
-            ${opts.button ? `<button class="btn" id="modalBtn">${opts.button}</button>` : ''}
-          </div>
-        </div>
-      `;
-      if (opts.button) {
-        document.getElementById('modalBtn').onclick = () => {
-          modalRoot.innerHTML = '';
-          if (opts.onClose) opts.onClose();
-        };
+      if (isNaN(auto) || auto < 1.01 || auto > 100) {
+        alert('Некорректный автостоп!');
+        return;
       }
-    }
-    function hideModal() { modalRoot.innerHTML = ''; }
-
-    function playerCard(id, name, photo, isMe) {
-      return `
-        <div class="player-card${isMe ? ' me' : ''}">
-          <img class="player-avatar" src="${photo ? photo : 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" alt="avatar">
-          <div class="player-name">${name ? name : 'Игрок'}</div>
-          <div class="player-id">${id}</div>
-        </div>
-      `;
-    }
-
-    // --- Lobby ---
-    function renderLobby(playersCount=1, players=[]) {
-      main.innerHTML = `
-        <div class="card lobby">
-          <div style="font-size:1.2em; font-weight:600; margin-bottom:10px;">Добро пожаловать, ${playerName}!</div>
-          <button class="btn" id="joinBtn">Присоединиться к комнате</button>
-          <div style="margin:10px 0 0 0; font-size:1.05em;">
-            Игроков в комнате: <b id="playersCount">${playersCount}</b>
-          </div>
-          <div class="players-list" id="playersList"></div>
-          <div id="waitMsg" style="margin-top:10px; color:#888;"></div>
-        </div>
-      `;
-      document.getElementById('joinBtn').onclick = joinRoom;
-      updatePlayersList(players);
-    }
-
-    function updatePlayersList(players) {
-      const el = document.getElementById('playersList');
-      if (!el) return;
-      el.innerHTML = '';
-      players.forEach(p => {
-        el.innerHTML += playerCard(p.id, p.name, p.photo, p.id === playerId);
-      });
-      // Если я один — показать кнопку выхода
-      if (players.length === 1 && players[0].id === playerId) {
-        document.getElementById('waitMsg').innerHTML = `<button class="btn secondary" id="leaveBtn">Выйти из комнаты</button>`;
-        document.getElementById('leaveBtn').onclick = leaveRoom;
+      if (gameState.status !== 'waiting' && gameState.status !== 'starting') {
+        alert('Ставки принимаются только до начала раунда!');
+        return;
       }
-    }
+      myBet = bet;
+      myAutoCashout = auto;
+      betAmountInput.disabled = true;
+      autoCashoutInput.disabled = true;
+      betBtn.disabled = true;
+      betBtn.textContent = 'Ставка сделана';
+      db.ref('crash/rounds/' + gameState.roundId + '/players/' + userId).set({
+        name: userName,
+        bet: bet,
+        auto: auto,
+        status: 'playing',
+        cashout: null
+      });
+    };
+    cashoutBtn.onclick = () => {
+      if (gameState.status !== 'started' || !myBet || myCashout) return;
+      const cashoutAt = gameState.multiplier;
+      myCashout = cashoutAt;
+      db.ref('crash/rounds/' + gameState.roundId + '/players/' + userId + '/cashout').set(cashoutAt);
+      db.ref('crash/rounds/' + gameState.roundId + '/players/' + userId + '/status').set('cashed');
+      cashoutBtn.disabled = true;
+      cashoutBtn.textContent = 'Забрано!';
+    };
+    autoCashoutInput.oninput = () => {
+      let v = parseFloat(autoCashoutInput.value);
+      if (isNaN(v) || v < 1.01) v = 1.01;
+      if (v > 100) v = 100;
+      autoCashoutInput.value = v.toFixed(2);
+      myAutoCashout = v;
+    };
 
-    // --- Game UI ---
-    function renderGame() {
-      main.innerHTML = `
-        <div class="status-bar" id="statusBar"></div>
-        <div class="boards-container">
-          <div class="board-block">
-            <div class="board-title">Ваше поле</div>
-            <div class="ships-list" id="myShipsList"></div>
-            <div class="board-grid" id="myBoard"></div>
-          </div>
-          <div class="board-block">
-            <div class="board-title">Поле противника</div>
-            <div class="ships-list" id="enemyShipsList"></div>
-            <div class="board-grid" id="enemyBoard"></div>
-          </div>
-        </div>
-        <div class="players-list" style="margin-top:18px;">
-          ${playerCard(playerId, playerName, playerPhoto, true)}
-          ${playerCard(enemyId, enemyName, enemyPhoto, false)}
-        </div>
-      `;
-      drawBoards();
-    }
-
-    function drawBoards() {
-      // Мое поле
-      let html = '';
-      for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 10; x++) {
-          let cls = 'cell';
-          if (myField[y][x] === 1) cls += ' ship';
-          if (myField[y][x] === 2) cls += ' hit';
-          if (myField[y][x] === 3) cls += ' miss';
-          html += `<div class="${cls}">${myField[y][x]===2?'✖':myField[y][x]===3?'•':''}</div>`;
+    // --- Game loop ---
+    function listenGameState() {
+      db.ref('crash/state').on('value', snap => {
+        const state = snap.val();
+        if (!state) return;
+        const prevRoundId = gameState.roundId;
+        gameState.status = state.status;
+        gameState.startTime = state.startTime;
+        gameState.crashAt = state.crashAt;
+        gameState.multiplier = state.multiplier;
+        gameState.roundId = state.roundId;
+        gameState.nextStart = state.nextStart || 0;
+        if (prevRoundId !== state.roundId) {
+          joinedInRound = false;
+          myBet = null;
+          myCashout = null;
+          betAmountInput.disabled = false;
+          autoCashoutInput.disabled = false;
+          betBtn.disabled = false;
+          betBtn.textContent = 'Сделать ставку';
         }
-      }
-      document.getElementById('myBoard').innerHTML = html;
-
-      // Поле противника
-      html = '';
-      for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 10; x++) {
-          let cls = 'cell enemy';
-          if (enemyField[y][x] === 2) cls += ' hit disabled';
-          if (enemyField[y][x] === 3) cls += ' miss disabled';
-          if (myTurn && !gameOver) cls += ' active';
-          if (!myTurn || gameOver) cls += ' disabled';
-          html += `<div class="${cls}" data-x="${x}" data-y="${y}">${enemyField[y][x]===2?'✖':enemyField[y][x]===3?'•':''}</div>`;
-        }
-      }
-      document.getElementById('enemyBoard').innerHTML = html;
-      // Навесить обработчик
-      document.querySelectorAll('#enemyBoard .cell.enemy').forEach(cell => {
-        cell.onclick = (e) => {
-          if (cell.classList.contains('disabled')) return;
-          const x = +cell.dataset.x, y = +cell.dataset.y;
-          shoot(x, y);
-        };
-      });
-
-      // Визуализация хода
-      document.getElementById('enemyBoard').style.opacity = myTurn && !gameOver ? "1" : "0.45";
-      document.getElementById('enemyBoard').style.filter = myTurn && !gameOver ? "none" : "grayscale(0.5)";
-
-      // Счетчик кораблей
-      document.getElementById('myShipsList').innerHTML = shipsListHtml(myShips);
-      document.getElementById('enemyShipsList').innerHTML = shipsListHtml(enemyShips);
-    }
-
-    function shipsListHtml(ships) {
-      return `
-        <span class="ship-icon s4"><span class="ship-shape"></span> ${ships[4]||0}</span>
-        <span class="ship-icon s3"><span class="ship-shape"></span> ${ships[3]||0}</span>
-        <span class="ship-icon s2"><span class="ship-shape"></span> ${ships[2]||0}</span>
-        <span class="ship-icon s1"><span class="ship-shape"></span> ${ships[1]||0}</span>
-      `;
-    }
-
-    function setStatus(msg) {
-      const el = document.getElementById('statusBar');
-      if (el) el.textContent = msg;
-    }
-
-    // --- Room logic ---
-    function joinRoom() {
-      showModal('Присоединяемся к комнате...', {loader:true});
-      db.ref(`rooms/${roomId}/players/${playerId}`).set({
-        name: playerName,
-        photo: playerPhoto
-      }).then(() => {
-        waitForPlayers();
+        updateGameUI();
+        listenPlayers();
       });
     }
-
-    function waitForPlayers() {
-      hideModal();
-      showModal('Ожидание второго игрока...', {loader:true});
-      if (unsubRoom) unsubRoom();
-      unsubRoom = db.ref(`rooms/${roomId}/players`).on('value', snap => {
-        const players = snap.val() || {};
-        const ids = Object.keys(players);
-        document.getElementById('playersCount').textContent = ids.length;
-        let playersArr = ids.map(id => ({
-          id,
-          name: players[id].name || 'Игрок',
-          photo: players[id].photo || null
-        }));
-        updatePlayersList(playersArr);
-        if (ids.length === 2) {
-          enemyId = ids.find(id => id !== playerId);
-          enemyName = players[enemyId].name || "Противник";
-          enemyPhoto = players[enemyId].photo || null;
-          hideModal();
-          startGame();
-        }
-      });
-      document.getElementById('waitMsg').textContent = 'Ожидание второго игрока...';
-    }
-
-    function leaveRoom() {
-      showModal('Покидаем комнату...', {loader:true});
-      if (roomId) {
-        db.ref(`rooms/${roomId}/players/${playerId}`).remove();
-        db.ref(`rooms/${roomId}/fields/${playerId}`).remove();
-        db.ref(`rooms/${roomId}/shots/${playerId}`).remove();
-        db.ref(`rooms/${roomId}/turn`).remove();
-        setTimeout(() => {
-          cleanupListeners();
-          enemyId = null;
-          gameStarted = false;
-          myField = null;
-          enemyField = null;
-          myShips = {};
-          enemyShips = {};
-          gameOver = false;
-          renderLobby(1, [{id:playerId, name:playerName, photo:playerPhoto}]);
-          hideModal();
-        }, 500);
-      }
-    }
-
-    function cleanupListeners() {
-      if (unsubRoom) { db.ref(`rooms/${roomId}/players`).off(); unsubRoom = null; }
-      if (unsubTurn) { db.ref(`rooms/${roomId}/turn`).off(); unsubTurn = null; }
-      if (unsubShotsMe) { db.ref(`rooms/${roomId}/shots/${playerId}`).off(); unsubShotsMe = null; }
-      if (unsubShotsEnemy) { db.ref(`rooms/${roomId}/shots/${enemyId}`).off(); unsubShotsEnemy = null; }
-      if (unsubEnemyField) { db.ref(`rooms/${roomId}/fields/${enemyId}`).off(); unsubEnemyField = null; }
-    }
-
-    // --- Game logic ---
-    function startGame() {
-      gameStarted = true;
-      gameOver = false;
-      myField = randomShips();
-      myShips = countShips(myField);
-      enemyField = emptyField();
-      enemyShips = {4:1,3:2,2:3,1:4};
-      db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
-      db.ref(`rooms/${roomId}/players`).once('value', snap => {
-        const ids = Object.keys(snap.val());
-        myTurn = (ids[0] === playerId);
-        if (myTurn) db.ref(`rooms/${roomId}/turn`).set(playerId);
-        renderGame();
-        setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
-        listenGame();
-      });
-    }
-
-    function listenGame() {
-      if (unsubTurn) db.ref(`rooms/${roomId}/turn`).off();
-      unsubTurn = db.ref(`rooms/${roomId}/turn`).on('value', snap => {
-        myTurn = (snap.val() === playerId);
-        if (!gameOver) setStatus(myTurn ? 'Ваш ход!' : 'Ход противника...');
-        drawBoards();
-      });
-      if (unsubShotsMe) db.ref(`rooms/${roomId}/shots/${playerId}`).off();
-      unsubShotsMe = db.ref(`rooms/${roomId}/shots/${playerId}`).on('child_added', snap => {
-        const [y, x] = snap.key.split('_').map(Number);
-        if (myField[y][x] === 1) {
-          myField[y][x] = 2; // hit
-        } else if (myField[y][x] === 0) {
-          myField[y][x] = 3; // miss
-        }
-        // Проверка уничтожения корабля
-        let destroyed = markDestroyedShips(myField, y, x);
-        myShips = countShips(myField);
-        db.ref(`rooms/${roomId}/fields/${playerId}`).set(myField);
-        drawBoards();
-        if (Object.values(myShips).reduce((a,b)=>a+b,0) === 0 && !gameOver) {
-          setStatus('Вы проиграли!');
-          showModal('<div class="game-over">Вы проиграли!</div>', {button:'Ок', onClose:leaveRoom});
-          gameOver = true;
-          cleanupListeners();
-        }
-      });
-      if (unsubShotsEnemy) db.ref(`rooms/${roomId}/shots/${enemyId}`).off();
-      unsubShotsEnemy = db.ref(`rooms/${roomId}/shots/${enemyId}`).on('child_added', snap => {
-        const [y, x] = snap.key.split('_').map(Number);
-        db.ref(`rooms/${roomId}/fields/${enemyId}`).once('value', s => {
-          const field = s.val();
-          if (!field) return;
-          if (field[y][x] === 1) {
-            enemyField[y][x] = 2; // hit
-          } else {
-            enemyField[y][x] = 3; // miss
+    function listenPlayers() {
+      db.ref('crash/rounds/' + gameState.roundId + '/players').on('value', snap => {
+        gameState.players = snap.val() || {};
+        updatePlayersTable();
+        // Если игрок только что присоединился в уже идущем раунде
+        if (!joinedInRound && (gameState.status === 'started' || gameState.status === 'crashed')) {
+          if (!gameState.players[userId]) {
+            joinedInRound = true;
+            showWaitingRound();
           }
-          // Проверка уничтожения корабля
-          let destroyed = markDestroyedShips(enemyField, y, x);
-          enemyShips = countShips(enemyField);
-          drawBoards();
-          if (Object.values(enemyShips).reduce((a,b)=>a+b,0) === 0 && !gameOver) {
-            setStatus('Вы победили!');
-            showModal('<div class="game-over" style="color:#388e3c;">Вы победили!</div>', {button:'Ок', onClose:leaveRoom});
-            gameOver = true;
-            cleanupListeners();
+        }
+      });
+    }
+    function updateGameUI() {
+      if (gameState.status === 'waiting' || gameState.status === 'starting') {
+        waitingRoundDiv.style.display = 'none';
+        graphCanvas.style.display = '';
+        multiplierEl.textContent = '1.00x';
+        crashMsg.style.display = 'none';
+        betBtn.style.display = '';
+        betBtn.disabled = false;
+        betBtn.textContent = myBet ? 'Ставка сделана' : 'Сделать ставку';
+        cashoutBtn.style.display = 'none';
+        betAmountInput.disabled = !!myBet;
+        autoCashoutInput.disabled = !!myBet;
+        if (gameState.status === 'starting') {
+          let left = Math.max(0, Math.floor((gameState.nextStart - Date.now())/1000));
+          statusBar.textContent = `До старта: ${left} сек`;
+        } else {
+          statusBar.textContent = 'Ожидание следующего раунда...';
+        }
+        myCashout = null;
+        graphData = [];
+        drawGraph();
+      } else if (gameState.status === 'started') {
+        if (joinedInRound && !gameState.players[userId]) {
+          showWaitingRound();
+        } else {
+          waitingRoundDiv.style.display = 'none';
+          graphCanvas.style.display = '';
+          statusBar.textContent = 'Игра началась!';
+          betBtn.style.display = 'none';
+          cashoutBtn.style.display = '';
+          cashoutBtn.disabled = !!myCashout;
+          cashoutBtn.textContent = myCashout ? 'Забрано!' : 'Забрать';
+          crashMsg.style.display = 'none';
+          animateGraph();
+        }
+      } else if (gameState.status === 'crashed') {
+        if (joinedInRound && !gameState.players[userId]) {
+          showWaitingRound();
+        } else {
+          waitingRoundDiv.style.display = 'none';
+          graphCanvas.style.display = '';
+          statusBar.textContent = 'Игра окончена!';
+          betBtn.style.display = '';
+          betBtn.disabled = false;
+          betBtn.textContent = 'Сделать ставку';
+          cashoutBtn.style.display = 'none';
+          crashMsg.style.display = '';
+          setTimeout(() => { crashMsg.style.display = 'none'; }, 2000);
+          drawGraph(true);
+          // Выплата выигрыша если был кэшаут
+          if (myBet && myCashout && myCashout <= gameState.crashAt) {
+            const win = myBet * myCashout;
+            balance += win;
+            localStorage.setItem('crash_balance_' + userId, balance);
+            updateBalanceUI();
+          }
+          myBet = null;
+          myCashout = null;
+          betAmountInput.disabled = false;
+          autoCashoutInput.disabled = false;
+        }
+      }
+    }
+    function showWaitingRound() {
+      waitingRoundDiv.style.display = '';
+      waitingRoundDiv.textContent = 'Ожидание нового раунда';
+      graphCanvas.style.display = 'none';
+      multiplierEl.textContent = '';
+      crashMsg.style.display = 'none';
+      betBtn.style.display = '';
+      betBtn.disabled = true;
+      cashoutBtn.style.display = 'none';
+      statusBar.textContent = 'Вы присоединились в уже идущем раунде';
+    }
+    function updatePlayersTable() {
+      playersTbody.innerHTML = '';
+      const players = gameState.players || {};
+      Object.keys(players).forEach(uid => {
+        const p = players[uid];
+        const tr = document.createElement('tr');
+        if (uid === userId) tr.classList.add('you');
+        tr.innerHTML = `
+          <td>${p.name || 'Гость'}${uid === userId ? ' <b>(Вы)</b>' : ''}</td>
+          <td>${p.bet ? p.bet + '₽' : '-'}</td>
+          <td>${p.auto ? p.auto + 'x' : '-'}</td>
+          <td>${p.status === 'cashed' ? '<span style="color:var(--success)">Забрал</span>' : (p.status === 'crashed' ? '<span style="color:var(--danger)">Сгорел</span>' : '<span style="color:var(--accent)">Играет</span>')}</td>
+          <td>${p.cashout ? (p.bet * p.cashout).toFixed(2) + '₽' : '-'}</td>
+        `;
+        playersTbody.appendChild(tr);
+      });
+    }
+
+    // --- Graph ---
+    function getMultiplier(time) {
+      // Классическая формула Crash: multiplier = e^(0.00006 * t)
+      return Math.floor(100 * Math.exp(0.00006 * time)) / 100;
+    }
+    function animateGraph() {
+      if (gameState.status !== 'started') return;
+      const now = Date.now();
+      const elapsed = now - gameState.startTime;
+      const mult = getMultiplier(elapsed);
+      gameState.multiplier = mult;
+      multiplierEl.textContent = mult.toFixed(2) + 'x';
+      graphData.push({ t: elapsed, m: mult });
+      drawGraph();
+      // Автостоп
+      if (myBet && !myCashout && myAutoCashout <= mult) {
+        cashoutBtn.click();
+      }
+      graphAnimId = requestAnimationFrame(animateGraph);
+    }
+    function drawGraph(crashed) {
+      ctx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+      // Оси
+      ctx.strokeStyle = '#2c3145';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(40, graphCanvas.height - 30);
+      ctx.lineTo(40, 20);
+      ctx.moveTo(40, graphCanvas.height - 30);
+      ctx.lineTo(graphCanvas.width - 10, graphCanvas.height - 30);
+      ctx.stroke();
+      // Подписи осей
+      ctx.fillStyle = '#b0b8d1';
+      ctx.font = '14px Montserrat';
+      ctx.fillText('1x', 10, graphCanvas.height - 35);
+      ctx.fillText('Время', graphCanvas.width - 60, graphCanvas.height - 10);
+      // График
+      if (graphData.length > 1) {
+        // Масштабирование по времени и множителю
+        let maxT = Math.max(...graphData.map(d => d.t), 10000);
+        let maxM = Math.max(...graphData.map(d => d.m), 2);
+        if (crashed) maxM = Math.max(maxM, gameState.crashAt);
+        const xScale = (graphCanvas.width - 60) / maxT;
+        const yScale = (graphCanvas.height - 60) / (maxM - 1);
+        ctx.strokeStyle = crashed ? '#ff3b3b' : '#ffb300';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let i = 0; i < graphData.length; i++) {
+          const x = 40 + graphData[i].t * xScale;
+          const y = graphCanvas.height - 30 - (graphData[i].m - 1) * yScale;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        // Crash точка
+        if (crashed && graphData.length > 1) {
+          const last = graphData[graphData.length - 1];
+          const x = 40 + last.t * xScale;
+          const y = graphCanvas.height - 30 - (last.m - 1) * yScale;
+          ctx.beginPath();
+          ctx.arc(x, y, 10, 0, 2 * Math.PI);
+          ctx.fillStyle = '#ff3b3b';
+          ctx.fill();
+        }
+      }
+    }
+
+    // --- Listen game state ---
+    listenGameState();
+
+    // --- Admin: Автоматический запуск раундов (только если никого нет ведущего) ---
+    let isHost = false;
+    function tryBecomeHost() {
+      const hostRef = db.ref('crash/host');
+      hostRef.transaction(current => {
+        if (!current || current.ts < Date.now() - 20000) {
+          return { id: userId, ts: Date.now() };
+        }
+        return current;
+      }, (err, committed, snap) => {
+        if (snap && snap.val() && snap.val().id === userId) {
+          isHost = true;
+          startHostLoop();
+        }
+      });
+    }
+    function startHostLoop() {
+      setInterval(() => {
+        db.ref('crash/state').once('value').then(snap => {
+          const state = snap.val();
+          if (!state || state.status === 'crashed' || state.status === 'waiting') {
+            startRound();
           }
         });
+      }, 1000);
+    }
+    function startRound() {
+      const roundId = 'r_' + Date.now();
+      const crashAt = (Math.random() * 10 + 1.5).toFixed(2); // 1.5x - 11.5x
+      const nextStart = Date.now() + 10000;
+      db.ref('crash/state').set({
+        status: 'starting',
+        startTime: 0,
+        crashAt: parseFloat(crashAt),
+        multiplier: 1.0,
+        roundId: roundId,
+        nextStart: nextStart
       });
-      if (unsubEnemyField) db.ref(`rooms/${roomId}/fields/${enemyId}`).off();
-      unsubEnemyField = db.ref(`rooms/${roomId}/fields/${enemyId}`).on('value', snap => {
-        const field = snap.val();
-        if (!field) return;
-        enemyShips = countShips(field);
-        drawBoards();
+      db.ref('crash/rounds/' + roundId).set({
+        players: {}
       });
+      // КД 10 секунд
+      setTimeout(() => {
+        db.ref('crash/state').update({
+          status: 'waiting'
+        });
+        setTimeout(() => {
+          db.ref('crash/state').update({
+            status: 'started',
+            startTime: Date.now(),
+            multiplier: 1.0
+          });
+          runCrash(roundId, parseFloat(crashAt));
+        }, 1000);
+      }, 9000);
     }
-
-    function shoot(x, y) {
-      if (!myTurn || gameOver) return;
-      if (enemyField[y][x] === 2 || enemyField[y][x] === 3) return;
-      db.ref(`rooms/${roomId}/shots/${enemyId}/${y}_${x}`).set(true);
-      db.ref(`rooms/${roomId}/fields/${enemyId}`).once('value', snap => {
-        const field = snap.val();
-        if (!field) return;
-        if (field[y][x] === 1) {
-          enemyField[y][x] = 2; // hit
-          setStatus('Попадание! Ходите еще.');
-          // Проверка уничтожения корабля
-          let destroyed = markDestroyedShips(enemyField, y, x);
-          enemyShips = countShips(enemyField);
-          if (Object.values(enemyShips).reduce((a,b)=>a+b,0) === 0 && !gameOver) {
-            setStatus('Вы победили!');
-            showModal('<div class="game-over" style="color:#388e3c;">Вы победили!</div>', {button:'Ок', onClose:leaveRoom});
-            gameOver = true;
-            cleanupListeners();
-            return;
-          }
-        } else {
-          enemyField[y][x] = 3; // miss
-          setStatus('Мимо! Ход противника...');
-          db.ref(`rooms/${roomId}/turn`).set(enemyId);
+    function runCrash(roundId, crashAt) {
+      let running = true;
+      let start = Date.now();
+      function tick() {
+        if (!running) return;
+        const elapsed = Date.now() - start;
+        const mult = getMultiplier(elapsed);
+        if (mult >= crashAt) {
+          running = false;
+          db.ref('crash/state').update({
+            status: 'crashed',
+            multiplier: crashAt
+          });
+          // Обновить статусы игроков
+          db.ref('crash/rounds/' + roundId + '/players').once('value').then(snap => {
+            const players = snap.val() || {};
+            Object.keys(players).forEach(uid => {
+              if (!players[uid].cashout) {
+                db.ref('crash/rounds/' + roundId + '/players/' + uid + '/status').set('crashed');
+              }
+            });
+          });
+          return;
         }
-        drawBoards();
-      });
-    }
-
-    // --- Ships placement and logic ---
-    function emptyField() {
-      return Array(10).fill(0).map(() => Array(10).fill(0));
-    }
-    function randomShips() {
-      let field = emptyField();
-      let ships = [4,3,3,2,2,2,1,1,1,1];
-      for (let s of ships) {
-        let placed = false;
-        let tries = 0;
-        while (!placed && tries < 100) {
-          tries++;
-          let dir = Math.random() < 0.5 ? 'h' : 'v';
-          let x = Math.floor(Math.random() * (dir==='h'?10-s+1:10));
-          let y = Math.floor(Math.random() * (dir==='v'?10-s+1:10));
-          let ok = true;
-          for (let i=0;i<s;i++) {
-            let xx = x + (dir==='h'?i:0), yy = y + (dir==='v'?i:0);
-            if (field[yy][xx] !== 0) ok = false;
-            for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++) {
-              let nx=xx+dx, ny=yy+dy;
-              if (nx>=0&&nx<10&&ny>=0&&ny<10&&field[ny][nx]===1) ok=false;
-            }
-          }
-          if (ok) {
-            for (let i=0;i<s;i++) {
-              let xx = x + (dir==='h'?i:0), yy = y + (dir==='v'?i:0);
-              field[yy][xx]=1;
-            }
-            placed = true;
-          }
-        }
-        if (!placed) {
-          for (let y=0;y<10;y++) for (let x=0;x<10;x++) if (field[y][x]===0) { field[y][x]=1; placed=true; break; }
-        }
+        db.ref('crash/state').update({
+          multiplier: mult
+        });
+        setTimeout(tick, 50);
       }
-      return field;
+      tick();
     }
+    tryBecomeHost();
 
-    // Подсчет кораблей по размерам
-    function countShips(field) {
-      let visited = Array(10).fill(0).map(()=>Array(10).fill(false));
-      let ships = {4:0,3:0,2:0,1:0};
-      for (let y=0;y<10;y++) for (let x=0;x<10;x++) {
-        if (field[y][x]===1 && !visited[y][x]) {
-          let size = getShipSize(field, x, y, visited);
-          if (size>=1 && size<=4) ships[size]++;
-        }
-      }
-      return ships;
-    }
-    function getShipSize(field, x, y, visited) {
-      let size = 0;
-      let stack = [[x,y]];
-      let dir = null;
-      while (stack.length) {
-        let [cx,cy] = stack.pop();
-        if (cx<0||cy<0||cx>=10||cy>=10) continue;
-        if (visited[cy][cx]) continue;
-        if (field[cy][cx]!==1) continue;
-        visited[cy][cx]=true;
-        size++;
-        // Определяем направление
-        if (dir===null) {
-          if (cx+1<10 && field[cy][cx+1]===1) dir='h';
-          else if (cy+1<10 && field[cy+1][cx]===1) dir='v';
-        }
-        if (dir==='h') {
-          stack.push([cx+1,cy]);
-          stack.push([cx-1,cy]);
-        } else if (dir==='v') {
-          stack.push([cx,cy+1]);
-          stack.push([cx,cy-1]);
-        } else {
-          stack.push([cx+1,cy]);
-          stack.push([cx-1,cy]);
-          stack.push([cx,cy+1]);
-          stack.push([cx,cy-1]);
-        }
-      }
-      return size;
-    }
+    // --- Не сбрасывать баланс при перезагрузке ---
+    // window.onbeforeunload = () => {};
 
-    // Проверка уничтожения корабля и обводка вокруг
-    function markDestroyedShips(field, y, x) {
-      let shipCells = getShipCells(field, x, y, [2]);
-      if (!shipCells.length) return false;
-      // Проверяем, все ли клетки корабля подбиты
-      let destroyed = shipCells.every(([xx,yy])=>field[yy][xx]===2);
-      if (destroyed) {
-        // Обводим вокруг корабля промахами
-        for (let [xx,yy] of shipCells) {
-          for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++) {
-            let nx=xx+dx, ny=yy+dy;
-            if (nx>=0&&nx<10&&ny>=0&&ny<10) {
-              if (field[ny][nx]===0) field[ny][nx]=3;
-            }
-          }
-        }
+    // --- Таймер обновления статуса ---
+    setInterval(() => {
+      if (gameState.status === 'starting') {
+        let left = Math.max(0, Math.floor((gameState.nextStart - Date.now())/1000));
+        statusBar.textContent = `До старта: ${left} сек`;
       }
-      return destroyed;
-    }
-    // Получить все клетки корабля (по координате)
-    function getShipCells(field, x, y, allowed=[1,2]) {
-      let res = [];
-      let visited = Array(10).fill(0).map(()=>Array(10).fill(false));
-      let val = field[y][x];
-      if (!allowed.includes(val)) return [];
-      let stack = [[x,y]];
-      while (stack.length) {
-        let [cx,cy] = stack.pop();
-        if (cx<0||cy<0||cx>=10||cy>=10) continue;
-        if (visited[cy][cx]) continue;
-        if (!allowed.includes(field[cy][cx])) continue;
-        visited[cy][cx]=true;
-        res.push([cx,cy]);
-        stack.push([cx+1,cy]);
-        stack.push([cx-1,cy]);
-        stack.push([cx,cy+1]);
-        stack.push([cx,cy-1]);
-      }
-      return res;
-    }
+    }, 200);
 
-    // --- Initial render ---
-    renderLobby(1, [{id:playerId, name:playerName, photo:playerPhoto}]);
   </script>
 </body>
 </html>
