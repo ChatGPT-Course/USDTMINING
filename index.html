@@ -3,7 +3,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Crash Game</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -23,17 +23,15 @@
       --transition: 0.2s cubic-bezier(.4,0,.2,1);
     }
     * { box-sizing: border-box; }
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       background: var(--main-bg);
       color: var(--text);
       font-family: 'Montserrat', sans-serif;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      width: 100vw;
+      overflow-x: hidden;
     }
     .centered {
       display: flex;
@@ -41,6 +39,7 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      width: 100vw;
     }
     .btn {
       background: var(--accent);
@@ -54,6 +53,9 @@
       box-shadow: var(--shadow);
       transition: background var(--transition), transform var(--transition);
       margin: 12px 0;
+      width: 100%;
+      max-width: 350px;
+      outline: none;
     }
     .btn:disabled {
       background: #b0b8d1;
@@ -69,43 +71,47 @@
       background: var(--panel-bg);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 32px 24px 24px 24px;
-      max-width: 900px;
-      width: 100%;
-      margin: 32px auto;
+      padding: 24px 8px 16px 8px;
+      max-width: 430px;
+      width: 100vw;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
       position: relative;
+      min-height: 100vh;
     }
     .balance {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--accent);
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       letter-spacing: 1px;
+      text-align: center;
+      width: 100%;
     }
     .crash-graph {
       width: 100%;
-      max-width: 700px;
-      height: 320px;
+      max-width: 400px;
+      height: 220px;
       background: #1a1e2d;
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      margin-bottom: 24px;
+      margin-bottom: 18px;
       position: relative;
       overflow: hidden;
       border: 2px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
+      min-width: 0;
     }
     .crash-multiplier {
       position: absolute;
-      top: 24px;
+      top: 18px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 2.8rem;
+      font-size: 2.1rem;
       font-weight: 700;
       color: var(--accent);
       text-shadow: 0 2px 12px #000a;
@@ -116,67 +122,108 @@
     }
     .bet-panel {
       display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .bet-row {
+      display: flex;
       flex-direction: row;
-      align-items: center;
-      gap: 18px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
     }
     .bet-panel input[type="number"] {
       background: #23283a;
       color: var(--text);
       border: 2px solid var(--border);
       border-radius: var(--radius);
-      padding: 10px 18px;
+      padding: 10px 12px;
       font-size: 1.1rem;
-      width: 110px;
+      width: 100%;
       outline: none;
       transition: border var(--transition);
+      text-align: center;
     }
     .bet-panel input[type="number"]:focus {
       border: 2px solid var(--accent);
     }
-    .bet-panel .btn {
-      padding: 12px 28px;
-      font-size: 1.1rem;
-      margin: 0;
-    }
-    .auto-cashout {
+    .auto-cashout-row {
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: var(--text-muted);
+      gap: 8px;
       font-size: 1rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      margin-bottom: 2px;
     }
-    .auto-cashout input[type="number"] {
+    .auto-cashout-row input[type="number"] {
       width: 70px;
       padding: 6px 10px;
       font-size: 1rem;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+    .switch input { display: none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #b0b8d1;
+      border-radius: 24px;
+      transition: .3s;
+    }
+    .slider:before {
+      position: absolute;
+      content: '';
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .3s;
+    }
+    input:checked + .slider {
+      background: var(--accent);
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
     }
     .players-list {
       background: #23283a;
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px 18px 12px 18px;
-      margin-top: 18px;
+      padding: 10px 6px 6px 6px;
+      margin-top: 10px;
       width: 100%;
-      max-width: 700px;
-      min-height: 80px;
+      max-width: 400px;
+      min-height: 60px;
+      overflow-x: auto;
     }
     .players-list-title {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       font-weight: 700;
+      text-align: center;
     }
     .players-table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 0.98rem;
     }
     .players-table th, .players-table td {
-      padding: 6px 8px;
+      padding: 4px 4px;
       text-align: left;
-      font-size: 1rem;
+      font-size: 0.98rem;
+      white-space: nowrap;
     }
     .players-table th {
       color: var(--text-muted);
@@ -189,27 +236,28 @@
       border-bottom: none;
     }
     .status-bar {
-      margin: 12px 0 0 0;
-      font-size: 1.1rem;
+      margin: 8px 0 0 0;
+      font-size: 1.05rem;
       color: var(--text-muted);
       text-align: center;
-      min-height: 28px;
+      min-height: 24px;
     }
     .crash {
       color: var(--danger);
       font-weight: 700;
-      font-size: 2.2rem;
+      font-size: 1.5rem;
       text-shadow: 0 2px 12px #000a;
-      margin-top: 12px;
+      margin-top: 8px;
       animation: crash-pop 0.7s cubic-bezier(.4,0,.2,1);
+      text-align: center;
     }
     .waiting-round {
       color: var(--accent);
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       font-weight: 700;
       text-align: center;
       width: 100%;
-      padding: 60px 0;
+      padding: 40px 0;
       letter-spacing: 1px;
     }
     @keyframes crash-pop {
@@ -217,24 +265,23 @@
       60% { transform: scale(1.2); opacity: 1; }
       100% { transform: scale(1); opacity: 1; }
     }
-    @media (max-width: 900px) {
-      .game-container { max-width: 99vw; padding: 12px 2vw; }
-      .crash-graph, .players-list { max-width: 99vw; }
-    }
-    @media (max-width: 600px) {
-      .crash-graph { height: 180px; }
-      .crash-multiplier { font-size: 1.7rem; }
-      .bet-panel { flex-direction: column; gap: 10px; }
-      .players-list { padding: 8px; }
-    }
     .you {
       background: rgba(255, 179, 0, 0.08);
+    }
+    @media (max-width: 500px) {
+      .game-container, .crash-graph, .players-list { max-width: 99vw; }
+      .crash-graph { height: 150px; }
+      .crash-multiplier { font-size: 1.2rem; }
+      .players-list { padding: 4px; }
+      .btn { font-size: 1.1rem; padding: 12px 0; }
+      .bet-panel input[type="number"] { font-size: 1rem; }
+      .players-table th, .players-table td { font-size: 0.9rem; }
     }
   </style>
 </head>
 <body>
   <div id="main-menu" class="centered">
-    <h1 style="font-size:2.7rem; font-weight:800; margin-bottom:32px; letter-spacing:2px;">Crash Game</h1>
+    <h1 style="font-size:2.1rem; font-weight:800; margin-bottom:24px; letter-spacing:2px;">Crash Game</h1>
     <button class="btn" id="play-btn">Играть в краш</button>
   </div>
   <div id="game" style="display:none;">
@@ -242,19 +289,25 @@
       <div class="balance" id="balance">Баланс: 100₽</div>
       <div class="crash-graph" id="crash-graph">
         <div class="crash-multiplier" id="multiplier">1.00x</div>
-        <canvas id="graph-canvas" width="700" height="320" style="width:100%;height:100%;position:absolute;top:0;left:0;"></canvas>
+        <canvas id="graph-canvas" width="400" height="220" style="width:100%;height:100%;position:absolute;top:0;left:0;"></canvas>
         <div id="waiting-round" class="waiting-round" style="display:none;">Ожидание нового раунда</div>
       </div>
-      <div class="bet-panel">
-        <input type="number" id="bet-amount" min="10" max="10000" step="1" value="10" placeholder="Ставка (₽)">
-        <div class="auto-cashout">
-          Автостоп:
-          <input type="number" id="auto-cashout" min="1.01" max="100" step="0.01" value="2.00">
-          x
+      <form class="bet-panel" onsubmit="return false;">
+        <div class="bet-row">
+          <input type="number" id="bet-amount" min="10" max="10000" step="1" value="10" placeholder="Ставка (₽)">
+          <button class="btn" id="bet-btn" type="button">Сделать ставку</button>
         </div>
-        <button class="btn" id="bet-btn">Сделать ставку</button>
-        <button class="btn" id="cashout-btn" style="display:none;background:var(--success);color:#fff;">Забрать</button>
-      </div>
+        <div class="auto-cashout-row">
+          <label for="auto-cashout-switch">Автостоп</label>
+          <label class="switch">
+            <input type="checkbox" id="auto-cashout-switch" checked>
+            <span class="slider"></span>
+          </label>
+          <input type="number" id="auto-cashout" min="1.01" max="100" step="0.01" value="2.00">
+          <span>x</span>
+        </div>
+        <button class="btn" id="cashout-btn" style="display:none;background:var(--success);color:#fff;" type="button">Забрать</button>
+      </form>
       <div class="status-bar" id="status-bar">Ожидание следующего раунда...</div>
       <div id="crash-msg" class="crash" style="display:none;">CRASH!</div>
       <div class="players-list">
@@ -349,6 +402,7 @@
     let myBet = null;
     let myAutoCashout = 2.00;
     let myCashout = null;
+    let autoCashoutEnabled = true;
     let graphData = [];
     let graphAnimId = null;
     let joinedInRound = false;
@@ -361,6 +415,7 @@
     const cashoutBtn = document.getElementById('cashout-btn');
     const betAmountInput = document.getElementById('bet-amount');
     const autoCashoutInput = document.getElementById('auto-cashout');
+    const autoCashoutSwitch = document.getElementById('auto-cashout-switch');
     const playersTbody = document.getElementById('players-tbody');
     const graphCanvas = document.getElementById('graph-canvas');
     const ctx = graphCanvas.getContext('2d');
@@ -374,7 +429,7 @@
         alert('Некорректная сумма ставки!');
         return;
       }
-      if (isNaN(auto) || auto < 1.01 || auto > 100) {
+      if (autoCashoutEnabled && (isNaN(auto) || auto < 1.01 || auto > 100)) {
         alert('Некорректный автостоп!');
         return;
       }
@@ -386,12 +441,13 @@
       myAutoCashout = auto;
       betAmountInput.disabled = true;
       autoCashoutInput.disabled = true;
+      autoCashoutSwitch.disabled = true;
       betBtn.disabled = true;
       betBtn.textContent = 'Ставка сделана';
       db.ref('crash/rounds/' + gameState.roundId + '/players/' + userId).set({
         name: userName,
         bet: bet,
-        auto: auto,
+        auto: autoCashoutEnabled ? auto : null,
         status: 'playing',
         cashout: null
       });
@@ -412,6 +468,11 @@
       autoCashoutInput.value = v.toFixed(2);
       myAutoCashout = v;
     };
+    autoCashoutSwitch.onchange = () => {
+      autoCashoutEnabled = autoCashoutSwitch.checked;
+      autoCashoutInput.disabled = !autoCashoutEnabled;
+      autoCashoutInput.style.opacity = autoCashoutEnabled ? '1' : '0.5';
+    };
 
     // --- Game loop ---
     function listenGameState() {
@@ -430,7 +491,8 @@
           myBet = null;
           myCashout = null;
           betAmountInput.disabled = false;
-          autoCashoutInput.disabled = false;
+          autoCashoutInput.disabled = !autoCashoutEnabled;
+          autoCashoutSwitch.disabled = false;
           betBtn.disabled = false;
           betBtn.textContent = 'Сделать ставку';
         }
@@ -458,11 +520,12 @@
         multiplierEl.textContent = '1.00x';
         crashMsg.style.display = 'none';
         betBtn.style.display = '';
-        betBtn.disabled = false;
+        betBtn.disabled = !!myBet;
         betBtn.textContent = myBet ? 'Ставка сделана' : 'Сделать ставку';
         cashoutBtn.style.display = 'none';
         betAmountInput.disabled = !!myBet;
-        autoCashoutInput.disabled = !!myBet;
+        autoCashoutInput.disabled = !!myBet || !autoCashoutEnabled;
+        autoCashoutSwitch.disabled = !!myBet;
         if (gameState.status === 'starting') {
           let left = Math.max(0, Math.floor((gameState.nextStart - Date.now())/1000));
           statusBar.textContent = `До старта: ${left} сек`;
@@ -510,7 +573,8 @@
           myBet = null;
           myCashout = null;
           betAmountInput.disabled = false;
-          autoCashoutInput.disabled = false;
+          autoCashoutInput.disabled = !autoCashoutEnabled;
+          autoCashoutSwitch.disabled = false;
         }
       }
     }
@@ -558,7 +622,7 @@
       graphData.push({ t: elapsed, m: mult });
       drawGraph();
       // Автостоп
-      if (myBet && !myCashout && myAutoCashout <= mult) {
+      if (myBet && !myCashout && autoCashoutEnabled && myAutoCashout <= mult) {
         cashoutBtn.click();
       }
       graphAnimId = requestAnimationFrame(animateGraph);
@@ -576,7 +640,7 @@
       ctx.stroke();
       // Подписи осей
       ctx.fillStyle = '#b0b8d1';
-      ctx.font = '14px Montserrat';
+      ctx.font = '13px Montserrat';
       ctx.fillText('1x', 10, graphCanvas.height - 35);
       ctx.fillText('Время', graphCanvas.width - 60, graphCanvas.height - 10);
       // График
@@ -585,6 +649,9 @@
         let maxT = Math.max(...graphData.map(d => d.t), 10000);
         let maxM = Math.max(...graphData.map(d => d.m), 2);
         if (crashed) maxM = Math.max(maxM, gameState.crashAt);
+        // Ограничим масштаб, чтобы график не вылазил
+        maxT = Math.max(maxT, 5000);
+        maxM = Math.max(maxM, 2.5);
         const xScale = (graphCanvas.width - 60) / maxT;
         const yScale = (graphCanvas.height - 60) / (maxM - 1);
         ctx.strokeStyle = crashed ? '#ff3b3b' : '#ffb300';
@@ -701,9 +768,6 @@
       tick();
     }
     tryBecomeHost();
-
-    // --- Не сбрасывать баланс при перезагрузке ---
-    // window.onbeforeunload = () => {};
 
     // --- Таймер обновления статуса ---
     setInterval(() => {
