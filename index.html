@@ -8,196 +8,148 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
             height: 100vh;
-        }
-        
-        .construction-container {
-            flex: 1;
-            position: relative;
             overflow: hidden;
-            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+            background: linear-gradient(to bottom, #1a2980, #26d0ce);
+            font-family: Arial, sans-serif;
         }
         
-        .tower {
+        .sky {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .rocket {
             position: absolute;
-            bottom: 0;
+            width: 80px;
+            height: 120px;
+            bottom: 20%;
             left: 50%;
             transform: translateX(-50%);
-            width: 100px;
-            height: 0;
-            background-color: #795548;
-            animation: buildTower 5s linear infinite;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ff5722" d="M12,2.5c0,0,4.5,2.04,4.5,10.5c0,2.49-1.04,5.57-1.6,7H9.1c-0.56-1.43-1.6-4.51-1.6-7C7.5,4.54,12,2.5,12,2.5z"/><path fill="%23ff9800" d="M10.5,16.5c0,0.83,0.67,1.5,1.5,1.5s1.5-0.67,1.5-1.5V14h-3V16.5z"/><path fill="%23ffc107" d="M12,18.5c0.83,0,1.5,0.67,1.5,1.5s-0.67,1.5-1.5,1.5s-1.5-0.67-1.5-1.5S11.17,18.5,12,18.5z"/><path fill="%23ffeb3b" d="M17,16.5c0,0.83-0.67,1.5-1.5,1.5S14,17.33,14,16.5S14.67,15,15.5,15S17,15.67,17,16.5z"/><path fill="%23ff5722" d="M7,16.5c0,0.83,0.67,1.5,1.5,1.5S10,17.33,10,16.5S9.33,15,8.5,15S7,15.67,7,16.5z"/></svg>') no-repeat center;
+            background-size: contain;
+            animation: fly 8s ease-in-out infinite;
+            z-index: 10;
         }
         
-        .crane {
+        .flame {
             position: absolute;
-            bottom: 0;
+            width: 40px;
+            height: 80px;
+            bottom: -70px;
             left: 50%;
             transform: translateX(-50%);
-            width: 4px;
-            height: 200px;
-            background-color: #333;
-            animation: moveCrane 5s linear infinite;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23ffeb3b" d="M12,23c0,0-5-3-5-8c0-2,1-3,1-5c0-2-1-3-1-5c0-3,5-5,5-5s5,2,5,5c0,2-1,3-1,5c0,2,1,3,1,5C17,20,12,23,12,23z"/></svg>') no-repeat center;
+            background-size: contain;
+            animation: flicker 0.3s ease-in-out infinite alternate;
+            z-index: 9;
         }
         
-        .crane-arm {
+        .cloud {
             position: absolute;
-            top: 0;
-            left: 50%;
-            width: 100px;
-            height: 4px;
-            background-color: #333;
-            transform-origin: left center;
-            animation: rotateArm 5s linear infinite;
-        }
-        
-        .brick {
-            position: absolute;
-            width: 30px;
-            height: 15px;
-            background-color: #8D6E63;
-            border-radius: 2px;
-            animation: moveBrick 5s linear infinite;
-        }
-        
-        .worker {
-            position: absolute;
-            width: 20px;
-            height: 40px;
-            background-color: #3E2723;
-            border-radius: 10px 10px 0 0;
-            bottom: 0;
-            left: 50%;
-            margin-left: -60px;
-            animation: work 2.5s ease-in-out infinite;
-        }
-        
-        .worker:nth-child(2) {
-            margin-left: 40px;
-            animation-delay: 0.5s;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: moveCloud linear infinite;
         }
         
         .status-text {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
             text-align: center;
-            padding: 20px;
-            background-color: #333;
             color: white;
-            font-size: 18px;
+            font-size: 24px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            z-index: 100;
         }
         
-        @keyframes buildTower {
-            0% { height: 0; }
-            100% { height: 100vh; }
-        }
-        
-        @keyframes moveCrane {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(-20px); }
-        }
-        
-        @keyframes rotateArm {
-            0% { transform: rotate(-30deg); }
-            50% { transform: rotate(30deg); }
-            100% { transform: rotate(-30deg); }
-        }
-        
-        @keyframes moveBrick {
-            0% { 
-                top: 50px;
-                left: 50%;
-                opacity: 0;
-                transform: translateX(-50%) translateY(0);
+        @keyframes fly {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0) rotate(0deg);
             }
-            10% { opacity: 1; }
-            50% { 
-                top: 150px;
-                left: 50%;
-                transform: translateX(-50%) translateY(0);
+            25% {
+                transform: translateX(-55%) translateY(-20px) rotate(-5deg);
             }
-            100% { 
-                top: 150px;
-                left: 50%;
-                opacity: 0;
-                transform: translateX(-50%) translateY(200px);
+            50% {
+                transform: translateX(-45%) translateY(-40px) rotate(5deg);
+            }
+            75% {
+                transform: translateX(-55%) translateY(-20px) rotate(-5deg);
             }
         }
         
-        @keyframes work {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        @keyframes flicker {
+            0% {
+                transform: translateX(-50%) scaleY(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-50%) scaleY(1.2);
+                opacity: 0.8;
+            }
         }
         
-        @keyframes buildTower {
-            0% { height: 0; }
-            100% { height: 100vh; }
+        @keyframes moveCloud {
+            0% {
+                transform: translateX(100vw);
+            }
+            100% {
+                transform: translateX(-200px);
+            }
         }
     </style>
 </head>
 <body>
-    <div class="construction-container">
-        <div class="tower"></div>
-        <div class="crane">
-            <div class="crane-arm"></div>
-        </div>
-        <div class="brick"></div>
-        <div class="worker"></div>
-        <div class="worker"></div>
+    <div class="sky" id="sky">
+        <div class="rocket"></div>
+        <div class="flame"></div>
     </div>
     <div class="status-text">
-        Приложение в разработке... Пожалуйста, подождите
+        Приложение в разработке... Мы летим к вам!
     </div>
     
     <script>
-        // Создаем кирпичи для анимации
-        function createBricks() {
-            const container = document.querySelector('.construction-container');
+        // Создаем облака
+        function createClouds() {
+            const sky = document.getElementById('sky');
+            const cloudCount = 10;
             
-            setInterval(() => {
-                const brick = document.createElement('div');
-                brick.className = 'brick';
+            for (let i = 0; i < cloudCount; i++) {
+                const cloud = document.createElement('div');
+                cloud.className = 'cloud';
                 
-                // Начальная позиция (вверху крана)
-                const startX = window.innerWidth / 2 - 15;
-                const startY = 50;
+                // Случайные параметры облаков
+                const size = Math.random() * 100 + 50;
+                const top = Math.random() * 70 + 10;
+                const opacity = Math.random() * 0.5 + 0.3;
+                const duration = Math.random() * 30 + 20;
+                const delay = Math.random() * -20;
                 
-                brick.style.left = startX + 'px';
-                brick.style.top = startY + 'px';
+                cloud.style.width = `${size}px`;
+                cloud.style.height = `${size * 0.6}px`;
+                cloud.style.top = `${top}%`;
+                cloud.style.opacity = opacity;
+                cloud.style.animationDuration = `${duration}s`;
+                cloud.style.animationDelay = `${delay}s`;
                 
-                container.appendChild(brick);
-                
-                // Удаляем кирпич после анимации
-                setTimeout(() => {
-                    brick.remove();
-                }, 5000);
-            }, 500);
+                sky.appendChild(cloud);
+            }
         }
         
-        // Запускаем анимацию башни
-        function animateTower() {
-            const tower = document.querySelector('.tower');
-            let height = 0;
-            const maxHeight = window.innerHeight;
-            
-            const interval = setInterval(() => {
-                height += 2;
-                tower.style.height = height + 'px';
-                
-                if (height >= maxHeight) {
-                    height = 0;
-                    tower.style.height = '0';
-                }
-            }, 100);
-        }
-        
-        // Инициализация анимации
+        // Запускаем анимацию при загрузке
         window.onload = function() {
-            createBricks();
-            animateTower();
+            createClouds();
+            
+            // Добавляем мерцание звезд (опционально)
+            setInterval(() => {
+                const stars = document.querySelectorAll('.star');
+                stars.forEach(star => {
+                    star.style.opacity = Math.random() * 0.8 + 0.2;
+                });
+            }, 1000);
         };
     </script>
 </body>
