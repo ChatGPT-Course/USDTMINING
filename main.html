@@ -256,28 +256,44 @@
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         
-        // Конфигурация NocoDB API
-        const NOCODB_API = "https://app.nocodb.com/#/weamcfo6/p27jdsmk69wuimh/mvsq6em9m8dcluy"; // Замените на ваш URL API NocoDB
-        const NOCODB_API_KEY = "bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ"; // Замените на ваш API ключ
-        const TABLE_NAME = "Ymvsq6em9m8dcluy"; // Замените на название вашей таблицы
+        // Конфигурация NocoDB API (ЗАМЕНИТЕ НА СВОИ ДАННЫЕ)
+        const config = {
+          orgs: 'weamcfo6',                   // Организация (из URL)
+          projectName: 'p27jdsmk69wuimh',      // Имя проекта (из URL)
+          tableName: 'mvsq6em9m8dcluy',        // Новое имя таблицы (из URL)
+          apiToken: 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ', // Ваш API токен (оставляю ваш)
+          apiVersion: 'v1'                     // Версия API (обычно 'v1')
+        };
+        
+        // Формируем базовый URL для API запросов
+        const BASE_API_URL = `https://api.nocodb.com/api/${config.apiVersion}/db/data`;
+        const TABLE_API_URL = `${BASE_API_URL}/${config.orgs}/${config.projectName}/${config.tableName}`;
+        
+        // Заголовки для запросов
+        const API_HEADERS = {
+          'Content-Type': 'application/json',
+          'xc-token': config.apiToken
+        };
         
         // Проверка и создание пользователя в NocoDB
         async function checkOrCreateUser() {
             const user = tg.initDataUnsafe.user;
-            if (!user) return;
+            if (!user) {
+                console.error('Пользователь Telegram не определен');
+                return;
+            }
             
             try {
-                // Проверяем существование пользователя
-                const checkResponse = await fetch(`${NOCODB_API}/api/v1/db/data/v1/${TABLE_NAME}?where=(tg_user_id,eq,${user.id})`, {
-                    headers: {
-                        'xc-auth': NOCODB_API_KEY
-                    }
+                // 1. Проверяем существование пользователя
+                const checkUrl = `${TABLE_API_URL}?where=(tg_user_id,eq,${user.id})`;
+                const checkResponse = await fetch(checkUrl, {
+                    headers: API_HEADERS
                 });
                 
                 const data = await checkResponse.json();
                 
-                // Если пользователь не найден, создаем новую запись
-                if (data.list.length === 0) {
+                // 2. Если пользователь не найден, создаем новую запись
+                if (data.list && data.list.length === 0) {
                     const newUser = {
                         tg_user_id: user.id,
                         tg_username: user.username ? `@${user.username}` : 'unknown',
@@ -285,41 +301,51 @@
                         stars: 0
                     };
                     
-                    await fetch(`${NOCODB_API}/api/v1/db/data/v1/${TABLE_NAME}`, {
+                    const createResponse = await fetch(TABLE_API_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'xc-auth': NOCODB_API_KEY
-                        },
+                        headers: API_HEADERS,
                         body: JSON.stringify(newUser)
                     });
                     
-                    console.log('Новый пользователь создан');
+                    const result = await createResponse.json();
+                    console.log('Новый пользователь создан:', result);
+                    
+                    // Обновляем данные на странице
+                    updateUserInfo(newUser);
+                } else if (data.list && data.list.length > 0) {
+                    // 3. Если пользователь найден, обновляем данные на странице
+                    updateUserInfo(data.list[0]);
                 }
             } catch (error) {
                 console.error('Ошибка при работе с NocoDB:', error);
+                // В случае ошибки показываем заглушки
+                document.getElementById('username').textContent = '@' + (user.username || 'username');
+                document.getElementById('name').textContent = user.first_name || 'Пользователь';
             }
         }
         
-        // Загрузка данных пользователя
+        // Обновление информации о пользователе на странице
+        function updateUserInfo(userData) {
+            document.getElementById('username').textContent = userData.tg_username || `@unknown`;
+            document.getElementById('name').textContent = userData.tg_name || 'Пользователь';
+            document.getElementById('balance').textContent = userData.stars || 0;
+        }
+        
+        // Загрузка данных пользователя (для автообновления)
         async function loadUserData() {
             const user = tg.initDataUnsafe.user;
             if (!user) return;
             
             try {
-                const response = await fetch(`${NOCODB_API}/api/v1/db/data/v1/${TABLE_NAME}?where=(tg_user_id,eq,${user.id})`, {
-                    headers: {
-                        'xc-auth': NOCODB_API_KEY
-                    }
+                const url = `${TABLE_API_URL}?where=(tg_user_id,eq,${user.id})`;
+                const response = await fetch(url, {
+                    headers: API_HEADERS
                 });
                 
                 const data = await response.json();
                 
-                if (data.list.length > 0) {
-                    const userData = data.list[0];
-                    document.getElementById('username').textContent = userData.tg_username || `@${user.username}`;
-                    document.getElementById('name').textContent = userData.tg_name || user.first_name || 'Пользователь';
-                    document.getElementById('balance').textContent = userData.stars || 0;
+                if (data.list && data.list.length > 0) {
+                    updateUserInfo(data.list[0]);
                 }
             } catch (error) {
                 console.error('Ошибка при загрузке данных:', error);
@@ -335,16 +361,11 @@
                 const star = document.createElement('div');
                 star.classList.add('star');
                 
-                // Случайный размер от 2 до 10px
                 const size = Math.random() * 8 + 2;
                 star.style.width = `${size}px`;
                 star.style.height = `${size}px`;
-                
-                // Случайная позиция
                 star.style.left = `${Math.random() * 100}%`;
                 star.style.top = `${Math.random() * 100}%`;
-                
-                // Случайная задержка анимации
                 star.style.animationDelay = `${Math.random() * 5}s`;
                 star.style.animationDuration = `${10 + Math.random() * 20}s`;
                 
@@ -352,20 +373,21 @@
             }
         }
         
-        // Инициализация
+        // Инициализация приложения
         document.addEventListener('DOMContentLoaded', async () => {
             createStars();
-            
-            // Развернуть приложение на весь экран
             tg.expand();
             
-            // Работа с NocoDB
             if (tg.initDataUnsafe.user) {
+                // Первоначальная загрузка данных
                 await checkOrCreateUser();
-                await loadUserData();
                 
-                // Обновляем данные каждые 5 секунд
+                // Автообновление каждые 5 секунд
                 setInterval(loadUserData, 5000);
+            } else {
+                // Заглушки, если нет данных пользователя
+                document.getElementById('username').textContent = '@username';
+                document.getElementById('name').textContent = 'Гость';
             }
         });
     </script>
