@@ -9,7 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
-        /* Ваши стили остаются без изменений */
         body {
             margin: 0;
             padding: 0;
@@ -57,11 +56,31 @@
             box-sizing: border-box;
         }
         
+        .name-card {
+            background-color: #1a1a2a;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
         .name {
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 20px;
             color: #ffffff;
+            margin: 0;
+        }
+        
+        .settings-btn {
+            background: none;
+            border: none;
+            color: #40e0d0;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
         }
         
         .balance-card {
@@ -77,6 +96,30 @@
         .sticker {
             font-size: 36px;
             margin-right: 15px;
+            position: relative;
+        }
+        
+        .star-particle {
+            position: absolute;
+            background-color: gold;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle 2s infinite ease-out;
+        }
+        
+        @keyframes particle {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+                width: 2px;
+                height: 2px;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty));
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
         }
         
         .balance-info {
@@ -139,13 +182,56 @@
             background-color: rgba(231, 76, 60, 0.2);
         }
         
-        .btn-deposit .btn-icon {
-            color: #2ecc71;
-            transform: rotate(180deg);
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+            position: relative;
         }
         
-        .btn-withdraw .btn-icon {
-            color: #e74c3c;
+        .btn-deposit .btn-icon::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background-color: #2ecc71;
+            transform: translateX(-50%);
+        }
+        
+        .btn-deposit .btn-icon::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border-left: 2px solid #2ecc71;
+            border-bottom: 2px solid #2ecc71;
+            transform: translateX(-50%) rotate(-45deg);
+        }
+        
+        .btn-withdraw .btn-icon::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background-color: #e74c3c;
+            transform: translateX(-50%);
+        }
+        
+        .btn-withdraw .btn-icon::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border-left: 2px solid #e74c3c;
+            border-bottom: 2px solid #e74c3c;
+            transform: translateX(-50%) rotate(135deg);
         }
         
         .history-btn {
@@ -157,7 +243,7 @@
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s;
-            background-color: #1a1a2a;
+            background-color: #2a2a3a;
             color: white;
             margin-bottom: 60px;
         }
@@ -195,16 +281,108 @@
         .nav-item.active .nav-icon {
             color: #40e0d0;
         }
+        
+        /* Стили для попапа настроек */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .popup-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .popup-content {
+            background-color: #1a1a2a;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .popup-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #a0a0a0;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .popup-title {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #40e0d0;
+        }
+        
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .form-input {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #2a2a3a;
+            background-color: #2a2a3a;
+            color: white;
+            font-family: inherit;
+        }
+        
+        .save-btn {
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            background-color: #40e0d0;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div id="space-background"></div>
     
     <div class="container">
-        <div class="name" id="name">Загрузка...</div>
+        <div class="name-card">
+            <div class="name" id="name">Загрузка...</div>
+            <button class="settings-btn" id="settingsBtn">⚙️</button>
+        </div>
         
         <div class="balance-card">
-            <div class="sticker">⭐</div>
+            <div class="sticker" id="starSticker">⭐
+                <!-- Частицы будут добавляться через JS -->
+            </div>
             <div class="balance-info">
                 <div class="balance-label">STARS</div>
                 <div class="balance-amount" id="balance">0</div>
@@ -214,13 +392,13 @@
         <div class="action-buttons">
             <button class="btn btn-deposit">
                 <div class="btn-circle">
-                    <div class="btn-icon">⬆️</div>
+                    <div class="btn-icon"></div>
                 </div>
                 <div>Пополнить</div>
             </button>
             <button class="btn btn-withdraw">
                 <div class="btn-circle">
-                    <div class="btn-icon">⬆️</div>
+                    <div class="btn-icon"></div>
                 </div>
                 <div>Вывести</div>
             </button>
@@ -242,6 +420,29 @@
             <span class="nav-icon">🤝</span>
             <span>Партнерство</span>
         </a>
+    </div>
+
+    <!-- Попап настроек -->
+    <div class="popup-overlay" id="settingsPopup">
+        <div class="popup-content">
+            <button class="popup-close" id="closePopup">✕</button>
+            <h3 class="popup-title">Настройки</h3>
+            <form class="settings-form" id="settingsForm">
+                <div class="form-group">
+                    <label class="form-label">TON Кошелек</label>
+                    <input type="text" class="form-input" id="tonWallet" placeholder="Введите адрес TON кошелька">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Юзернейм для вывода</label>
+                    <input type="text" class="form-input" id="withdrawUsername" placeholder="Ваш юзернейм">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">USDT Кошелек</label>
+                    <input type="text" class="form-input" id="usdtWallet" placeholder="Введите адрес USDT кошелька">
+                </div>
+                <button type="submit" class="save-btn">Сохранить</button>
+            </form>
+        </div>
     </div>
 
 <script>
@@ -290,9 +491,7 @@
                     tg_id: userId,
                     tg_username: tgUser.username ? `@${tgUser.username}` : 'не указан',
                     tg_name: tgUser.first_name || 'не указано',
-                    stars: 0,
-                    created_at: firebase.database.ServerValue.TIMESTAMP,
-                    last_visit: firebase.database.ServerValue.TIMESTAMP
+                    stars: 0
                 };
 
                 await userRef.set(newUser);
@@ -307,11 +506,6 @@
                 
                 // Обновляем баланс на странице
                 document.getElementById('balance').textContent = userData.stars || '0';
-                
-                // Обновляем время последнего визита
-                await userRef.update({
-                    last_visit: firebase.database.ServerValue.TIMESTAMP
-                });
             }
 
             // 5. Настраиваем слушатель изменений баланса
@@ -351,10 +545,77 @@
         }
     }
 
+    // Анимация звезды с частицами
+    function animateStar() {
+        const star = document.getElementById('starSticker');
+        const particlesCount = 5;
+        
+        for (let i = 0; i < particlesCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('star-particle');
+            
+            // Случайное направление частицы
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 10 + Math.random() * 20;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            
+            particle.style.setProperty('--tx', `${tx}px`);
+            particle.style.setProperty('--ty', `${ty}px`);
+            
+            // Случайная задержка
+            particle.style.animationDelay = `${Math.random() * 0.5}s`;
+            
+            star.appendChild(particle);
+            
+            // Удаляем частицу после анимации
+            setTimeout(() => {
+                particle.remove();
+            }, 2000);
+        }
+    }
+
+    // Управление попапом настроек
+    function setupSettingsPopup() {
+        const popup = document.getElementById('settingsPopup');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const closeBtn = document.getElementById('closePopup');
+        const settingsForm = document.getElementById('settingsForm');
+        
+        settingsBtn.addEventListener('click', () => {
+            popup.classList.add('active');
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            popup.classList.remove('active');
+        });
+        
+        settingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Здесь можно добавить сохранение настроек
+            const tonWallet = document.getElementById('tonWallet').value;
+            const withdrawUsername = document.getElementById('withdrawUsername').value;
+            const usdtWallet = document.getElementById('usdtWallet').value;
+            
+            console.log('Настройки сохранены:', {
+                tonWallet,
+                withdrawUsername,
+                usdtWallet
+            });
+            
+            popup.classList.remove('active');
+        });
+    }
+
     // Запуск приложения после загрузки страницы
     document.addEventListener('DOMContentLoaded', () => {
         createStars();
         tg.expand();
+        setupSettingsPopup();
+        
+        // Запускаем анимацию звезды каждые 2 секунды
+        setInterval(animateStar, 2000);
         
         // Даем время на инициализацию Telegram WebApp
         setTimeout(() => {
