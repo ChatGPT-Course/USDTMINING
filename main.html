@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Главная</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
+        /* Ваши стили остаются без изменений */
         body {
             margin: 0;
             padding: 0;
@@ -197,7 +201,7 @@
     <div id="space-background"></div>
     
     <div class="container">
-        <div class="name" id="name">Имя пользователя</div>
+        <div class="name" id="name">Загрузка...</div>
         
         <div class="balance-card">
             <div class="sticker">⭐</div>
@@ -239,97 +243,93 @@
             <span>Партнерство</span>
         </a>
     </div>
-        
+
 <script>
     // Инициализация Telegram WebApp
     const tg = window.Telegram.WebApp;
     
     // Конфигурация Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
-      authDomain: "vrot-x-7a48f.firebaseapp.com",
-      databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
-      projectId: "vrot-x-7a48f",
-      storageBucket: "vrot-x-7a48f.firebasestorage.app",
-      messagingSenderId: "622297225288",
-      appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+        apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+        authDomain: "vrot-x-7a48f.firebaseapp.com",
+        databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+        projectId: "vrot-x-7a48f",
+        storageBucket: "vrot-x-7a48f.firebasestorage.app",
+        messagingSenderId: "622297225288",
+        appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
     };
-    
+
     // Инициализация Firebase
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    
-    // Проверка и создание пользователя в Firebase
-    async function checkOrCreateUser() {
-        const user = tg.initDataUnsafe.user;
-        if (!user) {
-            console.log('Пользователь Telegram не определен');
-            document.getElementById('name').textContent = 'Гость';
-            return false;
-        }
-        
+
+    // Основная функция инициализации
+    async function initApp() {
         try {
-            const userRef = database.ref('users/' + user.id);
-            
-            // Проверяем существование пользователя
+            // 1. Проверяем данные пользователя Telegram
+            if (!tg.initDataUnsafe?.user) {
+                throw new Error('Данные пользователя Telegram не доступны');
+            }
+
+            const tgUser = tg.initDataUnsafe.user;
+            console.log('Данные пользователя Telegram:', tgUser);
+
+            // 2. Отображаем имя пользователя сразу (из Telegram данных)
+            document.getElementById('name').textContent = tgUser.first_name || 'Пользователь';
+
+            // 3. Работа с Firebase
+            const userId = tgUser.id.toString();
+            const userRef = database.ref('users/' + userId);
+
+            // 4. Проверяем существование пользователя в БД
             const snapshot = await userRef.once('value');
             
             if (!snapshot.exists()) {
                 // Создаем нового пользователя
                 const newUser = {
-                    tg_username: user.username ? `@${user.username}` : 'unknown',
-                    tg_name: user.first_name || 'Имя не указано',
+                    tg_id: userId,
+                    tg_username: tgUser.username ? `@${tgUser.username}` : 'не указан',
+                    tg_name: tgUser.first_name || 'не указано',
                     stars: 0,
-                    created_at: firebase.database.ServerValue.TIMESTAMP
+                    created_at: firebase.database.ServerValue.TIMESTAMP,
+                    last_visit: firebase.database.ServerValue.TIMESTAMP
                 };
-                
+
                 await userRef.set(newUser);
-                console.log('Новый пользователь создан:', newUser);
+                console.log('Новый пользователь создан в Firebase:', newUser);
                 
-                // Обновляем данные на странице
-                updateUserInfo(newUser);
-                return true;
+                // Обновляем баланс на странице
+                document.getElementById('balance').textContent = '0';
             } else {
-                // Обновляем данные существующего пользователя
+                // Пользователь существует - обновляем данные
                 const userData = snapshot.val();
-                updateUserInfo(userData);
-                return true;
+                console.log('Данные пользователя из Firebase:', userData);
+                
+                // Обновляем баланс на странице
+                document.getElementById('balance').textContent = userData.stars || '0';
+                
+                // Обновляем время последнего визита
+                await userRef.update({
+                    last_visit: firebase.database.ServerValue.TIMESTAMP
+                });
             }
+
+            // 5. Настраиваем слушатель изменений баланса
+            userRef.on('value', (snap) => {
+                if (snap.exists()) {
+                    const data = snap.val();
+                    document.getElementById('balance').textContent = data.stars || '0';
+                    console.log('Баланс обновлен:', data.stars);
+                }
+            });
+
         } catch (error) {
-            console.error('Ошибка при работе с Firebase:', error);
-            // Показываем имя из Telegram, если не удалось получить данные
-            document.getElementById('name').textContent = user.first_name || 'Пользователь';
-            return false;
+            console.error('Ошибка инициализации:', error);
+            document.getElementById('name').textContent = 'Ошибка загрузки';
+            document.getElementById('balance').textContent = '0';
         }
     }
-    
-    // Обновление информации о пользователе на странице
-    function updateUserInfo(userData) {
-        // Отображаем имя из Telegram (приоритет) или из базы данных
-        const tgUser = tg.initDataUnsafe.user;
-        const displayName = tgUser?.first_name || userData.tg_name || 'Пользователь';
-        document.getElementById('name').textContent = displayName;
-        document.getElementById('balance').textContent = userData.stars || 0;
-    }
-    
-    // Подписка на изменения данных пользователя
-    function setupUserDataListener() {
-        const user = tg.initDataUnsafe.user;
-        if (!user) return;
-        
-        const userRef = database.ref('users/' + user.id);
-        
-        userRef.on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                updateUserInfo(snapshot.val());
-            }
-        }, (error) => {
-            console.error('Ошибка слушателя Firebase:', error);
-        });
-    }
-    
+
     // Создание звездного фона
     function createStars() {
         const space = document.getElementById('space-background');
@@ -350,34 +350,16 @@
             space.appendChild(star);
         }
     }
-    
-    // Инициализация приложения
-    document.addEventListener('DOMContentLoaded', async () => {
+
+    // Запуск приложения после загрузки страницы
+    document.addEventListener('DOMContentLoaded', () => {
         createStars();
         tg.expand();
         
-        // Добавляем скрипт Firebase SDK
-        const firebaseScript = document.createElement('script');
-        firebaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js";
-        document.head.appendChild(firebaseScript);
-        
-        const firebaseDatabaseScript = document.createElement('script');
-        firebaseDatabaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js";
-        document.head.appendChild(firebaseDatabaseScript);
-        
-        firebaseScript.onload = firebaseDatabaseScript.onload = async () => {
-            if (tg.initDataUnsafe?.user) {
-                // Первоначальная загрузка данных
-                const userCreated = await checkOrCreateUser();
-                
-                if (userCreated) {
-                    // Настраиваем слушатель изменений
-                    setupUserDataListener();
-                }
-            } else {
-                document.getElementById('name').textContent = 'Гость';
-            }
-        };
+        // Даем время на инициализацию Telegram WebApp
+        setTimeout(() => {
+            initApp();
+        }, 300);
     });
 </script>
 </body>
