@@ -53,15 +53,24 @@
             box-sizing: border-box;
         }
         
+        .user-info {
+            margin-bottom: 20px;
+        }
+        
         .username {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 4px;
+        }
+        
+        .name {
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 20px;
             color: #ffffff;
         }
         
         .balance-card {
-            background-color: #40e0d0;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             border-radius: 12px;
             padding: 15px;
             display: flex;
@@ -107,16 +116,41 @@
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background-color: #40e0d0;
-            color: white;
-        }
-        
-        .btn-secondary {
             background-color: #2a2a3a;
             color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80px;
+            position: relative;
+        }
+        
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .btn-deposit .btn-circle {
+            background-color: rgba(46, 204, 113, 0.2);
+        }
+        
+        .btn-withdraw .btn-circle {
+            background-color: rgba(231, 76, 60, 0.2);
+        }
+        
+        .btn-deposit .btn-icon {
+            color: #2ecc71;
+            transform: rotate(180deg);
+        }
+        
+        .btn-withdraw .btn-icon {
+            color: #e74c3c;
         }
         
         .history-btn {
@@ -149,7 +183,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: white;
+            color: #a0a0a0;
             text-decoration: none;
             font-size: 12px;
         }
@@ -162,13 +196,20 @@
         .nav-item.active {
             color: #40e0d0;
         }
+        
+        .nav-item.active .nav-icon {
+            color: #40e0d0;
+        }
     </style>
 </head>
 <body>
     <div id="space-background"></div>
     
     <div class="container">
-        <div class="username" id="username">@username</div>
+        <div class="user-info">
+            <div class="username" id="username">@username</div>
+            <div class="name" id="name">Имя пользователя</div>
+        </div>
         
         <div class="balance-card">
             <div class="sticker">⭐</div>
@@ -179,8 +220,18 @@
         </div>
         
         <div class="action-buttons">
-            <button class="btn btn-primary">Пополнить</button>
-            <button class="btn btn-secondary">Вывести</button>
+            <button class="btn btn-deposit">
+                <div class="btn-circle">
+                    <div class="btn-icon">⬆️</div>
+                </div>
+                <div>Пополнить</div>
+            </button>
+            <button class="btn btn-withdraw">
+                <div class="btn-circle">
+                    <div class="btn-icon">⬆️</div>
+                </div>
+                <div>Вывести</div>
+            </button>
         </div>
         
         <button class="history-btn">История транзакций</button>
@@ -205,10 +256,75 @@
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         
-        // Устанавливаем имя пользователя
-        document.getElementById('username').textContent = tg.initDataUnsafe.user?.username 
-            ? `@${tg.initDataUnsafe.user.username}` 
-            : '@username';
+        // Конфигурация NocoDB API
+        const NOCODB_API = "https://app.nocodb.com/#/weamcfo6/p27jdsmk69wuimh/mvsq6em9m8dcluy"; // Замените на ваш URL API NocoDB
+        const NOCODB_API_KEY = "bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ"; // Замените на ваш API ключ
+        const TABLE_NAME = "Ymvsq6em9m8dcluy"; // Замените на название вашей таблицы
+        
+        // Проверка и создание пользователя в NocoDB
+        async function checkOrCreateUser() {
+            const user = tg.initDataUnsafe.user;
+            if (!user) return;
+            
+            try {
+                // Проверяем существование пользователя
+                const checkResponse = await fetch(`${NOCODB_API}/api/v1/db/data/v1/${TABLE_NAME}?where=(tg_user_id,eq,${user.id})`, {
+                    headers: {
+                        'xc-auth': NOCODB_API_KEY
+                    }
+                });
+                
+                const data = await checkResponse.json();
+                
+                // Если пользователь не найден, создаем новую запись
+                if (data.list.length === 0) {
+                    const newUser = {
+                        tg_user_id: user.id,
+                        tg_username: user.username ? `@${user.username}` : 'unknown',
+                        tg_name: user.first_name || 'Пользователь',
+                        stars: 0
+                    };
+                    
+                    await fetch(`${NOCODB_API}/api/v1/db/data/v1/${TABLE_NAME}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'xc-auth': NOCODB_API_KEY
+                        },
+                        body: JSON.stringify(newUser)
+                    });
+                    
+                    console.log('Новый пользователь создан');
+                }
+            } catch (error) {
+                console.error('Ошибка при работе с NocoDB:', error);
+            }
+        }
+        
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            const user = tg.initDataUnsafe.user;
+            if (!user) return;
+            
+            try {
+                const response = await fetch(`${NOCODB_API}/api/v1/db/data/v1/${TABLE_NAME}?where=(tg_user_id,eq,${user.id})`, {
+                    headers: {
+                        'xc-auth': NOCODB_API_KEY
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.list.length > 0) {
+                    const userData = data.list[0];
+                    document.getElementById('username').textContent = userData.tg_username || `@${user.username}`;
+                    document.getElementById('name').textContent = userData.tg_name || user.first_name || 'Пользователь';
+                    document.getElementById('balance').textContent = userData.stars || 0;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+            }
+        }
         
         // Создание звездного фона
         function createStars() {
@@ -236,20 +352,21 @@
             }
         }
         
-        // Загрузка баланса (заглушка)
-        function loadBalance() {
-            // Здесь будет запрос к вашему API для получения баланса
-            // Пока используем заглушку
-            document.getElementById('balance').textContent = '1000';
-        }
-        
         // Инициализация
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             createStars();
-            loadBalance();
             
             // Развернуть приложение на весь экран
             tg.expand();
+            
+            // Работа с NocoDB
+            if (tg.initDataUnsafe.user) {
+                await checkOrCreateUser();
+                await loadUserData();
+                
+                // Обновляем данные каждые 5 секунд
+                setInterval(loadUserData, 5000);
+            }
         });
     </script>
 </body>
