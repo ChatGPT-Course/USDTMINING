@@ -240,130 +240,145 @@
         </a>
     </div>
         
-    <script>
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        
-        // Конфигурация Firebase
-        const firebaseConfig = {
-          apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
-          authDomain: "vrot-x-7a48f.firebaseapp.com",
-          databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
-          projectId: "vrot-x-7a48f",
-          storageBucket: "vrot-x-7a48f.firebasestorage.app",
-          messagingSenderId: "622297225288",
-          appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
-        };
-        
-        // Инициализация Firebase
+<script>
+    // Инициализация Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    
+    // Конфигурация Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+      authDomain: "vrot-x-7a48f.firebaseapp.com",
+      databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+      projectId: "vrot-x-7a48f",
+      storageBucket: "vrot-x-7a48f.firebasestorage.app",
+      messagingSenderId: "622297225288",
+      appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+    };
+    
+    // Инициализация Firebase
+    if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
-        // Проверка и создание пользователя в Firebase
-        async function checkOrCreateUser() {
-            const user = tg.initDataUnsafe.user;
-            if (!user) {
-                console.log('Пользователь Telegram не определен');
-                document.getElementById('name').textContent = 'Гость';
-                return;
-            }
-            
-            try {
-                const userRef = database.ref('users/' + user.id);
-                
-                // Проверяем существование пользователя
-                const snapshot = await userRef.once('value');
-                
-                if (!snapshot.exists()) {
-                    // Создаем нового пользователя
-                    const newUser = {
-                        tg_username: user.username ? `@${user.username}` : 'unknown',
-                        tg_name: user.first_name || 'Пользователь',
-                        stars: 0
-                    };
-                    
-                    await userRef.set(newUser);
-                    console.log('Новый пользователь создан:', newUser);
-                    
-                    // Обновляем данные на странице
-                    updateUserInfo(newUser);
-                } else {
-                    // Обновляем данные существующего пользователя
-                    updateUserInfo(snapshot.val());
-                }
-            } catch (error) {
-                console.error('Ошибка при работе с Firebase:', error);
-                document.getElementById('name').textContent = user.first_name || 'Пользователь';
-            }
+    }
+    const database = firebase.database();
+    
+    // Проверка и создание пользователя в Firebase
+    async function checkOrCreateUser() {
+        const user = tg.initDataUnsafe.user;
+        if (!user) {
+            console.log('Пользователь Telegram не определен');
+            document.getElementById('name').textContent = 'Гость';
+            return false;
         }
         
-        // Обновление информации о пользователе на странице
-        function updateUserInfo(userData) {
-            document.getElementById('name').textContent = userData.tg_name || 'Пользователь';
-            document.getElementById('balance').textContent = userData.stars || 0;
-        }
-        
-        // Подписка на изменения данных пользователя
-        function setupUserDataListener() {
-            const user = tg.initDataUnsafe.user;
-            if (!user) return;
-            
+        try {
             const userRef = database.ref('users/' + user.id);
             
-            userRef.on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    updateUserInfo(snapshot.val());
-                }
-            });
-        }
-        
-        // Создание звездного фона
-        function createStars() {
-            const space = document.getElementById('space-background');
-            const starCount = 30;
+            // Проверяем существование пользователя
+            const snapshot = await userRef.once('value');
             
-            for (let i = 0; i < starCount; i++) {
-                const star = document.createElement('div');
-                star.classList.add('star');
+            if (!snapshot.exists()) {
+                // Создаем нового пользователя
+                const newUser = {
+                    tg_username: user.username ? `@${user.username}` : 'unknown',
+                    tg_name: user.first_name || 'Имя не указано',
+                    stars: 0,
+                    created_at: firebase.database.ServerValue.TIMESTAMP
+                };
                 
-                const size = Math.random() * 8 + 2;
-                star.style.width = `${size}px`;
-                star.style.height = `${size}px`;
-                star.style.left = `${Math.random() * 100}%`;
-                star.style.top = `${Math.random() * 100}%`;
-                star.style.animationDelay = `${Math.random() * 5}s`;
-                star.style.animationDuration = `${10 + Math.random() * 20}s`;
+                await userRef.set(newUser);
+                console.log('Новый пользователь создан:', newUser);
                 
-                space.appendChild(star);
+                // Обновляем данные на странице
+                updateUserInfo(newUser);
+                return true;
+            } else {
+                // Обновляем данные существующего пользователя
+                const userData = snapshot.val();
+                updateUserInfo(userData);
+                return true;
             }
+        } catch (error) {
+            console.error('Ошибка при работе с Firebase:', error);
+            // Показываем имя из Telegram, если не удалось получить данные
+            document.getElementById('name').textContent = user.first_name || 'Пользователь';
+            return false;
         }
+    }
+    
+    // Обновление информации о пользователе на странице
+    function updateUserInfo(userData) {
+        // Отображаем имя из Telegram (приоритет) или из базы данных
+        const tgUser = tg.initDataUnsafe.user;
+        const displayName = tgUser?.first_name || userData.tg_name || 'Пользователь';
+        document.getElementById('name').textContent = displayName;
+        document.getElementById('balance').textContent = userData.stars || 0;
+    }
+    
+    // Подписка на изменения данных пользователя
+    function setupUserDataListener() {
+        const user = tg.initDataUnsafe.user;
+        if (!user) return;
         
-        // Инициализация приложения
-        document.addEventListener('DOMContentLoaded', async () => {
-            createStars();
-            tg.expand();
-            
-            // Добавляем скрипт Firebase SDK
-            const firebaseScript = document.createElement('script');
-            firebaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js";
-            document.head.appendChild(firebaseScript);
-            
-            const firebaseDatabaseScript = document.createElement('script');
-            firebaseDatabaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js";
-            document.head.appendChild(firebaseDatabaseScript);
-            
-            firebaseScript.onload = firebaseDatabaseScript.onload = async () => {
-                if (tg.initDataUnsafe.user) {
-                    // Первоначальная загрузка данных
-                    await checkOrCreateUser();
-                    
-                    // Настраиваем слушатель изменений (обновление каждые ~3 секунды)
-                    setupUserDataListener();
-                } else {
-                    document.getElementById('name').textContent = 'Гость';
-                }
-            };
+        const userRef = database.ref('users/' + user.id);
+        
+        userRef.on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                updateUserInfo(snapshot.val());
+            }
+        }, (error) => {
+            console.error('Ошибка слушателя Firebase:', error);
         });
-    </script>
+    }
+    
+    // Создание звездного фона
+    function createStars() {
+        const space = document.getElementById('space-background');
+        const starCount = 30;
+        
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            
+            const size = Math.random() * 8 + 2;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            star.style.animationDuration = `${10 + Math.random() * 20}s`;
+            
+            space.appendChild(star);
+        }
+    }
+    
+    // Инициализация приложения
+    document.addEventListener('DOMContentLoaded', async () => {
+        createStars();
+        tg.expand();
+        
+        // Добавляем скрипт Firebase SDK
+        const firebaseScript = document.createElement('script');
+        firebaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js";
+        document.head.appendChild(firebaseScript);
+        
+        const firebaseDatabaseScript = document.createElement('script');
+        firebaseDatabaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js";
+        document.head.appendChild(firebaseDatabaseScript);
+        
+        firebaseScript.onload = firebaseDatabaseScript.onload = async () => {
+            if (tg.initDataUnsafe?.user) {
+                // Первоначальная загрузка данных
+                const userCreated = await checkOrCreateUser();
+                
+                if (userCreated) {
+                    // Настраиваем слушатель изменений
+                    setupUserDataListener();
+                }
+            } else {
+                document.getElementById('name').textContent = 'Гость';
+            }
+        };
+    });
+</script>
 </body>
 </html>
