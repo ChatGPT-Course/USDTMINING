@@ -53,19 +53,10 @@
             box-sizing: border-box;
         }
         
-        .user-info {
-            margin-bottom: 20px;
-        }
-        
-        .username {
-            font-size: 14px;
-            color: #a0a0a0;
-            margin-bottom: 4px;
-        }
-        
         .name {
             font-size: 18px;
             font-weight: bold;
+            margin-bottom: 20px;
             color: #ffffff;
         }
         
@@ -206,10 +197,7 @@
     <div id="space-background"></div>
     
     <div class="container">
-        <div class="user-info">
-            <div class="username" id="username">@username</div>
-            <div class="name" id="name">Имя пользователя</div>
-        </div>
+        <div class="name" id="name">Имя пользователя</div>
         
         <div class="balance-card">
             <div class="sticker">⭐</div>
@@ -256,16 +244,16 @@
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         
-        // Конфигурация NocoDB API (ЗАМЕНИТЕ НА СВОИ ДАННЫЕ)
+        // Конфигурация NocoDB API
         const config = {
-          orgs: 'weamcfo6',                   // Организация (из URL)
-          projectName: 'p27jdsmk69wuimh',      // Имя проекта (из URL)
-          tableName: 'mvsq6em9m8dcluy',        // Новое имя таблицы (из URL)
-          apiToken: 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ', // Ваш API токен (оставляю ваш)
-          apiVersion: 'v1'                     // Версия API (обычно 'v1')
+          orgs: 'weamcfo6',
+          projectName: 'p27jdsmk69wuimh',
+          tableName: 'mvsq6em9m8dcluy',
+          apiToken: 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ',
+          apiVersion: 'v1'
         };
         
-        // Формируем базовый URL для API запросов
+        // Формируем URL для API запросов
         const BASE_API_URL = `https://api.nocodb.com/api/${config.apiVersion}/db/data`;
         const TABLE_API_URL = `${BASE_API_URL}/${config.orgs}/${config.projectName}/${config.tableName}`;
         
@@ -279,12 +267,12 @@
         async function checkOrCreateUser() {
             const user = tg.initDataUnsafe.user;
             if (!user) {
-                console.error('Пользователь Telegram не определен');
+                console.log('Пользователь Telegram не определен');
                 return;
             }
             
             try {
-                // 1. Проверяем существование пользователя
+                // 1. Проверяем существование пользователя по tg_user_id
                 const checkUrl = `${TABLE_API_URL}?where=(tg_user_id,eq,${user.id})`;
                 const checkResponse = await fetch(checkUrl, {
                     headers: API_HEADERS
@@ -313,20 +301,18 @@
                     // Обновляем данные на странице
                     updateUserInfo(newUser);
                 } else if (data.list && data.list.length > 0) {
-                    // 3. Если пользователь найден, обновляем данные на странице
+                    // 3. Если пользователь найден, обновляем данные
                     updateUserInfo(data.list[0]);
                 }
             } catch (error) {
                 console.error('Ошибка при работе с NocoDB:', error);
-                // В случае ошибки показываем заглушки
-                document.getElementById('username').textContent = '@' + (user.username || 'username');
+                // Отображаем базовую информацию
                 document.getElementById('name').textContent = user.first_name || 'Пользователь';
             }
         }
         
         // Обновление информации о пользователе на странице
         function updateUserInfo(userData) {
-            document.getElementById('username').textContent = userData.tg_username || `@unknown`;
             document.getElementById('name').textContent = userData.tg_name || 'Пользователь';
             document.getElementById('balance').textContent = userData.stars || 0;
         }
@@ -386,7 +372,6 @@
                 setInterval(loadUserData, 5000);
             } else {
                 // Заглушки, если нет данных пользователя
-                document.getElementById('username').textContent = '@username';
                 document.getElementById('name').textContent = 'Гость';
             }
         });
