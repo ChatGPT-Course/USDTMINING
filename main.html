@@ -239,74 +239,60 @@
             <span>Партнерство</span>
         </a>
     </div>
-    
+        
     <script>
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         
-        // Конфигурация NocoDB API
-        const config = {
-          orgs: 'weamcfo6',
-          projectName: 'p27jdsmk69wuimh',
-          tableName: 'mvsq6em9m8dcluy',
-          apiToken: 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ',
-          apiVersion: 'v1'
+        // Конфигурация Firebase
+        const firebaseConfig = {
+          apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+          authDomain: "vrot-x-7a48f.firebaseapp.com",
+          databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+          projectId: "vrot-x-7a48f",
+          storageBucket: "vrot-x-7a48f.firebasestorage.app",
+          messagingSenderId: "622297225288",
+          appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
         };
         
-        // Формируем URL для API запросов
-        const BASE_API_URL = `https://api.nocodb.com/api/${config.apiVersion}/db/data`;
-        const TABLE_API_URL = `${BASE_API_URL}/${config.orgs}/${config.projectName}/${config.tableName}`;
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
         
-        // Заголовки для запросов
-        const API_HEADERS = {
-          'Content-Type': 'application/json',
-          'xc-token': config.apiToken
-        };
-        
-        // Проверка и создание пользователя в NocoDB
+        // Проверка и создание пользователя в Firebase
         async function checkOrCreateUser() {
             const user = tg.initDataUnsafe.user;
             if (!user) {
                 console.log('Пользователь Telegram не определен');
+                document.getElementById('name').textContent = 'Гость';
                 return;
             }
             
             try {
-                // 1. Проверяем существование пользователя по tg_user_id
-                const checkUrl = `${TABLE_API_URL}?where=(tg_user_id,eq,${user.id})`;
-                const checkResponse = await fetch(checkUrl, {
-                    headers: API_HEADERS
-                });
+                const userRef = database.ref('users/' + user.id);
                 
-                const data = await checkResponse.json();
+                // Проверяем существование пользователя
+                const snapshot = await userRef.once('value');
                 
-                // 2. Если пользователь не найден, создаем новую запись
-                if (data.list && data.list.length === 0) {
+                if (!snapshot.exists()) {
+                    // Создаем нового пользователя
                     const newUser = {
-                        tg_user_id: user.id,
                         tg_username: user.username ? `@${user.username}` : 'unknown',
                         tg_name: user.first_name || 'Пользователь',
                         stars: 0
                     };
                     
-                    const createResponse = await fetch(TABLE_API_URL, {
-                        method: 'POST',
-                        headers: API_HEADERS,
-                        body: JSON.stringify(newUser)
-                    });
-                    
-                    const result = await createResponse.json();
-                    console.log('Новый пользователь создан:', result);
+                    await userRef.set(newUser);
+                    console.log('Новый пользователь создан:', newUser);
                     
                     // Обновляем данные на странице
                     updateUserInfo(newUser);
-                } else if (data.list && data.list.length > 0) {
-                    // 3. Если пользователь найден, обновляем данные
-                    updateUserInfo(data.list[0]);
+                } else {
+                    // Обновляем данные существующего пользователя
+                    updateUserInfo(snapshot.val());
                 }
             } catch (error) {
-                console.error('Ошибка при работе с NocoDB:', error);
-                // Отображаем базовую информацию
+                console.error('Ошибка при работе с Firebase:', error);
                 document.getElementById('name').textContent = user.first_name || 'Пользователь';
             }
         }
@@ -317,25 +303,18 @@
             document.getElementById('balance').textContent = userData.stars || 0;
         }
         
-        // Загрузка данных пользователя (для автообновления)
-        async function loadUserData() {
+        // Подписка на изменения данных пользователя
+        function setupUserDataListener() {
             const user = tg.initDataUnsafe.user;
             if (!user) return;
             
-            try {
-                const url = `${TABLE_API_URL}?where=(tg_user_id,eq,${user.id})`;
-                const response = await fetch(url, {
-                    headers: API_HEADERS
-                });
-                
-                const data = await response.json();
-                
-                if (data.list && data.list.length > 0) {
-                    updateUserInfo(data.list[0]);
+            const userRef = database.ref('users/' + user.id);
+            
+            userRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    updateUserInfo(snapshot.val());
                 }
-            } catch (error) {
-                console.error('Ошибка при загрузке данных:', error);
-            }
+            });
         }
         
         // Создание звездного фона
@@ -364,16 +343,26 @@
             createStars();
             tg.expand();
             
-            if (tg.initDataUnsafe.user) {
-                // Первоначальная загрузка данных
-                await checkOrCreateUser();
-                
-                // Автообновление каждые 5 секунд
-                setInterval(loadUserData, 5000);
-            } else {
-                // Заглушки, если нет данных пользователя
-                document.getElementById('name').textContent = 'Гость';
-            }
+            // Добавляем скрипт Firebase SDK
+            const firebaseScript = document.createElement('script');
+            firebaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js";
+            document.head.appendChild(firebaseScript);
+            
+            const firebaseDatabaseScript = document.createElement('script');
+            firebaseDatabaseScript.src = "https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js";
+            document.head.appendChild(firebaseDatabaseScript);
+            
+            firebaseScript.onload = firebaseDatabaseScript.onload = async () => {
+                if (tg.initDataUnsafe.user) {
+                    // Первоначальная загрузка данных
+                    await checkOrCreateUser();
+                    
+                    // Настраиваем слушатель изменений (обновление каждые ~3 секунды)
+                    setupUserDataListener();
+                } else {
+                    document.getElementById('name').textContent = 'Гость';
+                }
+            };
         });
     </script>
 </body>
