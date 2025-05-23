@@ -512,6 +512,29 @@
             color: rgba(255, 255, 255, 0.6);
             padding: 20px 0;
         }
+        .refresh-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(64, 224, 208, 0.2);
+            border: none;
+            color: #40e0d0;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .refresh-btn:hover:not(:disabled) {
+            background: rgba(64, 224, 208, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -528,16 +551,17 @@
             </div>
         </div>
         
-        <div class="balance-card">
-            <div class="balance-label-top">Баланс</div>
-            <div class="balance-content">
-                <div class="sticker">⭐</div>
-                <div class="balance-info">
-                    <div class="balance-amount" id="balance">0</div>
-                    <div class="balance-label">STARS</div>
+            <div class="balance-card">
+                <div class="balance-label-top">Баланс</div>
+                <div class="balance-content">
+                    <div class="sticker">⭐</div>
+                    <div class="balance-info">
+                        <div class="balance-amount" id="balance">0</div>
+                        <div class="balance-label">STARS</div>
+                    </div>
                 </div>
+                <button id="refreshBalanceBtn" class="refresh-btn">🔄 Обновить</button>
             </div>
-        </div>
         
         <div class="action-buttons">
             <button class="btn btn-deposit" id="depositBtn">
