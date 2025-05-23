@@ -574,110 +574,123 @@
         return null;
     }
 
-    // Основная функция инициализации
-    async function initApp() {
-        try {
-            let tgUser = {};
-            let fromCookie = false;
-            
-            // Проверяем cookies на наличие данных
-            const tgUserId = getCookie('tg_user_id');
-            const tgName = getCookie('tg_name');
-            const tgUsername = getCookie('tg_username');
-            
-            if (tgUserId && tgName) {
-                tgUser = {
-                    id: tgUserId,
-                    first_name: tgName,
-                    username: tgUsername || undefined,
-                    photo_url: getCookie('tg_photo_url') || undefined
-                };
-                fromCookie = true;
-                console.log('Данные пользователя загружены из cookies');
-            }
-            
-            // Если нет данных в cookies, пробуем получить из Telegram
-            if (!fromCookie && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                tgUser = tg.initDataUnsafe.user;
-            } else if (!fromCookie && tg.initData) {
-                const initData = new URLSearchParams(tg.initData);
-                const userJson = initData.get('user');
-                if (userJson) tgUser = JSON.parse(userJson);
-            }
-
-            console.log('Данные пользователя:', tgUser);
-
-            // Сохраняем данные в cookies на 30 дней
-            if (tgUser.id && !fromCookie) {
-                setCookie('tg_user_id', tgUser.id, 30);
-                setCookie('tg_name', tgUser.first_name || 'Пользователь', 30);
-                setCookie('tg_username', tgUser.username || '', 30);
-                if (tgUser.photo_url) setCookie('tg_photo_url', tgUser.photo_url, 30);
-            }
-
-            // Отображаем данные пользователя
-            const userName = tgUser.first_name || 'Пользователь';
-            const userUsername = tgUser.username ? `(@${tgUser.username})` : '(-)';
-            
-            document.getElementById('name').textContent = userName;
-            document.getElementById('username').textContent = userUsername;
-
-            // Устанавливаем аватар
-            const avatarImg = document.getElementById('userAvatar');
-            if (tgUser.photo_url) {
-                avatarImg.src = tgUser.photo_url;
-            } else {
-                // Заглушка для аватара
-                avatarImg.style.backgroundColor = '#2a2a3a';
-                avatarImg.style.display = 'flex';
-                avatarImg.style.alignItems = 'center';
-                avatarImg.style.justifyContent = 'center';
-                avatarImg.style.color = '#40e0d0';
-                avatarImg.style.fontWeight = 'bold';
-                avatarImg.textContent = userName.charAt(0).toUpperCase();
-            }
-
-            // Работа с Firebase
-            const userId = tgUser.id ? tgUser.id.toString() : 'demo_' + Math.random().toString(36).substr(2, 9);
-            const userRef = database.ref('users/' + userId);
-
-            // Проверяем/создаем пользователя в БД
-            const snapshot = await userRef.once('value');
-            
-            if (!snapshot.exists()) {
-                const newUser = {
-                    tg_id: userId,
-                    tg_username: tgUser.username ? `@${tgUser.username}` : 'не указан',
-                    tg_name: userName,
-                    stars: 0,
-                    created_at: firebase.database.ServerValue.TIMESTAMP,
-                    last_active: firebase.database.ServerValue.TIMESTAMP
-                };
-
-                await userRef.set(newUser);
-                console.log('Новый пользователь создан в Firebase:', newUser);
-            } else {
-                // Обновляем время последней активности
-                await userRef.update({
-                    last_active: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-
-            // Слушаем изменения баланса
-            userRef.on('value', (snap) => {
-                if (snap.exists()) {
-                    const data = snap.val();
-                    document.getElementById('balance').textContent = data.stars || '0';
+        // Замените функцию initApp() в вашем коде на эту:
+        
+        async function initApp() {
+            try {
+                let tgUser = {};
+                let fromCookie = false;
+                
+                // 1. Пробуем получить данные из Telegram WebApp
+                if (window.Telegram && window.Telegram.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    
+                    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                        tgUser = tg.initDataUnsafe.user;
+                        console.log('Данные из initDataUnsafe:', tgUser);
+                    } else if (tg.initData) {
+                        try {
+                            const initData = new URLSearchParams(tg.initData);
+                            const userJson = initData.get('user');
+                            if (userJson) {
+                                tgUser = JSON.parse(decodeURIComponent(userJson));
+                                console.log('Данные из initData:', tgUser);
+                            }
+                        } catch (e) {
+                            console.error('Ошибка парсинга initData:', e);
+                        }
+                    }
                 }
-            });
-
-        } catch (error) {
-            console.error('Ошибка инициализации:', error);
-            document.getElementById('name').textContent = 'Гость';
-            document.getElementById('username').textContent = '(-)';
-            document.getElementById('balance').textContent = '0';
+        
+                // 2. Если нет данных из Telegram, пробуем из cookies
+                if (!tgUser.id) {
+                    const tgUserId = getCookie('tg_user_id');
+                    const tgName = getCookie('tg_name');
+                    const tgUsername = getCookie('tg_username');
+                    
+                    if (tgUserId && tgName) {
+                        tgUser = {
+                            id: tgUserId,
+                            first_name: tgName,
+                            username: tgUsername || undefined,
+                            photo_url: getCookie('tg_photo_url') || undefined
+                        };
+                        fromCookie = true;
+                        console.log('Данные из cookies:', tgUser);
+                    }
+                }
+        
+                // 3. Если все еще нет данных - демо-режим
+                if (!tgUser.id) {
+                    tgUser = {
+                        id: 'demo_' + Math.random().toString(36).substr(2, 9),
+                        first_name: 'Гость',
+                        username: undefined,
+                        photo_url: undefined
+                    };
+                    console.log('Демо-режим:', tgUser);
+                }
+        
+                // 4. Отображаем данные пользователя
+                const userName = sanitizeText(tgUser.first_name || 'Пользователь');
+                const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
+                
+                document.getElementById('name').textContent = userName;
+                document.getElementById('username').textContent = userUsername;
+        
+                // 5. Устанавливаем аватар
+                const avatarImg = document.getElementById('userAvatar');
+                if (tgUser.photo_url) {
+                    // Добавляем временную метку для избежания кеширования
+                    avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
+                    avatarImg.onerror = function() {
+                        // Если аватар не загрузился - показываем инициалы
+                        showInitials(avatarImg, userName);
+                    };
+                } else {
+                    showInitials(avatarImg, userName);
+                }
+        
+                // 6. Сохраняем данные в cookies (если не из cookies)
+                if (!fromCookie && tgUser.id) {
+                    setCookie('tg_user_id', tgUser.id, 30);
+                    setCookie('tg_name', userName, 30);
+                    setCookie('tg_username', tgUser.username || '', 30);
+                    if (tgUser.photo_url) setCookie('tg_photo_url', tgUser.photo_url, 30);
+                }
+        
+                // Остальной код работы с Firebase и балансом...
+                // ... (остается без изменений)
+        
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('name').textContent = 'Гость';
+                document.getElementById('username').textContent = '(-)';
+                document.getElementById('balance').textContent = '0';
+                
+                const avatarImg = document.getElementById('userAvatar');
+                showInitials(avatarImg, 'Гость');
+            }
         }
-    }
+        
+        // Добавьте эти вспомогательные функции:
+        
+        // Функция для очистки текста от спецсимволов
+        function sanitizeText(text) {
+            return text.replace(/[^\p{L}\p{N}\s]/gu, '').trim() || 'Пользователь';
+        }
+        
+        // Функция для отображения инициалов
+        function showInitials(element, name) {
+            element.src = '';
+            element.style.backgroundColor = '#2a2a3a';
+            element.style.display = 'flex';
+            element.style.alignItems = 'center';
+            element.style.justifyContent = 'center';
+            element.style.color = '#40e0d0';
+            element.style.fontWeight = 'bold';
+            element.textContent = name.charAt(0).toUpperCase();
+        }
 
     // Создание звездного фона
     function createStars() {
