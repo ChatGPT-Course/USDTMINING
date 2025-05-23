@@ -695,65 +695,118 @@
         element.style.fontWeight = 'bold';
         element.textContent = name.charAt(0).toUpperCase();
     }
-                
-        // Функция для инициализации приложения
-        async function initApp() {
-            try {
-                let tgUser = {};
-                let isDemoMode = false;
-                
-                // 1. Получаем данные пользователя из Telegram WebApp
-                if (window.Telegram && window.Telegram.WebApp) {
-                    const tg = window.Telegram.WebApp;
+                        
+           async function initApp() {
+                try {
+                    let tgUser = {};
+                    let isDemoMode = false;
                     
-                    if (tg.initDataUnsafe?.user) {
-                        tgUser = tg.initDataUnsafe.user;
-                        console.log('Данные из initDataUnsafe:', tgUser);
-                    } else if (tg.initData) {
-                        try {
-                            const initData = new URLSearchParams(tg.initData);
-                            const userJson = initData.get('user');
-                            if (userJson) {
-                                tgUser = JSON.parse(decodeURIComponent(userJson));
-                                console.log('Данные из initData:', tgUser);
+                    // 1. Получаем данные пользователя из Telegram WebApp
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        const tg = window.Telegram.WebApp;
+                        
+                        if (tg.initDataUnsafe?.user) {
+                            tgUser = tg.initDataUnsafe.user;
+                            console.log('Данные из initDataUnsafe:', tgUser);
+                        } else if (tg.initData) {
+                            try {
+                                const initData = new URLSearchParams(tg.initData);
+                                const userJson = initData.get('user');
+                                if (userJson) {
+                                    tgUser = JSON.parse(decodeURIComponent(userJson));
+                                    console.log('Данные из initData:', tgUser);
+                                }
+                            } catch (e) {
+                                console.error('Ошибка парсинга initData:', e);
                             }
-                        } catch (e) {
-                            console.error('Ошибка парсинга initData:', e);
                         }
                     }
-                }
         
-                // 2. Если нет данных из Telegram - используем сохраненные данные или демо-режим
-                if (!tgUser.id) {
-                    const savedUser = localStorage.getItem('tg_user');
-                    if (savedUser) {
-                        tgUser = JSON.parse(savedUser);
-                        console.log('Используем сохраненные данные:', tgUser);
-                    } else {
-                        tgUser = {
-                            id: 'demo_' + Math.random().toString(36).substr(2, 9),
-                            first_name: 'Гость',
-                            username: undefined,
-                            photo_url: undefined
-                        };
-                        isDemoMode = true;
-                        console.log('Демо-режим:', tgUser);
+                    // 2. Если нет данных из Telegram - используем сохраненные данные или демо-режим
+                    if (!tgUser.id) {
+                        const savedUser = getUserData();
+                        if (savedUser) {
+                            tgUser = savedUser;
+                            console.log('Используем сохраненные данные:', tgUser);
+                        } else {
+                            tgUser = {
+                                id: 'demo_' + Math.random().toString(36).substr(2, 9),
+                                first_name: 'Гость',
+                                username: undefined,
+                                photo_url: undefined
+                            };
+                            isDemoMode = true;
+                            console.log('Демо-режим:', tgUser);
+                        }
                     }
-                }
         
-                // 3. Сохраняем данные пользователя
-                if (!isDemoMode) {
-                    localStorage.setItem('tg_user', JSON.stringify(tgUser));
-                }
+                    // 3. Сохраняем данные пользователя
+                    if (!isDemoMode) {
+                        saveUserData(tgUser);
+                    }
         
-                // 4. Отображаем данные пользователя (один раз при загрузке)
+                    // 4. Отображаем данные пользователя (один раз при загрузке)
+                    const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
+                    const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
+        
+                    document.getElementById('name').textContent = userName;
+                    document.getElementById('username').textContent = userUsername;
+        
+                    // 5. Устанавливаем аватар (один раз при загрузке)
+                    const avatarImg = document.getElementById('userAvatar');
+                    if (tgUser.photo_url) {
+                        avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
+                        avatarImg.onerror = function() {
+                            showInitials(avatarImg, userName);
+                        };
+                    } else {
+                        showInitials(avatarImg, userName);
+                    }
+        
+                    // 6. Работа с Firebase
+                    const userId = tgUser.id;
+                    const userRef = database.ref('users/' + userId);
+        
+                    // Проверяем/создаем пользователя в БД (без created_at и last_active)
+                    const snapshot = await userRef.once('value');
+                    
+                    if (!snapshot.exists()) {
+                        await userRef.set({
+                            tg_id: userId,
+                            tg_username: tgUser.username || 'не указан',
+                            tg_name: userName,
+                            stars: 0
+                        });
+                        console.log('Новый пользователь создан в Firebase');
+                    }
+        
+                    // 7. Слушаем изменения баланса в реальном времени
+                    userRef.on('value', (snap) => {
+                        if (snap.exists()) {
+                            const data = snap.val();
+                            document.getElementById('balance').textContent = data.stars || '0';
+                        }
+                    });
+        
+                } catch (error) {
+                    console.error('Ошибка инициализации:', error);
+                    document.getElementById('name').textContent = 'Гость';
+                    document.getElementById('username').textContent = '(-)';
+                    document.getElementById('balance').textContent = '0';
+                    
+                    const avatarImg = document.getElementById('userAvatar');
+                    showInitials(avatarImg, 'Гость');
+                }
+            }
+                // Функция для обновления профиля пользователя
+            function updateUserProfile(tgUser) {
                 const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
                 const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
-        
+                
                 document.getElementById('name').textContent = userName;
                 document.getElementById('username').textContent = userUsername;
         
-                // 5. Устанавливаем аватар (один раз при загрузке)
+                // Устанавливаем аватар
                 const avatarImg = document.getElementById('userAvatar');
                 if (tgUser.photo_url) {
                     avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
@@ -763,76 +816,7 @@
                 } else {
                     showInitials(avatarImg, userName);
                 }
-        
-                // 6. Работа с Firebase
-                const userId = tgUser.id;
-                const userRef = database.ref('users/' + userId);
-        
-                // Проверяем/создаем пользователя в БД
-                const snapshot = await userRef.once('value');
-                
-                if (!snapshot.exists()) {
-                    await userRef.set({
-                        tg_id: userId,
-                        tg_username: tgUser.username || 'не указан',
-                        tg_name: userName,
-                        stars: 0,
-                        created_at: firebase.database.ServerValue.TIMESTAMP,
-                        last_active: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    console.log('Новый пользователь создан в Firebase');
-                }
-        
-                // 7. Обновляем баланс каждые 3 секунды
-                let balanceInterval = setInterval(() => {
-                    userRef.once('value').then((snap) => {
-                        if (snap.exists()) {
-                            const data = snap.val();
-                            document.getElementById('balance').textContent = data.stars || '0';
-                            // Обновляем last_active только если пользователь не в демо-режиме
-                            if (!isDemoMode) {
-                                userRef.update({
-                                    last_active: firebase.database.ServerValue.TIMESTAMP
-                                });
-                            }
-                        }
-                    });
-                }, 3000);
-        
-                // Очищаем интервал при закрытии страницы
-                window.addEventListener('beforeunload', () => {
-                    clearInterval(balanceInterval);
-                });
-        
-            } catch (error) {
-                console.error('Ошибка инициализации:', error);
-                document.getElementById('name').textContent = 'Гость';
-                document.getElementById('username').textContent = '(-)';
-                document.getElementById('balance').textContent = '0';
-                
-                const avatarImg = document.getElementById('userAvatar');
-                showInitials(avatarImg, 'Гость');
             }
-        }
-        // Функция для обновления профиля пользователя
-    function updateUserProfile(tgUser) {
-        const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
-        const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
-        
-        document.getElementById('name').textContent = userName;
-        document.getElementById('username').textContent = userUsername;
-
-        // Устанавливаем аватар
-        const avatarImg = document.getElementById('userAvatar');
-        if (tgUser.photo_url) {
-            avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
-            avatarImg.onerror = function() {
-                showInitials(avatarImg, userName);
-            };
-        } else {
-            showInitials(avatarImg, userName);
-        }
-    }
         // Функция для инициализации истории
         async function initHistory(userId) {
             try {
