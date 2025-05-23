@@ -720,11 +720,12 @@
         element.textContent = name.charAt(0).toUpperCase();
     }
                 
-        // Функция для инициализации приложения
         async function initApp() {
             try {
                 let tgUser = {};
                 let isDemoMode = false;
+                let lastRefreshTime = 0;
+                const refreshCooldown = 10000; // 10 секунд
                 
                 // 1. Получаем данные пользователя из Telegram WebApp
                 if (window.Telegram && window.Telegram.WebApp) {
@@ -792,7 +793,7 @@
                 const userId = tgUser.id;
                 const userRef = database.ref('users/' + userId);
         
-                // Проверяем/создаем пользователя в БД
+                // Проверяем/создаем пользователя в БД (без created_at и last_active)
                 const snapshot = await userRef.once('value');
                 
                 if (!snapshot.exists()) {
@@ -800,33 +801,51 @@
                         tg_id: userId,
                         tg_username: tgUser.username || 'не указан',
                         tg_name: userName,
-                        stars: 0,
-                        created_at: firebase.database.ServerValue.TIMESTAMP,
-                        last_active: firebase.database.ServerValue.TIMESTAMP
+                        stars: 0
                     });
                     console.log('Новый пользователь создан в Firebase');
                 }
         
-                // 7. Обновляем баланс каждые 3 секунды
-                let balanceInterval = setInterval(() => {
-                    userRef.once('value').then((snap) => {
+                // Загружаем баланс при входе
+                await refreshBalance();
+        
+                // Обработчик кнопки обновления
+                document.getElementById('refreshBalanceBtn').addEventListener('click', async () => {
+                    const now = Date.now();
+                    if (now - lastRefreshTime < refreshCooldown) {
+                        const remaining = Math.ceil((refreshCooldown - (now - lastRefreshTime)) / 1000);
+                        alert(`Подождите ${remaining} секунд перед следующим обновлением`);
+                        return;
+                    }
+                    
+                    lastRefreshTime = now;
+                    await refreshBalance();
+                });
+        
+                async function refreshBalance() {
+                    const balanceElement = document.getElementById('balance');
+                    const refreshBtn = document.getElementById('refreshBalanceBtn');
+                    
+                    // Показываем "--" на секунду
+                    balanceElement.textContent = '--';
+                    refreshBtn.disabled = true;
+                    
+                    try {
+                        const snap = await userRef.once('value');
                         if (snap.exists()) {
                             const data = snap.val();
-                            document.getElementById('balance').textContent = data.stars || '0';
-                            // Обновляем last_active только если пользователь не в демо-режиме
-                            if (!isDemoMode) {
-                                userRef.update({
-                                    last_active: firebase.database.ServerValue.TIMESTAMP
-                                });
-                            }
+                            // Задержка 1 секунда перед отображением нового баланса
+                            setTimeout(() => {
+                                balanceElement.textContent = data.stars || '0';
+                                refreshBtn.disabled = false;
+                            }, 1000);
                         }
-                    });
-                }, 3000);
-        
-                // Очищаем интервал при закрытии страницы
-                window.addEventListener('beforeunload', () => {
-                    clearInterval(balanceInterval);
-                });
+                    } catch (error) {
+                        console.error('Ошибка обновления баланса:', error);
+                        balanceElement.textContent = '0';
+                        refreshBtn.disabled = false;
+                    }
+                }
         
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
