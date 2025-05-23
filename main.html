@@ -74,15 +74,6 @@
             margin: 0;
         }
         
-        .settings-btn {
-            background: none;
-            border: none;
-            color: #40e0d0;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
         .balance-card {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             border-radius: 12px;
@@ -91,35 +82,23 @@
             align-items: center;
             margin-bottom: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        
+        .balance-label-top {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
         }
         
         .sticker {
             font-size: 36px;
             margin-right: 15px;
-            position: relative;
-        }
-        
-        .star-particle {
-            position: absolute;
-            background-color: gold;
-            border-radius: 50%;
-            pointer-events: none;
-            animation: particle 2s infinite ease-out;
-        }
-        
-        @keyframes particle {
-            0% {
-                transform: translate(0, 0);
-                opacity: 1;
-                width: 2px;
-                height: 2px;
-            }
-            100% {
-                transform: translate(var(--tx), var(--ty));
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
         }
         
         .balance-info {
@@ -161,7 +140,6 @@
             align-items: center;
             justify-content: center;
             height: 80px;
-            position: relative;
         }
         
         .btn-circle {
@@ -246,6 +224,10 @@
             background-color: #2a2a3a;
             color: white;
             margin-bottom: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .bottom-nav {
@@ -282,7 +264,7 @@
             color: #40e0d0;
         }
         
-        /* Стили для попапа настроек */
+        /* Стили для попапа пополнения */
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -330,9 +312,10 @@
             margin-top: 0;
             margin-bottom: 20px;
             color: #40e0d0;
+            text-align: center;
         }
         
-        .settings-form {
+        .deposit-form {
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -350,15 +333,78 @@
         }
         
         .form-input {
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
             border: 1px solid #2a2a3a;
             background-color: #2a2a3a;
             color: white;
             font-family: inherit;
+            font-size: 16px;
         }
         
-        .save-btn {
+        .form-input:focus {
+            outline: none;
+            border-color: #40e0d0;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .payment-methods {
+            margin-top: 15px;
+        }
+        
+        .payment-title {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+        
+        .payment-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .payment-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #2a2a3a;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .payment-option:hover {
+            background-color: #333344;
+        }
+        
+        .payment-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .payment-name {
+            flex: 1;
+            font-weight: bold;
+        }
+        
+        .payment-fee {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .deposit-btn {
             padding: 12px;
             border-radius: 6px;
             border: none;
@@ -367,6 +413,12 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .deposit-btn:disabled {
+            background-color: #2a2a3a;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -376,13 +428,11 @@
     <div class="container">
         <div class="name-card">
             <div class="name" id="name">Загрузка...</div>
-            <button class="settings-btn" id="settingsBtn">⚙️</button>
         </div>
         
         <div class="balance-card">
-            <div class="sticker" id="starSticker">⭐
-                <!-- Частицы будут добавляться через JS -->
-            </div>
+            <div class="balance-label-top">Баланс</div>
+            <div class="sticker">⭐</div>
             <div class="balance-info">
                 <div class="balance-label">STARS</div>
                 <div class="balance-amount" id="balance">0</div>
@@ -390,13 +440,13 @@
         </div>
         
         <div class="action-buttons">
-            <button class="btn btn-deposit">
+            <button class="btn btn-deposit" id="depositBtn">
                 <div class="btn-circle">
                     <div class="btn-icon"></div>
                 </div>
                 <div>Пополнить</div>
             </button>
-            <button class="btn btn-withdraw">
+            <button class="btn btn-withdraw" id="withdrawBtn">
                 <div class="btn-circle">
                     <div class="btn-icon"></div>
                 </div>
@@ -404,7 +454,7 @@
             </button>
         </div>
         
-        <button class="history-btn">История транзакций</button>
+        <button class="history-btn">📋 История транзакций</button>
     </div>
     
     <div class="bottom-nav">
@@ -413,34 +463,49 @@
             <span>Главная</span>
         </a>
         <a href="#" class="nav-item">
-            <span class="nav-icon">🎮</span>
+            <span class="nav-icon" style="color: #a0a0a0;">🎮</span>
             <span>Игры</span>
         </a>
         <a href="#" class="nav-item">
-            <span class="nav-icon">🤝</span>
+            <span class="nav-icon" style="color: #a0a0a0;">🤝</span>
             <span>Партнерство</span>
         </a>
     </div>
 
-    <!-- Попап настроек -->
-    <div class="popup-overlay" id="settingsPopup">
+    <!-- Попап пополнения баланса -->
+    <div class="popup-overlay" id="depositPopup">
         <div class="popup-content">
-            <button class="popup-close" id="closePopup">✕</button>
-            <h3 class="popup-title">Настройки</h3>
-            <form class="settings-form" id="settingsForm">
+            <button class="popup-close" id="closeDepositPopup">✕</button>
+            <h3 class="popup-title">Пополнение баланса</h3>
+            <form class="deposit-form" id="depositForm">
                 <div class="form-group">
-                    <label class="form-label">TON Кошелек</label>
-                    <input type="text" class="form-input" id="tonWallet" placeholder="Введите адрес TON кошелька">
+                    <label class="form-label">Сумма (STARS)</label>
+                    <input type="number" class="form-input" id="depositAmount" placeholder="Введите сумму" min="10" step="10">
+                    <div class="error-message" id="amountError"></div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Юзернейм для вывода</label>
-                    <input type="text" class="form-input" id="withdrawUsername" placeholder="Ваш юзернейм">
+                
+                <div class="payment-methods">
+                    <div class="payment-title">Способы оплаты:</div>
+                    <div class="payment-options">
+                        <div class="payment-option" data-method="ton">
+                            <div class="payment-icon">💎</div>
+                            <div class="payment-name">TON</div>
+                            <div class="payment-fee">Комиссия: 0%</div>
+                        </div>
+                        <div class="payment-option" data-method="usdt">
+                            <div class="payment-icon">💵</div>
+                            <div class="payment-name">USDT (TRC20)</div>
+                            <div class="payment-fee">Комиссия: 1%</div>
+                        </div>
+                        <div class="payment-option" data-method="crypto_bot">
+                            <div class="payment-icon">🤖</div>
+                            <div class="payment-name">Crypto Bot</div>
+                            <div class="payment-fee">Комиссия: 0.5%</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">USDT Кошелек</label>
-                    <input type="text" class="form-input" id="usdtWallet" placeholder="Введите адрес USDT кошелька">
-                </div>
-                <button type="submit" class="save-btn">Сохранить</button>
+                
+                <button type="submit" class="deposit-btn" id="submitDeposit" disabled>Пополнить</button>
             </form>
         </div>
     </div>
@@ -545,77 +610,114 @@
         }
     }
 
-    // Анимация звезды с частицами
-    function animateStar() {
-        const star = document.getElementById('starSticker');
-        const particlesCount = 5;
-        
-        for (let i = 0; i < particlesCount; i++) {
-            const particle = document.createElement('div');
-            particle.classList.add('star-particle');
-            
-            // Случайное направление частицы
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 10 + Math.random() * 20;
-            const tx = Math.cos(angle) * distance;
-            const ty = Math.sin(angle) * distance;
-            
-            particle.style.setProperty('--tx', `${tx}px`);
-            particle.style.setProperty('--ty', `${ty}px`);
-            
-            // Случайная задержка
-            particle.style.animationDelay = `${Math.random() * 0.5}s`;
-            
-            star.appendChild(particle);
-            
-            // Удаляем частицу после анимации
-            setTimeout(() => {
-                particle.remove();
-            }, 2000);
-        }
-    }
+    // Управление попапом пополнения
+    function setupDepositPopup() {
+        const popup = document.getElementById('depositPopup');
+        const depositBtn = document.getElementById('depositBtn');
+        const closeBtn = document.getElementById('closeDepositPopup');
+        const depositForm = document.getElementById('depositForm');
+        const depositAmount = document.getElementById('depositAmount');
+        const amountError = document.getElementById('amountError');
+        const submitBtn = document.getElementById('submitDeposit');
+        let selectedMethod = null;
 
-    // Управление попапом настроек
-    function setupSettingsPopup() {
-        const popup = document.getElementById('settingsPopup');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const closeBtn = document.getElementById('closePopup');
-        const settingsForm = document.getElementById('settingsForm');
-        
-        settingsBtn.addEventListener('click', () => {
+        // Открытие попапа
+        depositBtn.addEventListener('click', () => {
             popup.classList.add('active');
         });
         
+        // Закрытие попапа
         closeBtn.addEventListener('click', () => {
             popup.classList.remove('active');
+            resetForm();
         });
         
-        settingsForm.addEventListener('submit', (e) => {
+        // Выбор метода оплаты
+        document.querySelectorAll('.payment-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.payment-option').forEach(opt => {
+                    opt.style.backgroundColor = '#2a2a3a';
+                });
+                option.style.backgroundColor = '#333344';
+                selectedMethod = option.getAttribute('data-method');
+                validateForm();
+            });
+        });
+        
+        // Валидация суммы
+        depositAmount.addEventListener('input', () => {
+            validateForm();
+        });
+        
+        // Отправка формы
+        depositForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            // Здесь можно добавить сохранение настроек
-            const tonWallet = document.getElementById('tonWallet').value;
-            const withdrawUsername = document.getElementById('withdrawUsername').value;
-            const usdtWallet = document.getElementById('usdtWallet').value;
+            if (!selectedMethod || !depositAmount.value) return;
             
-            console.log('Настройки сохранены:', {
-                tonWallet,
-                withdrawUsername,
-                usdtWallet
-            });
+            const amount = parseInt(depositAmount.value);
             
+            // Здесь можно добавить логику обработки платежа
+            console.log('Пополнение на:', amount, 'STARS');
+            console.log('Метод оплаты:', selectedMethod);
+            
+            // Закрываем попап и сбрасываем форму
             popup.classList.remove('active');
+            resetForm();
+            
+            // Здесь можно добавить редирект на оплату или другую логику
+            alert(`Запрос на пополнение ${amount} STARS через ${selectedMethod.toUpperCase()} отправлен!`);
         });
+        
+        // Валидация формы
+        function validateForm() {
+            const amount = parseInt(depositAmount.value);
+            let isValid = true;
+            
+            // Проверка суммы
+            if (isNaN(amount) {
+                amountError.style.display = 'none';
+                submitBtn.disabled = true;
+                return;
+            }
+            
+            if (amount < 10) {
+                amountError.textContent = 'Минимальная сумма 10 STARS';
+                amountError.style.display = 'block';
+                isValid = false;
+            } else if (amount % 10 !== 0) {
+                amountError.textContent = 'Сумма должна быть кратна 10';
+                amountError.style.display = 'block';
+                isValid = false;
+            } else {
+                amountError.style.display = 'none';
+            }
+            
+            // Проверка выбранного метода
+            if (!selectedMethod) {
+                isValid = false;
+            }
+            
+            submitBtn.disabled = !isValid;
+        }
+        
+        // Сброс формы
+        function resetForm() {
+            depositAmount.value = '';
+            amountError.style.display = 'none';
+            selectedMethod = null;
+            submitBtn.disabled = true;
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.style.backgroundColor = '#2a2a3a';
+            });
+        }
     }
 
     // Запуск приложения после загрузки страницы
     document.addEventListener('DOMContentLoaded', () => {
         createStars();
         tg.expand();
-        setupSettingsPopup();
-        
-        // Запускаем анимацию звезды каждые 2 секунды
-        setInterval(animateStar, 2000);
+        setupDepositPopup();
         
         // Даем время на инициализацию Telegram WebApp
         setTimeout(() => {
