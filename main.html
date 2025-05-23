@@ -695,92 +695,164 @@
         element.style.fontWeight = 'bold';
         element.textContent = name.charAt(0).toUpperCase();
     }
-
-     // Основная функция инициализации
-    async function initApp() {
-        try {
-            let tgUser = {};
-            
-            // 1. Получаем данные пользователя из Telegram WebApp
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
+        
+        async function initApp() {
+            try {
+                let tgUser = {};
+                let fromCookie = false;
                 
-                // Проверяем разные способы получения данных
-                if (tg.initDataUnsafe?.user) {
-                    tgUser = tg.initDataUnsafe.user;
-                    console.log('Данные из initDataUnsafe:', tgUser);
-                } else if (tg.initData) {
-                    try {
-                        const initData = new URLSearchParams(tg.initData);
-                        const userJson = initData.get('user');
-                        if (userJson) {
-                            tgUser = JSON.parse(decodeURIComponent(userJson));
-                            console.log('Данные из initData:', tgUser);
+                // 1. Получаем данные пользователя из Telegram WebApp
+                if (window.Telegram && window.Telegram.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    
+                    if (tg.initDataUnsafe?.user) {
+                        tgUser = tg.initDataUnsafe.user;
+                        console.log('Данные из initDataUnsafe:', tgUser);
+                    } else if (tg.initData) {
+                        try {
+                            const initData = new URLSearchParams(tg.initData);
+                            const userJson = initData.get('user');
+                            if (userJson) {
+                                tgUser = JSON.parse(decodeURIComponent(userJson));
+                                console.log('Данные из initData:', tgUser);
+                            }
+                        } catch (e) {
+                            console.error('Ошибка парсинга initData:', e);
                         }
-                    } catch (e) {
-                        console.error('Ошибка парсинга initData:', e);
                     }
                 }
-            }
-
-            // 2. Если нет данных из Telegram - используем демо-режим
-            if (!tgUser.id) {
-                tgUser = {
-                    id: 'demo_' + Math.random().toString(36).substr(2, 9),
-                    first_name: 'Гость',
-                    username: undefined,
-                    photo_url: undefined
-                };
-                console.log('Демо-режим:', tgUser);
-            }
-
-            // 3. Отображаем данные пользователя
-            updateUserProfile(tgUser);
-
-            // 4. Работа с Firebase
-            const userId = tgUser.id;
-            const userRef = database.ref('users/' + userId);
-            const historyRef = database.ref('history');
-
-            // Проверяем/создаем пользователя в БД
-            const userSnapshot = await userRef.once('value');
-            
-            if (!userSnapshot.exists()) {
-                await userRef.set({
-                    tg_id: userId,
-                    tg_username: tgUser.username || 'не указан',
-                    tg_name: tgUser.first_name || 'Пользователь',
-                    stars: 0,
-                    created_at: firebase.database.ServerValue.TIMESTAMP,
-                    last_active: firebase.database.ServerValue.TIMESTAMP
-                });
-                console.log('Новый пользователь создан в Firebase');
-            } else {
-                // Обновляем время последней активности
-                await userRef.update({
-                    last_active: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-
-            // 5. Создаем запись в истории
-            await initHistory(userId);
-
-            // 6. Слушаем изменения баланса
-            userRef.on('value', (snap) => {
-                if (snap.exists()) {
-                    const data = snap.val();
-                    document.getElementById('balance').textContent = data.stars || '0';
+        
+                // 2. Если нет данных из Telegram, пробуем из cookies
+                if (!tgUser.id) {
+                    const tgUserId = getCookie('tg_user_id');
+                    const tgName = getCookie('tg_name');
+                    const tgUsername = getCookie('tg_username');
+                    
+                    if (tgUserId && tgName) {
+                        tgUser = {
+                            id: tgUserId,
+                            first_name: tgName,
+                            username: tgUsername || undefined,
+                            photo_url: getCookie('tg_photo_url') || undefined
+                        };
+                        fromCookie = true;
+                        console.log('Данные из cookies:', tgUser);
+                    }
                 }
-            });
-
-        } catch (error) {
-            console.error('Ошибка инициализации:', error);
-            document.getElementById('name').textContent = 'Гость';
-            document.getElementById('username').textContent = '(-)';
-            document.getElementById('balance').textContent = '0';
-            showInitials(document.getElementById('userAvatar'), 'Гость');
+        
+                // 3. Если все еще нет данных - демо-режим
+                if (!tgUser.id) {
+                    tgUser = {
+                        id: 'demo_' + Math.random().toString(36).substr(2, 9),
+                        first_name: 'Гость',
+                        username: undefined,
+                        photo_url: undefined
+                    };
+                    console.log('Демо-режим:', tgUser);
+                }
+        
+                // 4. Отображаем данные пользователя
+                const userName = sanitizeText(tgUser.first_name || 'Пользователь');
+                const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
+                
+                document.getElementById('name').textContent = userName;
+                document.getElementById('username').textContent = userUsername;
+        
+                // 5. Устанавливаем аватар
+                const avatarImg = document.getElementById('userAvatar');
+                if (tgUser.photo_url) {
+                    avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
+                    avatarImg.onerror = function() {
+                        showInitials(avatarImg, userName);
+                    };
+                } else {
+                    showInitials(avatarImg, userName);
+                }
+        
+                // 6. Сохраняем данные в cookies (если не из cookies)
+                if (!fromCookie && tgUser.id) {
+                    setCookie('tg_user_id', tgUser.id, 30);
+                    setCookie('tg_name', userName, 30);
+                    setCookie('tg_username', tgUser.username || '', 30);
+                    if (tgUser.photo_url) setCookie('tg_photo_url', tgUser.photo_url, 30);
+                }
+        
+                // 7. Работа с Firebase
+                const userId = tgUser.id;
+                const userRef = database.ref('users/' + userId);
+        
+                // Проверяем/создаем пользователя в БД
+                const snapshot = await userRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    const newUser = {
+                        tg_id: userId,
+                        tg_username: tgUser.username ? `@${tgUser.username}` : 'не указан',
+                        tg_name: userName,
+                        stars: 0,
+                        created_at: firebase.database.ServerValue.TIMESTAMP,
+                        last_active: firebase.database.ServerValue.TIMESTAMP
+                    };
+        
+                    await userRef.set(newUser);
+                    console.log('Новый пользователь создан в Firebase:', newUser);
+                } else {
+                    // Обновляем время последней активности
+                    await userRef.update({
+                        last_active: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+        
+                // 8. Инициализация истории транзакций
+                const historyRef = database.ref('history');
+                
+                // Проверяем существование корня history
+                const historyRootSnapshot = await historyRef.once('value');
+                
+                // Если корня нет и это админ - создаем корень
+                if (!historyRootSnapshot.exists() && userId === ADMIN_ID) {
+                    await historyRef.set({
+                        created_at: firebase.database.ServerValue.TIMESTAMP,
+                        created_by: ADMIN_ID,
+                        description: "Корень истории транзакций"
+                    });
+                    console.log('Создан корень history');
+                }
+                
+                // Для всех пользователей (включая админа) проверяем/создаем свою ветку
+                const userHistoryRef = historyRef.child(userId);
+                const userHistorySnapshot = await userHistoryRef.once('value');
+                
+                if (!userHistorySnapshot.exists()) {
+                    await userHistoryRef.set({
+                        user_id: userId,
+                        user_name: userName,
+                        user_username: tgUser.username || '',
+                        created_at: firebase.database.ServerValue.TIMESTAMP,
+                        last_active: firebase.database.ServerValue.TIMESTAMP,
+                        transactions: {}
+                    });
+                    console.log(`Создана запись в истории для пользователя ${userId}`);
+                }
+        
+                // 9. Слушаем изменения баланса
+                userRef.on('value', (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        document.getElementById('balance').textContent = data.stars || '0';
+                    }
+                });
+        
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('name').textContent = 'Гость';
+                document.getElementById('username').textContent = '(-)';
+                document.getElementById('balance').textContent = '0';
+                
+                const avatarImg = document.getElementById('userAvatar');
+                showInitials(avatarImg, 'Гость');
+            }
         }
-    }
         // Функция для обновления профиля пользователя
     function updateUserProfile(tgUser) {
         const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
@@ -801,35 +873,43 @@
         }
     }
         // Функция для инициализации истории
-    async function initHistory(userId) {
-        try {
-            const historyRef = database.ref('history');
-            
-            if (userId === ADMIN_ID) {
-                // Для админа проверяем существование корня history
-                const snapshot = await historyRef.once('value');
-                if (!snapshot.exists()) {
-                    await historyRef.set({
-                        created_at: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    console.log('Создан корень history для админа');
-                }
-            } else {
-                // Для обычного пользователя создаем подкорень если его нет
-                const userHistoryRef = historyRef.child(userId);
-                const snapshot = await userHistoryRef.once('value');
+        async function initHistory(userId) {
+            try {
+                const historyRef = database.ref('history');
                 
-                if (!snapshot.exists()) {
-                    await userHistoryRef.set({
-                        created_at: firebase.database.ServerValue.TIMESTAMP
+                // 1. Сначала проверяем существование корня history
+                const rootSnapshot = await historyRef.once('value');
+                
+                // 2. Если корня нет - создаем (для админа или первого пользователя)
+                if (!rootSnapshot.exists() && userId === ADMIN_ID) {
+                    await historyRef.set({
+                        created_at: firebase.database.ServerValue.TIMESTAMP,
+                        created_by: ADMIN_ID
                     });
-                    console.log('Создана запись в истории для пользователя:', userId);
+                    console.log('Корень history создан админом');
                 }
+                
+                // 3. Проверяем существование подкорня с ID пользователя
+                const userHistoryRef = historyRef.child(userId);
+                const userSnapshot = await userHistoryRef.once('value');
+                
+                // 4. Если подкорня нет - создаем (для всех пользователей, включая админа)
+                if (!userSnapshot.exists()) {
+                    await userHistoryRef.set({
+                        created_at: firebase.database.ServerValue.TIMESTAMP,
+                        user_id: userId,
+                        user_name: getCookie('tg_name') || 'Пользователь',
+                        user_username: getCookie('tg_username') || ''
+                    });
+                    console.log(`Создана запись в истории для пользователя: ${userId}`);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Ошибка инициализации истории:', error);
+                return false;
             }
-        } catch (error) {
-            console.error('Ошибка инициализации истории:', error);
         }
-    }
 
     // Создание звездного фона
     function createStars() {
