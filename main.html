@@ -783,22 +783,37 @@
                     console.log('Новый пользователь создан в Firebase');
                 }
         
-                // 7. Слушаем изменения баланса в реальном времени
-                userRef.on('value', (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.val();
-                        document.getElementById('balance').textContent = data.stars || '0';
-                        
-                        // Обновляем last_active только если пользователь не в демо-режиме
-                        if (!isDemoMode) {
-                            userRef.update({
-                                last_active: firebase.database.ServerValue.TIMESTAMP
-                            }).catch(error => {
-                                console.error('Ошибка обновления last_active:', error);
-                            });
+                // 7. Обновляем баланс каждые 3 секунды
+                let balanceInterval = setInterval(() => {
+                    userRef.once('value').then((snap) => {
+                        if (snap.exists()) {
+                            const data = snap.val();
+                            document.getElementById('balance').textContent = data.stars || '0';
+                            // Обновляем last_active только если пользователь не в демо-режиме
+                            if (!isDemoMode) {
+                                userRef.update({
+                                    last_active: firebase.database.ServerValue.TIMESTAMP
+                                });
+                            }
                         }
-                    }
+                    });
+                }, 3000);
+        
+                // Очищаем интервал при закрытии страницы
+                window.addEventListener('beforeunload', () => {
+                    clearInterval(balanceInterval);
                 });
+        
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('name').textContent = 'Гость';
+                document.getElementById('username').textContent = '(-)';
+                document.getElementById('balance').textContent = '0';
+                
+                const avatarImg = document.getElementById('userAvatar');
+                showInitials(avatarImg, 'Гость');
+            }
+        }
         // Функция для обновления профиля пользователя
     function updateUserProfile(tgUser) {
         const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
