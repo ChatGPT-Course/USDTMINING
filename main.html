@@ -695,10 +695,12 @@
         element.style.fontWeight = 'bold';
         element.textContent = name.charAt(0).toUpperCase();
     }
-        
+                
+        // Функция для инициализации приложения
         async function initApp() {
             try {
                 let tgUser = {};
+                let isDemoMode = false;
                 
                 // 1. Получаем данные пользователя из Telegram WebApp
                 if (window.Telegram && window.Telegram.WebApp) {
@@ -721,25 +723,37 @@
                     }
                 }
         
-                // 2. Если нет данных из Telegram - используем демо-режим
+                // 2. Если нет данных из Telegram - используем сохраненные данные или демо-режим
                 if (!tgUser.id) {
-                    tgUser = {
-                        id: 'demo_' + Math.random().toString(36).substr(2, 9),
-                        first_name: 'Гость',
-                        username: undefined,
-                        photo_url: undefined
-                    };
-                    console.log('Демо-режим:', tgUser);
+                    const savedUser = localStorage.getItem('tg_user');
+                    if (savedUser) {
+                        tgUser = JSON.parse(savedUser);
+                        console.log('Используем сохраненные данные:', tgUser);
+                    } else {
+                        tgUser = {
+                            id: 'demo_' + Math.random().toString(36).substr(2, 9),
+                            first_name: 'Гость',
+                            username: undefined,
+                            photo_url: undefined
+                        };
+                        isDemoMode = true;
+                        console.log('Демо-режим:', tgUser);
+                    }
                 }
         
-                // 3. Отображаем данные пользователя
+                // 3. Сохраняем данные пользователя
+                if (!isDemoMode) {
+                    localStorage.setItem('tg_user', JSON.stringify(tgUser));
+                }
+        
+                // 4. Отображаем данные пользователя (один раз при загрузке)
                 const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
                 const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
         
                 document.getElementById('name').textContent = userName;
                 document.getElementById('username').textContent = userUsername;
         
-                // 4. Устанавливаем аватар
+                // 5. Устанавливаем аватар (один раз при загрузке)
                 const avatarImg = document.getElementById('userAvatar');
                 if (tgUser.photo_url) {
                     avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
@@ -750,7 +764,7 @@
                     showInitials(avatarImg, userName);
                 }
         
-                // 5. Работа с Firebase
+                // 6. Работа с Firebase
                 const userId = tgUser.id;
                 const userRef = database.ref('users/' + userId);
         
@@ -767,49 +781,27 @@
                         last_active: firebase.database.ServerValue.TIMESTAMP
                     });
                     console.log('Новый пользователь создан в Firebase');
-                } else {
-                    await userRef.update({
-                        last_active: firebase.database.ServerValue.TIMESTAMP
-                    });
                 }
         
-                // 6. Инициализация истории транзакций
-                const historyRef = database.ref('history');
-                const historyUserRef = historyRef.child(userId);
-        
-                const historySnapshot = await historyUserRef.once('value');
-                
-                if (!historySnapshot.exists()) {
-                    await historyUserRef.set({
-                        user_id: userId,
-                        user_name: userName,
-                        user_username: tgUser.username || '',
-                        created_at: firebase.database.ServerValue.TIMESTAMP,
-                        last_active: firebase.database.ServerValue.TIMESTAMP,
-                        transactions: {}
-                    });
-                    console.log('Создана запись в истории для пользователя:', userId);
-        
-                    // Для админа создаем корень если его нет
-                    if (userId === ADMIN_ID) {
-                        const rootSnapshot = await historyRef.once('value');
-                        if (!rootSnapshot.exists()) {
-                            await historyRef.set({
-                                created_at: firebase.database.ServerValue.TIMESTAMP,
-                                created_by: ADMIN_ID,
-                                description: "Корень истории транзакций"
-                            });
-                            console.log('Создан корень history');
+                // 7. Обновляем баланс каждые 3 секунды
+                let balanceInterval = setInterval(() => {
+                    userRef.once('value').then((snap) => {
+                        if (snap.exists()) {
+                            const data = snap.val();
+                            document.getElementById('balance').textContent = data.stars || '0';
+                            // Обновляем last_active только если пользователь не в демо-режиме
+                            if (!isDemoMode) {
+                                userRef.update({
+                                    last_active: firebase.database.ServerValue.TIMESTAMP
+                                });
+                            }
                         }
-                    }
-                }
+                    });
+                }, 3000);
         
-                // 7. Слушаем изменения баланса
-                userRef.on('value', (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.val();
-                        document.getElementById('balance').textContent = data.stars || '0';
-                    }
+                // Очищаем интервал при закрытии страницы
+                window.addEventListener('beforeunload', () => {
+                    clearInterval(balanceInterval);
                 });
         
             } catch (error) {
