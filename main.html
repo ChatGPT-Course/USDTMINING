@@ -120,25 +120,37 @@
             border-radius: 10px;
         }
         
+        .balance-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        
         .sticker {
             font-size: 36px;
             margin-right: 15px;
+            flex-shrink: 0;
         }
         
         .balance-info {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
         
         .balance-label {
-            font-size: 14px;
+            font-size: 12px;
             color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 5px;
+            margin-bottom: 2px;
+            margin-top: -5px;
         }
         
         .balance-amount {
             font-size: 24px;
             font-weight: bold;
             color: white;
+            margin: 0;
         }
         
         .action-buttons {
@@ -276,19 +288,28 @@
         }
         
         .nav-icon {
-            font-size: 24px;
+            width: 24px;
+            height: 24px;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-icon svg {
+            width: 100%;
+            height: 100%;
         }
         
         .nav-item.active {
             color: #40e0d0;
         }
         
-        .nav-item.active .nav-icon {
-            color: #40e0d0;
+        .nav-item.active .nav-icon svg path {
+            fill: #40e0d0;
         }
         
-        /* Стили для попапа пополнения */
+        /* Стили для попапов */
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -319,6 +340,8 @@
             max-width: 400px;
             position: relative;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         .popup-close {
@@ -339,6 +362,7 @@
             text-align: center;
         }
         
+        /* Стили для попапа пополнения */
         .deposit-form {
             display: flex;
             flex-direction: column;
@@ -444,6 +468,50 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
+        
+        /* Стили для попапа истории */
+        .history-list {
+            margin-top: 15px;
+        }
+        
+        .history-item {
+            background-color: #2a2a3a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .history-user {
+            font-weight: bold;
+            color: #40e0d0;
+        }
+        
+        .history-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .history-amount {
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .history-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .empty-history {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -462,10 +530,12 @@
         
         <div class="balance-card">
             <div class="balance-label-top">Баланс</div>
-            <div class="sticker">⭐</div>
-            <div class="balance-info">
-                <div class="balance-label">STARS</div>
-                <div class="balance-amount" id="balance">0</div>
+            <div class="balance-content">
+                <div class="sticker">⭐</div>
+                <div class="balance-info">
+                    <div class="balance-amount" id="balance">0</div>
+                    <div class="balance-label">STARS</div>
+                </div>
             </div>
         </div>
         
@@ -484,20 +554,41 @@
             </button>
         </div>
         
-        <button class="history-btn">📋 История транзакций</button>
+        <button class="history-btn" id="historyBtn">📋 История транзакций</button>
     </div>
     
     <div class="bottom-nav">
-        <a href="#" class="nav-item active">
-            <span class="nav-icon">🏠</span>
+        <a href="index.html" class="nav-item active">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" fill="#40E0D0"/>
+                    <path d="M9 22V12H15V22" fill="#0f0f1a"/>
+                </svg>
+            </div>
             <span>Главная</span>
         </a>
         <a href="game.html" class="nav-item">
-            <span class="nav-icon" style="color: #a0a0a0;">🎮</span>
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 6H3C2.44772 6 2 6.44772 2 7V17C2 17.5523 2.44772 18 3 18H21C21.5523 18 22 17.5523 22 17V7C22 6.44772 21.5523 6 21 6Z" fill="#a0a0a0"/>
+                    <path d="M12 8C11.4477 8 11 8.44772 11 9V10H10C9.44772 10 9 10.4477 9 11C9 11.5523 9.44772 12 10 12H11V13C11 13.5523 11.4477 14 12 14C12.5523 14 13 13.5523 13 13V12H14C14.5523 12 15 11.5523 15 11C15 10.4477 14.5523 10 14 10H13V9C13 8.44772 12.5523 8 12 8Z" fill="#0f0f1a"/>
+                    <path d="M17 10H16V11H17C17.5523 11 18 10.5523 18 10C18 9.44772 17.5523 9 17 9C16.4477 9 16 9.44772 16 10V11H17Z" fill="#0f0f1a"/>
+                    <path d="M7 10H8V11H7C6.44772 11 6 10.5523 6 10C6 9.44772 6.44772 9 7 9C7.55228 9 8 9.44772 8 10V11H7Z" fill="#0f0f1a"/>
+                </svg>
+            </div>
             <span>Игры</span>
         </a>
         <a href="friend.html" class="nav-item">
-            <span class="nav-icon" style="color: #a0a0a0;">🤝</span>
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" fill="#a0a0a0"/>
+                    <path d="M8 12C8 13.1046 7.10457 14 6 14C4.89543 14 4 13.1046 4 12C4 10.8954 4.89543 10 6 10C7.10457 10 8 10.8954 8 12Z" fill="#0f0f1a"/>
+                    <path d="M20 12C20 13.1046 19.1046 14 18 14C16.8954 14 16 13.1046 16 12C16 10.8954 16.8954 10 18 10C19.1046 10 20 10.8954 20 12Z" fill="#0f0f1a"/>
+                    <path d="M7.5 16C8.32843 16 9 15.3284 9 14.5C9 13.6716 8.32843 13 7.5 13C6.67157 13 6 13.6716 6 14.5C6 15.3284 6.67157 16 7.5 16Z" fill="#0f0f1a"/>
+                    <path d="M16.5 16C17.3284 16 18 15.3284 18 14.5C18 13.6716 17.3284 13 16.5 13C15.6716 13 15 13.6716 15 14.5C15 15.3284 15.6716 16 16.5 16Z" fill="#0f0f1a"/>
+                    <path d="M12 18C13.1046 18 14 17.1046 14 16C14 14.8954 13.1046 14 12 14C10.8954 14 10 14.8954 10 16C10 17.1046 10.8954 18 12 18Z" fill="#0f0f1a"/>
+                </svg>
+            </div>
             <span>Партнерство</span>
         </a>
     </div>
@@ -533,6 +624,17 @@
         </div>
     </div>
 
+    <!-- Попап истории транзакций -->
+    <div class="popup-overlay" id="historyPopup">
+        <div class="popup-content">
+            <button class="popup-close" id="closeHistoryPopup">✕</button>
+            <h3 class="popup-title">История транзакций</h3>
+            <div class="history-list" id="historyList">
+                <div class="empty-history">История транзакций пуста</div>
+            </div>
+        </div>
+    </div>
+
 <script>
     // Инициализация Telegram WebApp
     const tg = window.Telegram.WebApp;
@@ -551,6 +653,9 @@
     // Инициализация Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+
+    // ID админа (замените на ваш)
+    const ADMIN_ID = "1515638372";
 
     // Функция для работы с cookies
     function setCookie(name, value, days) {
@@ -574,123 +679,173 @@
         return null;
     }
 
-        // Замените функцию initApp() в вашем коде на эту:
-        
-        async function initApp() {
-            try {
-                let tgUser = {};
-                let fromCookie = false;
+    // Функция для очистки текста от спецсимволов
+    function sanitizeText(text) {
+        return text.replace(/[^\p{L}\p{N}\s]/gu, '').trim() || 'Пользователь';
+    }
+
+    // Функция для отображения инициалов
+    function showInitials(element, name) {
+        element.src = '';
+        element.style.backgroundColor = '#2a2a3a';
+        element.style.display = 'flex';
+        element.style.alignItems = 'center';
+        element.style.justifyContent = 'center';
+        element.style.color = '#40e0d0';
+        element.style.fontWeight = 'bold';
+        element.textContent = name.charAt(0).toUpperCase();
+    }
+
+    // Основная функция инициализации
+    async function initApp() {
+        try {
+            let tgUser = {};
+            let fromCookie = false;
+            
+            // 1. Пробуем получить данные из Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
                 
-                // 1. Пробуем получить данные из Telegram WebApp
-                if (window.Telegram && window.Telegram.WebApp) {
-                    const tg = window.Telegram.WebApp;
-                    
-                    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                        tgUser = tg.initDataUnsafe.user;
-                        console.log('Данные из initDataUnsafe:', tgUser);
-                    } else if (tg.initData) {
-                        try {
-                            const initData = new URLSearchParams(tg.initData);
-                            const userJson = initData.get('user');
-                            if (userJson) {
-                                tgUser = JSON.parse(decodeURIComponent(userJson));
-                                console.log('Данные из initData:', tgUser);
-                            }
-                        } catch (e) {
-                            console.error('Ошибка парсинга initData:', e);
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    tgUser = tg.initDataUnsafe.user;
+                    console.log('Данные из initDataUnsafe:', tgUser);
+                } else if (tg.initData) {
+                    try {
+                        const initData = new URLSearchParams(tg.initData);
+                        const userJson = initData.get('user');
+                        if (userJson) {
+                            tgUser = JSON.parse(decodeURIComponent(userJson));
+                            console.log('Данные из initData:', tgUser);
                         }
+                    } catch (e) {
+                        console.error('Ошибка парсинга initData:', e);
                     }
                 }
-        
-                // 2. Если нет данных из Telegram, пробуем из cookies
-                if (!tgUser.id) {
-                    const tgUserId = getCookie('tg_user_id');
-                    const tgName = getCookie('tg_name');
-                    const tgUsername = getCookie('tg_username');
-                    
-                    if (tgUserId && tgName) {
-                        tgUser = {
-                            id: tgUserId,
-                            first_name: tgName,
-                            username: tgUsername || undefined,
-                            photo_url: getCookie('tg_photo_url') || undefined
-                        };
-                        fromCookie = true;
-                        console.log('Данные из cookies:', tgUser);
-                    }
-                }
-        
-                // 3. Если все еще нет данных - демо-режим
-                if (!tgUser.id) {
-                    tgUser = {
-                        id: 'demo_' + Math.random().toString(36).substr(2, 9),
-                        first_name: 'Гость',
-                        username: undefined,
-                        photo_url: undefined
-                    };
-                    console.log('Демо-режим:', tgUser);
-                }
-        
-                // 4. Отображаем данные пользователя
-                const userName = sanitizeText(tgUser.first_name || 'Пользователь');
-                const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
-                
-                document.getElementById('name').textContent = userName;
-                document.getElementById('username').textContent = userUsername;
-        
-                // 5. Устанавливаем аватар
-                const avatarImg = document.getElementById('userAvatar');
-                if (tgUser.photo_url) {
-                    // Добавляем временную метку для избежания кеширования
-                    avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
-                    avatarImg.onerror = function() {
-                        // Если аватар не загрузился - показываем инициалы
-                        showInitials(avatarImg, userName);
-                    };
-                } else {
-                    showInitials(avatarImg, userName);
-                }
-        
-                // 6. Сохраняем данные в cookies (если не из cookies)
-                if (!fromCookie && tgUser.id) {
-                    setCookie('tg_user_id', tgUser.id, 30);
-                    setCookie('tg_name', userName, 30);
-                    setCookie('tg_username', tgUser.username || '', 30);
-                    if (tgUser.photo_url) setCookie('tg_photo_url', tgUser.photo_url, 30);
-                }
-        
-                // Остальной код работы с Firebase и балансом...
-                // ... (остается без изменений)
-        
-            } catch (error) {
-                console.error('Ошибка инициализации:', error);
-                document.getElementById('name').textContent = 'Гость';
-                document.getElementById('username').textContent = '(-)';
-                document.getElementById('balance').textContent = '0';
-                
-                const avatarImg = document.getElementById('userAvatar');
-                showInitials(avatarImg, 'Гость');
             }
+
+            // 2. Если нет данных из Telegram, пробуем из cookies
+            if (!tgUser.id) {
+                const tgUserId = getCookie('tg_user_id');
+                const tgName = getCookie('tg_name');
+                const tgUsername = getCookie('tg_username');
+                
+                if (tgUserId && tgName) {
+                    tgUser = {
+                        id: tgUserId,
+                        first_name: tgName,
+                        username: tgUsername || undefined,
+                        photo_url: getCookie('tg_photo_url') || undefined
+                    };
+                    fromCookie = true;
+                    console.log('Данные из cookies:', tgUser);
+                }
+            }
+
+            // 3. Если все еще нет данных - демо-режим
+            if (!tgUser.id) {
+                tgUser = {
+                    id: 'demo_' + Math.random().toString(36).substr(2, 9),
+                    first_name: 'Гость',
+                    username: undefined,
+                    photo_url: undefined
+                };
+                console.log('Демо-режим:', tgUser);
+            }
+
+            // 4. Отображаем данные пользователя
+            const userName = sanitizeText(tgUser.first_name || 'Пользователь');
+            const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
+            
+            document.getElementById('name').textContent = userName;
+            document.getElementById('username').textContent = userUsername;
+
+            // 5. Устанавливаем аватар
+            const avatarImg = document.getElementById('userAvatar');
+            if (tgUser.photo_url) {
+                // Добавляем временную метку для избежания кеширования
+                avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
+                avatarImg.onerror = function() {
+                    // Если аватар не загрузился - показываем инициалы
+                    showInitials(avatarImg, userName);
+                };
+            } else {
+                showInitials(avatarImg, userName);
+            }
+
+            // 6. Сохраняем данные в cookies (если не из cookies)
+            if (!fromCookie && tgUser.id) {
+                setCookie('tg_user_id', tgUser.id, 30);
+                setCookie('tg_name', userName, 30);
+                setCookie('tg_username', tgUser.username || '', 30);
+                if (tgUser.photo_url) setCookie('tg_photo_url', tgUser.photo_url, 30);
+            }
+
+            // 7. Работа с Firebase
+            const userId = tgUser.id;
+            const userRef = database.ref('users/' + userId);
+            const historyRef = database.ref('history/' + userId);
+
+            // Проверяем/создаем пользователя в БД
+            const snapshot = await userRef.once('value');
+            
+            if (!snapshot.exists()) {
+                const newUser = {
+                    tg_id: userId,
+                    tg_username: tgUser.username ? `@${tgUser.username}` : 'не указан',
+                    tg_name: userName,
+                    stars: 0,
+                    created_at: firebase.database.ServerValue.TIMESTAMP,
+                    last_active: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                await userRef.set(newUser);
+                console.log('Новый пользователь создан в Firebase:', newUser);
+            } else {
+                // Обновляем время последней активности
+                await userRef.update({
+                    last_active: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+
+            // 8. Создаем запись в истории (если это не админ и записи нет)
+            if (userId !== ADMIN_ID) {
+                const historySnapshot = await historyRef.once('value');
+                if (!historySnapshot.exists()) {
+                    await historyRef.set({
+                        created_at: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    console.log('Создана запись в истории для пользователя:', userId);
+                }
+            } else {
+                // Для админа проверяем существование корня history
+                const rootHistoryRef = database.ref('history');
+                const rootHistorySnapshot = await rootHistoryRef.once('value');
+                if (!rootHistorySnapshot.exists()) {
+                    await rootHistoryRef.set({
+                        created_at: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    console.log('Создан корень history для админа');
+                }
+            }
+
+            // 9. Слушаем изменения баланса
+            userRef.on('value', (snap) => {
+                if (snap.exists()) {
+                    const data = snap.val();
+                    document.getElementById('balance').textContent = data.stars || '0';
+                }
+            });
+
+        } catch (error) {
+            console.error('Ошибка инициализации:', error);
+            document.getElementById('name').textContent = 'Гость';
+            document.getElementById('username').textContent = '(-)';
+            document.getElementById('balance').textContent = '0';
+            
+            const avatarImg = document.getElementById('userAvatar');
+            showInitials(avatarImg, 'Гость');
         }
-        
-        // Добавьте эти вспомогательные функции:
-        
-        // Функция для очистки текста от спецсимволов
-        function sanitizeText(text) {
-            return text.replace(/[^\p{L}\p{N}\s]/gu, '').trim() || 'Пользователь';
-        }
-        
-        // Функция для отображения инициалов
-        function showInitials(element, name) {
-            element.src = '';
-            element.style.backgroundColor = '#2a2a3a';
-            element.style.display = 'flex';
-            element.style.alignItems = 'center';
-            element.style.justifyContent = 'center';
-            element.style.color = '#40e0d0';
-            element.style.fontWeight = 'bold';
-            element.textContent = name.charAt(0).toUpperCase();
-        }
+    }
 
     // Создание звездного фона
     function createStars() {
@@ -863,6 +1018,89 @@
         }
     }
 
+    // Управление попапом истории
+    function setupHistoryPopup() {
+        const popup = document.getElementById('historyPopup');
+        const historyBtn = document.getElementById('historyBtn');
+        const closeBtn = document.getElementById('closeHistoryPopup');
+        const historyList = document.getElementById('historyList');
+
+        // Открытие попапа
+        historyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            loadHistory();
+            popup.classList.add('active');
+        });
+        
+        // Закрытие попапа
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            popup.classList.remove('active');
+        });
+        
+        // Загрузка истории
+        async function loadHistory() {
+            try {
+                const userId = getCookie('tg_user_id') || 'demo';
+                const historyRef = database.ref('history/' + userId);
+                
+                const snapshot = await historyRef.once('value');
+                
+                if (snapshot.exists()) {
+                    const historyData = snapshot.val();
+                    let hasTransactions = false;
+                    let html = '';
+                    
+                    // Перебираем все записи в истории
+                    Object.keys(historyData).forEach(key => {
+                        const item = historyData[key];
+                        
+                        // Пропускаем технические поля
+                        if (key === 'created_at') return;
+                        
+                        hasTransactions = true;
+                        
+                        html += `
+                            <div class="history-item">
+                                <div class="history-header">
+                                    <div class="history-user">${item.user || 'Неизвестный'}</div>
+                                    <div class="history-date">${formatDate(item.date)}</div>
+                                </div>
+                                <div class="history-amount">${item.amount || 0} STARS</div>
+                                <div class="history-description">${item.description || 'Нет описания'}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    if (hasTransactions) {
+                        historyList.innerHTML = html;
+                    } else {
+                        historyList.innerHTML = '<div class="empty-history">История транзакций пуста</div>';
+                    }
+                } else {
+                    historyList.innerHTML = '<div class="empty-history">История транзакций пуста</div>';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки истории:', error);
+                historyList.innerHTML = '<div class="empty-history">Ошибка загрузки истории</div>';
+            }
+        }
+        
+        // Форматирование даты
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Дата неизвестна';
+            
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    }
+
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
         createStars();
@@ -875,6 +1113,7 @@
         }
         
         setupDepositPopup();
+        setupHistoryPopup();
         initApp();
     });
 </script>
