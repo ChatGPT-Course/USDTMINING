@@ -532,59 +532,56 @@
     // Основная функция инициализации
     async function initApp() {
         try {
-            // 1. Проверяем данные пользователя Telegram
-            if (!tg.initDataUnsafe?.user) {
-                throw new Error('Данные пользователя Telegram не доступны');
+            let tgUser = {};
+            
+            // 1. Получаем данные пользователя Telegram разными способами
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                tgUser = tg.initDataUnsafe.user;
+            } else if (tg.initData) {
+                const initData = new URLSearchParams(tg.initData);
+                const userJson = initData.get('user');
+                if (userJson) tgUser = JSON.parse(userJson);
             }
 
-            const tgUser = tg.initDataUnsafe.user;
             console.log('Данные пользователя Telegram:', tgUser);
 
-            // 2. Отображаем имя пользователя сразу (из Telegram данных)
-            document.getElementById('name').textContent = tgUser.first_name || 'Пользователь';
+            // 2. Отображаем имя пользователя
+            const userName = tgUser.first_name || 
+                             tgUser.username || 
+                             'Пользователь';
+            document.getElementById('name').textContent = userName;
 
-            // 3. Работа с Firebase
-            const userId = tgUser.id.toString();
+            // 3. Если нет ID пользователя, используем случайный (для демо)
+            const userId = tgUser.id ? tgUser.id.toString() : 'demo_' + Math.random().toString(36).substr(2, 9);
             const userRef = database.ref('users/' + userId);
 
-            // 4. Проверяем существование пользователя в БД
+            // 4. Проверяем/создаем пользователя в БД
             const snapshot = await userRef.once('value');
             
             if (!snapshot.exists()) {
-                // Создаем нового пользователя
                 const newUser = {
                     tg_id: userId,
                     tg_username: tgUser.username ? `@${tgUser.username}` : 'не указан',
-                    tg_name: tgUser.first_name || 'не указано',
-                    stars: 0
+                    tg_name: userName,
+                    stars: 0,
+                    created_at: firebase.database.ServerValue.TIMESTAMP
                 };
 
                 await userRef.set(newUser);
                 console.log('Новый пользователь создан в Firebase:', newUser);
-                
-                // Обновляем баланс на странице
-                document.getElementById('balance').textContent = '0';
-            } else {
-                // Пользователь существует - обновляем данные
-                const userData = snapshot.val();
-                console.log('Данные пользователя из Firebase:', userData);
-                
-                // Обновляем баланс на странице
-                document.getElementById('balance').textContent = userData.stars || '0';
             }
 
-            // 5. Настраиваем слушатель изменений баланса
+            // 5. Слушаем изменения баланса
             userRef.on('value', (snap) => {
                 if (snap.exists()) {
                     const data = snap.val();
                     document.getElementById('balance').textContent = data.stars || '0';
-                    console.log('Баланс обновлен:', data.stars);
                 }
             });
 
         } catch (error) {
             console.error('Ошибка инициализации:', error);
-            document.getElementById('name').textContent = 'Ошибка загрузки';
+            document.getElementById('name').textContent = 'Гость';
             document.getElementById('balance').textContent = '0';
         }
     }
@@ -622,12 +619,14 @@
         let selectedMethod = null;
 
         // Открытие попапа
-        depositBtn.addEventListener('click', () => {
+        depositBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             popup.classList.add('active');
         });
         
         // Закрытие попапа
-        closeBtn.addEventListener('click', () => {
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             popup.classList.remove('active');
             resetForm();
         });
@@ -657,16 +656,16 @@
             
             const amount = parseInt(depositAmount.value);
             
-            // Здесь можно добавить логику обработки платежа
+            // Здесь будет логика обработки платежа
             console.log('Пополнение на:', amount, 'STARS');
             console.log('Метод оплаты:', selectedMethod);
             
-            // Закрываем попап и сбрасываем форму
+            // В демо-режиме просто показываем сообщение
             popup.classList.remove('active');
             resetForm();
             
-            // Здесь можно добавить редирект на оплату или другую логику
-            alert(`Запрос на пополнение ${amount} STARS через ${selectedMethod.toUpperCase()} отправлен!`);
+            // В реальном приложении здесь редирект на оплату
+            alert(`Запрос на пополнение ${amount} STARS через ${selectedMethod.toUpperCase()} принят!`);
         });
         
         // Валидация формы
@@ -674,8 +673,7 @@
             const amount = parseInt(depositAmount.value);
             let isValid = true;
             
-            // Проверка суммы
-            if (isNaN(amount) {
+            if (isNaN(amount)) {
                 amountError.style.display = 'none';
                 submitBtn.disabled = true;
                 return;
@@ -693,7 +691,6 @@
                 amountError.style.display = 'none';
             }
             
-            // Проверка выбранного метода
             if (!selectedMethod) {
                 isValid = false;
             }
@@ -713,16 +710,19 @@
         }
     }
 
-    // Запуск приложения после загрузки страницы
+    // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
         createStars();
-        tg.expand();
-        setupDepositPopup();
         
-        // Даем время на инициализацию Telegram WebApp
-        setTimeout(() => {
-            initApp();
-        }, 300);
+        // Пытаемся расширить WebApp
+        try {
+            tg.expand();
+        } catch (e) {
+            console.log('Не удалось расширить WebApp');
+        }
+        
+        setupDepositPopup();
+        initApp();
     });
 </script>
 </body>
