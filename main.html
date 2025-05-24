@@ -107,6 +107,7 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             position: relative;
+            text-align: center;
         }
         
         .balance-label-top {
@@ -123,20 +124,21 @@
         .balance-content {
             display: flex;
             align-items: center;
+            justify-content: center;
             width: 100%;
+            flex-direction: column;
         }
         
         .sticker {
             font-size: 36px;
-            margin-right: 15px;
-            flex-shrink: 0;
+            margin-bottom: 10px;
         }
         
         .balance-info {
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
         }
         
         .balance-label {
@@ -153,6 +155,22 @@
             margin: 0;
         }
         
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #40e0d0;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Остальные стили остаются без изменений */
         .action-buttons {
             display: flex;
             justify-content: space-between;
@@ -512,28 +530,45 @@
             color: rgba(255, 255, 255, 0.6);
             padding: 20px 0;
         }
-        .refresh-btn {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(64, 224, 208, 0.2);
-            border: none;
-            color: #40e0d0;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .refresh-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .refresh-btn:hover:not(:disabled) {
-            background: rgba(64, 224, 208, 0.4);
+
+        @media (max-width: 600px) {
+            .content-block {
+                padding: 1.2rem 1rem;
+                font-size: 1rem;
+            }
+            .header-bar {
+                height: 48px;
+            }
+            .exit-btn {
+                width: 36px;
+                height: 36px;
+            }
+            .buttons-container {
+                bottom: 1rem;
+            }
+            .next-btn, .guide-btn {
+                padding: 0.7rem 1rem;
+                min-width: 110px;
+            }
+            .empty-space {
+                height: 40vh;
+            }
+            .completion-content, .feedback-content {
+                padding: 1.2rem;
+                width: 280px;
+            }
+            .checkmark {
+                width: 60px;
+                height: 60px;
+            }
+            .checkmark-icon {
+                font-size: 40px;
+            }
+            .feedback-option {
+                width: 40px;
+                height: 40px;
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -551,17 +586,18 @@
             </div>
         </div>
         
-            <div class="balance-card">
-                <div class="balance-label-top">Баланс</div>
-                <div class="balance-content">
-                    <div class="sticker">⭐</div>
-                    <div class="balance-info">
-                        <div class="balance-amount" id="balance">0</div>
-                        <div class="balance-label">STARS</div>
+        <div class="balance-card">
+            <div class="balance-label-top">Баланс</div>
+            <div class="balance-content">
+                <div class="sticker">⭐</div>
+                <div class="balance-info">
+                    <div class="balance-amount" id="balance">
+                        <div class="loader" id="balanceLoader"></div>
+                        <span id="balanceAmount" style="display: none;">0</span>
                     </div>
                 </div>
-                <button id="refreshBalanceBtn" class="refresh-btn">🔄 Обновить</button>
             </div>
+        </div>
         
         <div class="action-buttons">
             <button class="btn btn-deposit" id="depositBtn">
@@ -719,201 +755,6 @@
         element.style.fontWeight = 'bold';
         element.textContent = name.charAt(0).toUpperCase();
     }
-                
-        async function initApp() {
-            try {
-                let tgUser = {};
-                let isDemoMode = false;
-                let lastRefreshTime = 0;
-                const refreshCooldown = 10000; // 10 секунд
-                
-                // 1. Получаем данные пользователя из Telegram WebApp
-                if (window.Telegram && window.Telegram.WebApp) {
-                    const tg = window.Telegram.WebApp;
-                    
-                    if (tg.initDataUnsafe?.user) {
-                        tgUser = tg.initDataUnsafe.user;
-                        console.log('Данные из initDataUnsafe:', tgUser);
-                    } else if (tg.initData) {
-                        try {
-                            const initData = new URLSearchParams(tg.initData);
-                            const userJson = initData.get('user');
-                            if (userJson) {
-                                tgUser = JSON.parse(decodeURIComponent(userJson));
-                                console.log('Данные из initData:', tgUser);
-                            }
-                        } catch (e) {
-                            console.error('Ошибка парсинга initData:', e);
-                        }
-                    }
-                }
-        
-                // 2. Если нет данных из Telegram - используем сохраненные данные или демо-режим
-                if (!tgUser.id) {
-                    const savedUser = localStorage.getItem('tg_user');
-                    if (savedUser) {
-                        tgUser = JSON.parse(savedUser);
-                        console.log('Используем сохраненные данные:', tgUser);
-                    } else {
-                        tgUser = {
-                            id: 'demo_' + Math.random().toString(36).substr(2, 9),
-                            first_name: 'Гость',
-                            username: undefined,
-                            photo_url: undefined
-                        };
-                        isDemoMode = true;
-                        console.log('Демо-режим:', tgUser);
-                    }
-                }
-        
-                // 3. Сохраняем данные пользователя
-                if (!isDemoMode) {
-                    localStorage.setItem('tg_user', JSON.stringify(tgUser));
-                }
-        
-                // 4. Отображаем данные пользователя (один раз при загрузке)
-                const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
-                const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
-        
-                document.getElementById('name').textContent = userName;
-                document.getElementById('username').textContent = userUsername;
-        
-                // 5. Устанавливаем аватар (один раз при загрузке)
-                const avatarImg = document.getElementById('userAvatar');
-                if (tgUser.photo_url) {
-                    avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
-                    avatarImg.onerror = function() {
-                        showInitials(avatarImg, userName);
-                    };
-                } else {
-                    showInitials(avatarImg, userName);
-                }
-        
-                // 6. Работа с Firebase
-                const userId = tgUser.id;
-                const userRef = database.ref('users/' + userId);
-        
-                // Проверяем/создаем пользователя в БД (без created_at и last_active)
-                const snapshot = await userRef.once('value');
-                
-                if (!snapshot.exists()) {
-                    await userRef.set({
-                        tg_id: userId,
-                        tg_username: tgUser.username || 'не указан',
-                        tg_name: userName,
-                        stars: 0
-                    });
-                    console.log('Новый пользователь создан в Firebase');
-                }
-        
-                // Загружаем баланс при входе
-                await refreshBalance();
-        
-                // Обработчик кнопки обновления
-                document.getElementById('refreshBalanceBtn').addEventListener('click', async () => {
-                    const now = Date.now();
-                    if (now - lastRefreshTime < refreshCooldown) {
-                        const remaining = Math.ceil((refreshCooldown - (now - lastRefreshTime)) / 1000);
-                        alert(`Подождите ${remaining} секунд перед следующим обновлением`);
-                        return;
-                    }
-                    
-                    lastRefreshTime = now;
-                    await refreshBalance();
-                });
-        
-                async function refreshBalance() {
-                    const balanceElement = document.getElementById('balance');
-                    const refreshBtn = document.getElementById('refreshBalanceBtn');
-                    
-                    // Показываем "--" на секунду
-                    balanceElement.textContent = '--';
-                    refreshBtn.disabled = true;
-                    
-                    try {
-                        const snap = await userRef.once('value');
-                        if (snap.exists()) {
-                            const data = snap.val();
-                            // Задержка 1 секунда перед отображением нового баланса
-                            setTimeout(() => {
-                                balanceElement.textContent = data.stars || '0';
-                                refreshBtn.disabled = false;
-                            }, 1000);
-                        }
-                    } catch (error) {
-                        console.error('Ошибка обновления баланса:', error);
-                        balanceElement.textContent = '0';
-                        refreshBtn.disabled = false;
-                    }
-                }
-        
-            } catch (error) {
-                console.error('Ошибка инициализации:', error);
-                document.getElementById('name').textContent = 'Гость';
-                document.getElementById('username').textContent = '(-)';
-                document.getElementById('balance').textContent = '0';
-                
-                const avatarImg = document.getElementById('userAvatar');
-                showInitials(avatarImg, 'Гость');
-            }
-        }
-        // Функция для обновления профиля пользователя
-    function updateUserProfile(tgUser) {
-        const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
-        const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
-        
-        document.getElementById('name').textContent = userName;
-        document.getElementById('username').textContent = userUsername;
-
-        // Устанавливаем аватар
-        const avatarImg = document.getElementById('userAvatar');
-        if (tgUser.photo_url) {
-            avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
-            avatarImg.onerror = function() {
-                showInitials(avatarImg, userName);
-            };
-        } else {
-            showInitials(avatarImg, userName);
-        }
-    }
-        // Функция для инициализации истории
-        async function initHistory(userId) {
-            try {
-                const historyRef = database.ref('history');
-                
-                // 1. Сначала проверяем существование корня history
-                const rootSnapshot = await historyRef.once('value');
-                
-                // 2. Если корня нет - создаем (для админа или первого пользователя)
-                if (!rootSnapshot.exists() && userId === ADMIN_ID) {
-                    await historyRef.set({
-                        created_at: firebase.database.ServerValue.TIMESTAMP,
-                        created_by: ADMIN_ID
-                    });
-                    console.log('Корень history создан админом');
-                }
-                
-                // 3. Проверяем существование подкорня с ID пользователя
-                const userHistoryRef = historyRef.child(userId);
-                const userSnapshot = await userHistoryRef.once('value');
-                
-                // 4. Если подкорня нет - создаем (для всех пользователей, включая админа)
-                if (!userSnapshot.exists()) {
-                    await userHistoryRef.set({
-                        created_at: firebase.database.ServerValue.TIMESTAMP,
-                        user_id: userId,
-                        user_name: getCookie('tg_name') || 'Пользователь',
-                        user_username: getCookie('tg_username') || ''
-                    });
-                    console.log(`Создана запись в истории для пользователя: ${userId}`);
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Ошибка инициализации истории:', error);
-                return false;
-            }
-        }
 
     // Создание звездного фона
     function createStars() {
@@ -1169,7 +1010,105 @@
         }
     }
 
-  // Запуск приложения
+    // Загрузка данных пользователя
+    function loadUserData() {
+        let tgUser = {};
+        let isDemoMode = false;
+        
+        // 1. Получаем данные пользователя из Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            
+            if (tg.initDataUnsafe?.user) {
+                tgUser = tg.initDataUnsafe.user;
+                console.log('Данные из initDataUnsafe:', tgUser);
+            } else if (tg.initData) {
+                try {
+                    const initData = new URLSearchParams(tg.initData);
+                    const userJson = initData.get('user');
+                    if (userJson) {
+                        tgUser = JSON.parse(decodeURIComponent(userJson));
+                        console.log('Данные из initData:', tgUser);
+                    }
+                } catch (e) {
+                    console.error('Ошибка парсинга initData:', e);
+                }
+            }
+        }
+
+        // 2. Если нет данных из Telegram - используем сохраненные данные или демо-режим
+        if (!tgUser.id) {
+            const savedUser = localStorage.getItem('tg_user');
+            if (savedUser) {
+                tgUser = JSON.parse(savedUser);
+                console.log('Используем сохраненные данные:', tgUser);
+            } else {
+                tgUser = {
+                    id: 'demo_' + Math.random().toString(36).substr(2, 9),
+                    first_name: 'Гость',
+                    username: undefined,
+                    photo_url: undefined
+                };
+                isDemoMode = true;
+                console.log('Демо-режим:', tgUser);
+            }
+        }
+
+        // 3. Сохраняем данные пользователя
+        if (!isDemoMode) {
+            localStorage.setItem('tg_user', JSON.stringify(tgUser));
+        }
+
+        // 4. Отображаем данные пользователя
+        const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
+        const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
+
+        document.getElementById('name').textContent = userName;
+        document.getElementById('username').textContent = userUsername;
+
+        // 5. Устанавливаем аватар
+        const avatarImg = document.getElementById('userAvatar');
+        if (tgUser.photo_url) {
+            avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
+            avatarImg.onerror = function() {
+                showInitials(avatarImg, userName);
+            };
+        } else {
+            showInitials(avatarImg, userName);
+        }
+
+        // 6. Работа с Firebase
+        const userId = tgUser.id;
+        const userRef = database.ref('users/' + userId);
+
+        // Проверяем/создаем пользователя в БД
+        userRef.once('value').then(snapshot => {
+            if (!snapshot.exists()) {
+                userRef.set({
+                    tg_id: userId,
+                    tg_username: tgUser.username || 'не указан',
+                    tg_name: userName,
+                    stars: 0
+                });
+                console.log('Новый пользователь создан в Firebase');
+            }
+        });
+
+        // Подписываемся на изменения баланса
+        userRef.on('value', (snapshot) => {
+            const userData = snapshot.val();
+            if (userData) {
+                const balanceLoader = document.getElementById('balanceLoader');
+                const balanceAmount = document.getElementById('balanceAmount');
+                
+                balanceLoader.style.display = 'none';
+                balanceAmount.style.display = 'inline';
+                balanceAmount.textContent = userData.stars || '0';
+            }
+        });
+    }
+
+    // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
         createStars();
         
@@ -1183,7 +1122,7 @@
         
         setupDepositPopup();
         setupHistoryPopup();
-        initApp();
+        loadUserData();
     });
 </script>
 </body>
