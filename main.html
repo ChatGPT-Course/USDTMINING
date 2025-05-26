@@ -1009,7 +1009,49 @@
             });
         }
     }
-
+    const CRYPTO_BOT_TOKEN = "404319:AAeqRD0pfN18mgODHlFbuNXf11u4qUKbgHC"; 
+    const BOT_USERNAME = "Free1_USDT_bot"; // Например: "MyGameBot"
+    const TON_WALLET = "UQCSIvFd2sr5aIw9NXAa8x9Omb4FUscTRd-eXem_Nk460mY_"; // Например: "UQABD1xKuFp..."
+    
+    async function createSimpleInvoice() {
+      try {
+        // Фиксированная сумма: 10 STARS = 0.2 USDT
+        const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN
+          },
+          body: JSON.stringify({
+            asset: "USDT",
+            amount: 0.2,
+            description: "Пополнение 10 STARS",
+            paid_btn_name: "openBot",
+            paid_btn_url: `https://t.me/${BOT_USERNAME}`,
+            payload: JSON.stringify({ 
+              type: "stars_payment",
+              amount: 10 
+            })
+          })
+        });
+    
+        const data = await response.json();
+        
+        if (data.ok) {
+          // Открываем страницу оплаты
+          window.open(data.result.pay_url, "_blank");
+          alert("После оплаты свяжитесь с @AdminBot для зачисления STARS");
+        } else {
+          alert("Ошибка создания счета: " + data.error);
+        }
+      } catch (error) {
+        alert("Ошибка подключения к платежной системе");
+        console.error(error);
+      }
+    }
+    
+    // Привяжите эту функцию к кнопке пополнения
+    document.getElementById('depositBtn').addEventListener('click', createSimpleInvoice);
     // Загрузка данных пользователя
     function loadUserData() {
         let tgUser = {};
