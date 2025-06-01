@@ -256,7 +256,7 @@
             
             <div class="content">
                 <!-- Состояние: Нет заявки -->
-                <div id="no-application" class="hidden">
+                <div id="no-application">
                     <div class="status-card">
                         <h3 class="status-title"><i class="emoji">👋</i>Приветствуем!</h3>
                         <p class="status-description">У вас еще нет активной заявки на участие в бета-тестировании. Заполните форму ниже, и мы рассмотрим вашу заявку в ближайшее время.</p>
@@ -430,16 +430,15 @@
                     if (response.data && response.data.list && response.data.list.length > 0) {
                         const application = response.data.list[0];
                         showApplicationStatus(application);
-                    } else {
-                        showNoApplication();
+                        return;
                     }
                 } catch (error) {
                     console.error('Ошибка при загрузке данных:', error);
-                    showNoApplication();
                 }
-            } else {
-                showNoApplication();
             }
+            
+            // Если нет заявки или произошла ошибка
+            showNoApplication();
         });
         
         // Обработка отправки формы
@@ -493,9 +492,17 @@
                 });
                 
                 // Проверяем успешность запроса
-                if (response.data && response.data.id) {
+                if (response.data && (response.data.id || response.data.Id)) {
                     // Показываем статус заявки
                     showApplicationStatus(formData);
+                    
+                    // Сохраняем данные в localStorage для быстрого доступа
+                    localStorage.setItem('beta_application', JSON.stringify({
+                        username: formData.username,
+                        description: formData.description,
+                        status: formData.status,
+                        created_at: formData.created_at
+                    }));
                 } else {
                     throw new Error('Не удалось сохранить заявку');
                 }
@@ -512,16 +519,29 @@
         
         // Кнопка новой заявки
         newApplicationBtn.addEventListener('click', () => {
+            // Очищаем предыдущие данные
+            document.getElementById('username').value = '';
+            document.getElementById('description').value = '';
+            
+            // Показываем форму заявки
             showNoApplication();
+            
+            // Прокручиваем к началу формы
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
         
         // Кнопка начала тестирования
         startTestingBtn.addEventListener('click', () => {
             if (window.Telegram && window.Telegram.WebApp) {
+                // Закрываем WebApp в Telegram
                 Telegram.WebApp.close();
             } else {
+                // Редирект для обычного браузера
                 alert('Перенаправляем вас в приложение...');
-                // Здесь должна быть логика перехода в приложение
+                // window.location.href = 'https://ваше-приложение.com';
             }
         });
         
@@ -534,39 +554,37 @@
         }
         
         function showApplicationStatus(application) {
-            const username = application.username.startsWith('@') ? application.username : '@' + application.username;
+            const username = application.username || '';
+            const description = application.description || 'Описание отсутствует';
             const date = new Date(application.created_at || new Date()).toLocaleDateString('ru-RU');
-            const description = application.description || application.descript || 'Описание отсутствует';
+            
+            // Обновляем данные во всех блоках
+            document.getElementById('pending-username').textContent = username;
+            document.getElementById('pending-description').textContent = description;
+            document.getElementById('pending-date').textContent = date;
+            
+            document.getElementById('approved-username').textContent = username;
+            document.getElementById('approved-description').textContent = description;
+            document.getElementById('approved-date').textContent = date;
+            
+            document.getElementById('rejected-username').textContent = username;
+            document.getElementById('rejected-description').textContent = description;
+            document.getElementById('rejected-date').textContent = date;
+            
+            // Показываем соответствующий блок в зависимости от статуса
+            noApplicationView.classList.add('hidden');
+            pendingApplicationView.classList.add('hidden');
+            approvedApplicationView.classList.add('hidden');
+            rejectedApplicationView.classList.add('hidden');
             
             if (application.status === 0) {
                 // На модерации
-                document.getElementById('pending-username').textContent = username;
-                document.getElementById('pending-description').textContent = description;
-                document.getElementById('pending-date').textContent = date;
-                
-                noApplicationView.classList.add('hidden');
                 pendingApplicationView.classList.remove('hidden');
-                approvedApplicationView.classList.add('hidden');
-                rejectedApplicationView.classList.add('hidden');
             } else if (application.status === 1) {
                 // Одобрено
-                document.getElementById('approved-username').textContent = username;
-                document.getElementById('approved-description').textContent = description;
-                document.getElementById('approved-date').textContent = date;
-                
-                noApplicationView.classList.add('hidden');
-                pendingApplicationView.classList.add('hidden');
                 approvedApplicationView.classList.remove('hidden');
-                rejectedApplicationView.classList.add('hidden');
             } else if (application.status === -1) {
                 // Отклонено
-                document.getElementById('rejected-username').textContent = username;
-                document.getElementById('rejected-description').textContent = description;
-                document.getElementById('rejected-date').textContent = date;
-                
-                noApplicationView.classList.add('hidden');
-                pendingApplicationView.classList.add('hidden');
-                approvedApplicationView.classList.add('hidden');
                 rejectedApplicationView.classList.remove('hidden');
             }
         }
