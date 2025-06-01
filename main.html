@@ -391,10 +391,11 @@
         
         // Проверка статуса пользователя при загрузке страницы
         document.addEventListener('DOMContentLoaded', async () => {
-            // Получаем user_id из localStorage или из Telegram WebApp
-            let userId = localStorage.getItem('beta_user_id');
+            // Получаем user_id из Telegram WebApp или localStorage
+            let userId = null;
+            let username = '';
             
-            // Если открыто в Telegram WebApp, используем данные пользователя
+            // Проверяем, открыто ли в Telegram WebApp
             if (window.Telegram && window.Telegram.WebApp) {
                 Telegram.WebApp.expand();
                 const tgUser = Telegram.WebApp.initDataUnsafe.user;
@@ -402,18 +403,23 @@
                 if (tgUser) {
                     // Используем Telegram ID как user_id
                     userId = tgUser.id.toString();
-                    localStorage.setItem('beta_user_id', userId);
+                    username = tgUser.username || '';
                     
                     // Автозаполнение Telegram username
                     const usernameInput = document.getElementById('username');
-                    if (usernameInput && tgUser.username) {
-                        usernameInput.value = tgUser.username;
+                    if (usernameInput && username) {
+                        usernameInput.value = username;
                     }
                 }
             }
             
+            // Если нет Telegram WebApp, проверяем localStorage
+            if (!userId) {
+                userId = localStorage.getItem('beta_user_id');
+            }
+            
             if (userId) {
-                // Загружаем данные пользователя из таблицы
+                // Проверяем, есть ли заявка у пользователя
                 try {
                     const response = await axios.get(`${API_BASE_URL}?where=(user_id,eq,${userId})`, {
                         headers: {
@@ -421,7 +427,7 @@
                         }
                     });
                     
-                    if (response.data.list && response.data.list.length > 0) {
+                    if (response.data && response.data.list && response.data.list.length > 0) {
                         const application = response.data.list[0];
                         showApplicationStatus(application);
                     } else {
@@ -440,8 +446,11 @@
         applicationForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const username = document.getElementById('username').value.trim();
-            const description = document.getElementById('description').value.trim();
+            const usernameInput = document.getElementById('username');
+            const descriptionInput = document.getElementById('description');
+            
+            const username = usernameInput.value.trim();
+            const description = descriptionInput.value.trim();
             
             if (!username || !description) {
                 alert('Пожалуйста, заполните все поля');
@@ -452,13 +461,18 @@
             submitBtn.disabled = true;
             submitSpinner.classList.remove('hidden');
             
-            // Получаем user_id из localStorage или генерируем новый
-            let userId = localStorage.getItem('beta_user_id');
-            if (!userId) {
-                // Если нет в localStorage, создаем новый (в реальном приложении это должен быть Telegram ID)
-                userId = 'user_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('beta_user_id', userId);
+            // Получаем user_id из Telegram WebApp или создаем новый
+            let userId = null;
+            
+            if (window.Telegram && window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
+                userId = Telegram.WebApp.initDataUnsafe.user.id.toString();
+            } else {
+                // Генерируем временный ID для демонстрации
+                userId = 'temp_' + Math.random().toString(36).substr(2, 9);
             }
+            
+            // Сохраняем user_id в localStorage
+            localStorage.setItem('beta_user_id', userId);
             
             // Формируем данные для отправки
             const formData = {
@@ -478,8 +492,13 @@
                     }
                 });
                 
-                // Показываем статус заявки
-                showApplicationStatus(formData);
+                // Проверяем успешность запроса
+                if (response.data && response.data.id) {
+                    // Показываем статус заявки
+                    showApplicationStatus(formData);
+                } else {
+                    throw new Error('Не удалось сохранить заявку');
+                }
                 
             } catch (error) {
                 console.error('Ошибка при отправке заявки:', error);
@@ -498,10 +517,11 @@
         
         // Кнопка начала тестирования
         startTestingBtn.addEventListener('click', () => {
-            alert('Перенаправляем вас в приложение...');
-            // Здесь должна быть логика перехода в приложение
             if (window.Telegram && window.Telegram.WebApp) {
                 Telegram.WebApp.close();
+            } else {
+                alert('Перенаправляем вас в приложение...');
+                // Здесь должна быть логика перехода в приложение
             }
         });
         
@@ -516,11 +536,12 @@
         function showApplicationStatus(application) {
             const username = application.username.startsWith('@') ? application.username : '@' + application.username;
             const date = new Date(application.created_at || new Date()).toLocaleDateString('ru-RU');
+            const description = application.description || application.descript || 'Описание отсутствует';
             
             if (application.status === 0) {
                 // На модерации
                 document.getElementById('pending-username').textContent = username;
-                document.getElementById('pending-description').textContent = application.description || application.descript || 'Описание отсутствует';
+                document.getElementById('pending-description').textContent = description;
                 document.getElementById('pending-date').textContent = date;
                 
                 noApplicationView.classList.add('hidden');
@@ -530,7 +551,7 @@
             } else if (application.status === 1) {
                 // Одобрено
                 document.getElementById('approved-username').textContent = username;
-                document.getElementById('approved-description').textContent = application.description || application.descript || 'Описание отсутствует';
+                document.getElementById('approved-description').textContent = description;
                 document.getElementById('approved-date').textContent = date;
                 
                 noApplicationView.classList.add('hidden');
@@ -540,7 +561,7 @@
             } else if (application.status === -1) {
                 // Отклонено
                 document.getElementById('rejected-username').textContent = username;
-                document.getElementById('rejected-description').textContent = application.description || application.descript || 'Описание отсутствует';
+                document.getElementById('rejected-description').textContent = description;
                 document.getElementById('rejected-date').textContent = date;
                 
                 noApplicationView.classList.add('hidden');
