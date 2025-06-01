@@ -226,6 +226,23 @@
             font-size: 18px;
             margin-right: 8px;
         }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -258,7 +275,10 @@
                                 <textarea class="form-control" id="description" placeholder="Расскажите о себе и почему мы должны выбрать именно вас..." required></textarea>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary">Отправить заявку</button>
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                Отправить заявку
+                                <span id="submit-spinner" class="loader hidden"></span>
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -354,10 +374,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // Конфигурация
-        const API_URL = 'https://app.nocodb.com/#/weamcfo6/p27jdsmk69wuimh/merm7h6tgmnhaeq'; // Замените на ваш URL NocoDB
-        const API_TOKEN = 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ'; // Замените на ваш API токен
-        const TABLE_NAME = 'merm7h6tgmnhaeq'; // Имя таблицы
+        // Конфигурация API NocoDB
+        const API_BASE_URL = 'https://app.nocodb.com/api/v1/db/data/noco/weamcfo6/p27jdsmk69wuimh/merm7h6tgmnhaeq';
+        const API_TOKEN = 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ';
         
         // Элементы DOM
         const noApplicationView = document.getElementById('no-application');
@@ -367,19 +386,36 @@
         const applicationForm = document.getElementById('application-form');
         const newApplicationBtn = document.getElementById('new-application');
         const startTestingBtn = document.getElementById('start-testing');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitSpinner = document.getElementById('submit-spinner');
         
         // Проверка статуса пользователя при загрузке страницы
         document.addEventListener('DOMContentLoaded', async () => {
-            // Здесь должна быть логика проверки пользователя
-            // Например, по Telegram WebApp или кукам
+            // Получаем user_id из localStorage или из Telegram WebApp
+            let userId = localStorage.getItem('beta_user_id');
             
-            // Пример: проверяем localStorage для демонстрации
-            const userId = localStorage.getItem('beta_user_id');
+            // Если открыто в Telegram WebApp, используем данные пользователя
+            if (window.Telegram && window.Telegram.WebApp) {
+                Telegram.WebApp.expand();
+                const tgUser = Telegram.WebApp.initDataUnsafe.user;
+                
+                if (tgUser) {
+                    // Используем Telegram ID как user_id
+                    userId = tgUser.id.toString();
+                    localStorage.setItem('beta_user_id', userId);
+                    
+                    // Автозаполнение Telegram username
+                    const usernameInput = document.getElementById('username');
+                    if (usernameInput && tgUser.username) {
+                        usernameInput.value = tgUser.username;
+                    }
+                }
+            }
             
             if (userId) {
                 // Загружаем данные пользователя из таблицы
                 try {
-                    const response = await axios.get(`${API_URL}${TABLE_NAME}?where=(user_id,eq,${userId})`, {
+                    const response = await axios.get(`${API_BASE_URL}?where=(user_id,eq,${userId})`, {
                         headers: {
                             'xc-token': API_TOKEN
                         }
@@ -412,36 +448,46 @@
                 return;
             }
             
-            // Генерируем user_id (в реальном приложении это может быть Telegram ID)
-            const userId = 'user_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('beta_user_id', userId);
+            // Показываем спиннер загрузки
+            submitBtn.disabled = true;
+            submitSpinner.classList.remove('hidden');
             
-            // Отправляем данные в NocoDB
+            // Получаем user_id из localStorage или генерируем новый
+            let userId = localStorage.getItem('beta_user_id');
+            if (!userId) {
+                // Если нет в localStorage, создаем новый (в реальном приложении это должен быть Telegram ID)
+                userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('beta_user_id', userId);
+            }
+            
+            // Формируем данные для отправки
+            const formData = {
+                user_id: userId,
+                username: username.startsWith('@') ? username : '@' + username,
+                description: description,
+                status: 0, // 0 - на модерации, 1 - одобрено, -1 - отклонено
+                created_at: new Date().toISOString()
+            };
+            
             try {
-                const response = await axios.post(`${API_URL}${TABLE_NAME}`, {
-                    user_id: userId,
-                    username: username,
-                    descript: description,
-                    status: 0, // На модерации
-                    created_at: new Date().toISOString()
-                }, {
+                // Отправляем данные в NocoDB
+                const response = await axios.post(API_BASE_URL, formData, {
                     headers: {
-                        'xc-token': API_TOKEN
+                        'xc-token': API_TOKEN,
+                        'Content-Type': 'application/json'
                     }
                 });
                 
                 // Показываем статус заявки
-                showApplicationStatus({
-                    user_id: userId,
-                    username: username,
-                    descript: description,
-                    status: 0,
-                    created_at: new Date().toISOString()
-                });
+                showApplicationStatus(formData);
                 
             } catch (error) {
                 console.error('Ошибка при отправке заявки:', error);
                 alert('Произошла ошибка при отправке заявки. Пожалуйста, попробуйте позже.');
+            } finally {
+                // Скрываем спиннер загрузки
+                submitBtn.disabled = false;
+                submitSpinner.classList.add('hidden');
             }
         });
         
@@ -454,6 +500,9 @@
         startTestingBtn.addEventListener('click', () => {
             alert('Перенаправляем вас в приложение...');
             // Здесь должна быть логика перехода в приложение
+            if (window.Telegram && window.Telegram.WebApp) {
+                Telegram.WebApp.close();
+            }
         });
         
         // Функции отображения состояний
@@ -466,12 +515,12 @@
         
         function showApplicationStatus(application) {
             const username = application.username.startsWith('@') ? application.username : '@' + application.username;
-            const date = new Date(application.created_at).toLocaleDateString('ru-RU');
+            const date = new Date(application.created_at || new Date()).toLocaleDateString('ru-RU');
             
             if (application.status === 0) {
                 // На модерации
                 document.getElementById('pending-username').textContent = username;
-                document.getElementById('pending-description').textContent = application.descript || 'Описание отсутствует';
+                document.getElementById('pending-description').textContent = application.description || application.descript || 'Описание отсутствует';
                 document.getElementById('pending-date').textContent = date;
                 
                 noApplicationView.classList.add('hidden');
@@ -481,7 +530,7 @@
             } else if (application.status === 1) {
                 // Одобрено
                 document.getElementById('approved-username').textContent = username;
-                document.getElementById('approved-description').textContent = application.descript || 'Описание отсутствует';
+                document.getElementById('approved-description').textContent = application.description || application.descript || 'Описание отсутствует';
                 document.getElementById('approved-date').textContent = date;
                 
                 noApplicationView.classList.add('hidden');
@@ -491,30 +540,13 @@
             } else if (application.status === -1) {
                 // Отклонено
                 document.getElementById('rejected-username').textContent = username;
-                document.getElementById('rejected-description').textContent = application.descript || 'Описание отсутствует';
+                document.getElementById('rejected-description').textContent = application.description || application.descript || 'Описание отсутствует';
                 document.getElementById('rejected-date').textContent = date;
                 
                 noApplicationView.classList.add('hidden');
                 pendingApplicationView.classList.add('hidden');
                 approvedApplicationView.classList.add('hidden');
                 rejectedApplicationView.classList.remove('hidden');
-            }
-        }
-        
-        // Интеграция с Telegram WebApp (если используется)
-        if (window.Telegram && window.Telegram.WebApp) {
-            Telegram.WebApp.expand();
-            
-            const user = Telegram.WebApp.initDataUnsafe.user;
-            if (user) {
-                // Автозаполнение Telegram username
-                const usernameInput = document.getElementById('username');
-                if (usernameInput && user.username) {
-                    usernameInput.value = user.username;
-                }
-                
-                // Используем Telegram ID как user_id
-                localStorage.setItem('beta_user_id', user.id);
             }
         }
     </script>
