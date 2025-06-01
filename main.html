@@ -3,1190 +3,520 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <title>Бета-доступ | Ваше Приложение</title>
     <style>
-        body {
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #00CEFF;
+            --dark: #2D3436;
+            --light: #F5F6FA;
+            --success: #00B894;
+            --warning: #FDCB6E;
+            --danger: #D63031;
+            --gray: #E0E0E0;
+            --card-bg: #FFFFFF;
+        }
+        
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Roboto', sans-serif;
-            background-color: #0f0f1a;
-            color: white;
-            overflow-x: hidden;
-            height: 100vh;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        #space-background {
-            position: fixed;
-            top: 0;
-            left: 0;
+        html, body {
             width: 100%;
             height: 100%;
-            z-index: -1;
-            overflow: hidden;
+            background-color: #f5f7fa;
+            overflow-x: hidden;
         }
         
-        .star {
-            position: absolute;
-            background-color: rgba(64, 224, 208, 0.5);
-            border-radius: 50%;
-            animation: float 15s infinite linear;
-        }
-        
-        @keyframes float {
-            0% {
-                transform: translate(0, 0);
-                opacity: 0.3;
-            }
-            50% {
-                opacity: 0.7;
-            }
-            100% {
-                transform: translate(100px, 100px);
-                opacity: 0.3;
-            }
+        #app {
+            width: 100%;
+            min-height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
         
         .container {
-            padding: 20px;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-        
-        .name-card {
-            background-color: #1a1a2a;
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 12px;
-            object-fit: cover;
-            background-color: #2a2a3a;
-        }
-        
-        .name-info {
-            flex: 1;
-        }
-        
-        .name-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-        
-        .name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ffffff;
-            margin: 0;
-            margin-right: 8px;
-        }
-        
-        .username {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .balance-card {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-        
-        .balance-label-top {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
-            background-color: rgba(0, 0, 0, 0.2);
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
-        
-        .balance-content {
-            display: flex;
-            align-items: center;
             width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
         }
         
-        .balance-icon {
-            font-size: 36px;
-            margin-right: 15px;
-        }
-        
-        .balance-info {
-            flex: 1;
-        }
-        
-        .balance-label {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 2px;
-        }
-        
-        .balance-amount {
-            font-size: 24px;
-            font-weight: bold;
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
-            margin: 0;
-        }
-        
-        .loader {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #40e0d0;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Остальные стили остаются без изменений */
-        .action-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            gap: 10px;
-        }
-        
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            background-color: #2a2a3a;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 80px;
-        }
-        
-        .btn-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
-        
-        .btn-deposit .btn-circle {
-            background-color: rgba(46, 204, 113, 0.2);
-        }
-        
-        .btn-withdraw .btn-circle {
-            background-color: rgba(231, 76, 60, 0.2);
-        }
-        
-        .btn-icon {
-            width: 20px;
-            height: 20px;
-            position: relative;
-        }
-        
-        .btn-deposit .btn-icon::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 2px;
-            height: 100%;
-            background-color: #2ecc71;
-            transform: translateX(-50%);
-        }
-        
-        .btn-deposit .btn-icon::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 10px;
-            height: 10px;
-            border-left: 2px solid #2ecc71;
-            border-bottom: 2px solid #2ecc71;
-            transform: translateX(-50%) rotate(-45deg);
-        }
-        
-        .btn-withdraw .btn-icon::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 2px;
-            height: 100%;
-            background-color: #e74c3c;
-            transform: translateX(-50%);
-        }
-        
-        .btn-withdraw .btn-icon::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 10px;
-            height: 10px;
-            border-left: 2px solid #e74c3c;
-            border-bottom: 2px solid #e74c3c;
-            transform: translateX(-50%) rotate(135deg);
-        }
-        
-        .history-btn {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            background-color: #2a2a3a;
-            color: white;
-            margin-bottom: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #1a1a2a;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #a0a0a0;
-            text-decoration: none;
-            font-size: 12px;
-        }
-        
-        .nav-icon {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .nav-icon svg {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .nav-item.active {
-            color: #40e0d0;
-        }
-        
-        .nav-item.active .nav-icon svg path {
-            fill: #40e0d0;
-        }
-        
-        /* Стили для попапов */
-        .popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-        
-        .popup-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .popup-content {
-            background-color: #1a1a2a;
-            border-radius: 12px;
-            padding: 20px;
-            width: 90%;
-            max-width: 400px;
-            position: relative;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .popup-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: #a0a0a0;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        
-        .popup-title {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: #40e0d0;
+            padding: 24px;
             text-align: center;
         }
         
-        /* Стили для попапа пополнения */
-        .deposit-form {
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 24px;
+        }
+        
+        .status-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--gray);
+        }
+        
+        .status-card.pending {
+            border-left-color: var(--warning);
+        }
+        
+        .status-card.approved {
+            border-left-color: var(--success);
+        }
+        
+        .status-card.rejected {
+            border-left-color: var(--danger);
+        }
+        
+        .status-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            align-items: center;
+        }
+        
+        .status-title i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
+        .status-description {
+            font-size: 14px;
+            color: var(--dark);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            width: 120px;
+            color: #666;
+        }
+        
+        .info-value {
+            flex: 1;
         }
         
         .form-group {
-            display: flex;
-            flex-direction: column;
+            margin-bottom: 20px;
         }
         
         .form-label {
-            margin-bottom: 5px;
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
         }
         
-        .form-select {
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #2a2a3a;
-            background-color: #2a2a3a;
-            color: white;
-            font-family: inherit;
-            font-size: 16px;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 15px;
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
         }
         
-        .form-select:focus {
+        .form-control:focus {
+            border-color: var(--primary);
             outline: none;
-            border-color: #40e0d0;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
         }
         
-        .error-message {
-            color: #e74c3c;
-            font-size: 12px;
-            margin-top: 5px;
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .hidden {
             display: none;
         }
         
-        .payment-methods {
-            margin-top: 15px;
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
         }
         
-        .payment-title {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 10px;
+        .badge-pending {
+            background: rgba(253, 203, 110, 0.2);
+            color: #b78a00;
         }
         
-        .payment-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .badge-approved {
+            background: rgba(0, 184, 148, 0.2);
+            color: #007a5e;
         }
         
-        .payment-option {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-radius: 6px;
-            background-color: #2a2a3a;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            opacity: 0.5;
-            pointer-events: none;
+        .badge-rejected {
+            background: rgba(214, 48, 49, 0.2);
+            color: #c62828;
         }
         
-        .payment-option.active {
-            opacity: 1;
-            pointer-events: auto;
-            background-color: #333344;
-        }
-        
-        .payment-icon {
-            width: 30px;
-            height: 30px;
-            margin-right: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .emoji {
             font-size: 18px;
-        }
-        
-        .payment-name {
-            flex: 1;
-            font-weight: bold;
-        }
-        
-        .payment-rate {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .deposit-btn {
-            padding: 12px;
-            border-radius: 6px;
-            border: none;
-            background-color: #40e0d0;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: background-color 0.3s;
-        }
-        
-        .deposit-btn:disabled {
-            background-color: #2a2a3a;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        
-        /* Стили для попапа истории */
-        .history-list {
-            margin-top: 15px;
-        }
-        
-        .history-item {
-            background-color: #2a2a3a;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-        }
-        
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        
-        .history-user {
-            font-weight: bold;
-            color: #40e0d0;
-        }
-        
-        .history-date {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .history-amount {
-            font-weight: bold;
-            margin: 5px 0;
-        }
-        
-        .history-description {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        .empty-history {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 20px 0;
-        }
-
-        @media (max-width: 600px) {
-            .content-block {
-                padding: 1.2rem 1rem;
-                font-size: 1rem;
-            }
-            .header-bar {
-                height: 48px;
-            }
-            .exit-btn {
-                width: 36px;
-                height: 36px;
-            }
-            .buttons-container {
-                bottom: 1rem;
-            }
-            .next-btn, .guide-btn {
-                padding: 0.7rem 1rem;
-                min-width: 110px;
-            }
-            .empty-space {
-                height: 40vh;
-            }
-            .completion-content, .feedback-content {
-                padding: 1.2rem;
-                width: 280px;
-            }
-            .checkmark {
-                width: 60px;
-                height: 60px;
-            }
-            .checkmark-icon {
-                font-size: 40px;
-            }
-            .feedback-option {
-                width: 40px;
-                height: 40px;
-                font-size: 1.5rem;
-            }
+            margin-right: 8px;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div id="space-background"></div>
-    
-    <div class="container">
-        <div class="name-card">
-            <img src="" alt="Avatar" class="user-avatar" id="userAvatar">
-            <div class="name-info">
-                <div class="name-row">
-                    <h2 class="name" id="name">Загрузка...</h2>
-                    <span class="username" id="username">(-)</span>
-                </div>
+    <div id="app">
+        <div class="container">
+            <div class="header">
+                <h1>Закрытое бета-тестирование</h1>
+                <p>Подайте заявку на ранний доступ к приложению</p>
             </div>
-        </div>
-        
-        <div class="balance-card">
-            <div class="balance-label-top">Баланс</div>
-            <div class="balance-content">
-                <div class="balance-icon">⭐</div>
-                <div class="balance-info">
-                    <div class="balance-label">Ваш баланс</div>
-                    <div class="balance-amount" id="balance">
-                        <div class="loader" id="balanceLoader"></div>
-                        <span id="balanceAmount" style="display: none;">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="action-buttons">
-            <button class="btn btn-deposit" id="depositBtn">
-                <div class="btn-circle">
-                    <div class="btn-icon"></div>
-                </div>
-                <div>Пополнить</div>
-            </button>
-            <button class="btn btn-withdraw" id="withdrawBtn">
-                <div class="btn-circle">
-                    <div class="btn-icon"></div>
-                </div>
-                <div>Вывести</div>
-            </button>
-        </div>
-        
-        <button class="history-btn" id="historyBtn">📋 История транзакций</button>
-    </div>
-    
-    <div class="bottom-nav">
-        <a href="index.html" class="nav-item active">
-            <div class="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" fill="#40E0D0"/>
-                    <path d="M9 22V12H15V22" fill="#0f0f1a"/>
-                </svg>
-            </div>
-            <span>Главная</span>
-        </a>
-        <a href="game.html" class="nav-item">
-            <div class="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 6H3C2.44772 6 2 6.44772 2 7V17C2 17.5523 2.44772 18 3 18H21C21.5523 18 22 17.5523 22 17V7C22 6.44772 21.5523 6 21 6Z" fill="#a0a0a0"/>
-                    <path d="M12 8C11.4477 8 11 8.44772 11 9V10H10C9.44772 10 9 10.4477 9 11C9 11.5523 9.44772 12 10 12H11V13C11 13.5523 11.4477 14 12 14C12.5523 14 13 13.5523 13 13V12H14C14.5523 12 15 11.5523 15 11C15 10.4477 14.5523 10 14 10H13V9C13 8.44772 12.5523 8 12 8Z" fill="#0f0f1a"/>
-                    <path d="M17 10H16V11H17C17.5523 11 18 10.5523 18 10C18 9.44772 17.5523 9 17 9C16.4477 9 16 9.44772 16 10V11H17Z" fill="#0f0f1a"/>
-                    <path d="M7 10H8V11H7C6.44772 11 6 10.5523 6 10C6 9.44772 6.44772 9 7 9C7.55228 9 8 9.44772 8 10V11H7Z" fill="#0f0f1a"/>
-                </svg>
-            </div>
-            <span>Игры</span>
-        </a>
-        <a href="friend.html" class="nav-item">
-            <div class="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" fill="#a0a0a0"/>
-                    <path d="M8 12C8 13.1046 7.10457 14 6 14C4.89543 14 4 13.1046 4 12C4 10.8954 4.89543 10 6 10C7.10457 10 8 10.8954 8 12Z" fill="#0f0f1a"/>
-                    <path d="M20 12C20 13.1046 19.1046 14 18 14C16.8954 14 16 13.1046 16 12C16 10.8954 16.8954 10 18 10C19.1046 10 20 10.8954 20 12Z" fill="#0f0f1a"/>
-                    <path d="M7.5 16C8.32843 16 9 15.3284 9 14.5C9 13.6716 8.32843 13 7.5 13C6.67157 13 6 13.6716 6 14.5C6 15.3284 6.67157 16 7.5 16Z" fill="#0f0f1a"/>
-                    <path d="M16.5 16C17.3284 16 18 15.3284 18 14.5C18 13.6716 17.3284 13 16.5 13C15.6716 13 15 13.6716 15 14.5C15 15.3284 15.6716 16 16.5 16Z" fill="#0f0f1a"/>
-                    <path d="M12 18C13.1046 18 14 17.1046 14 16C14 14.8954 13.1046 14 12 14C10.8954 14 10 14.8954 10 16C10 17.1046 10.8954 18 12 18Z" fill="#0f0f1a"/>
-                </svg>
-            </div>
-            <span>Партнерство</span>
-        </a>
-    </div>
-
-    <!-- Попап пополнения баланса -->
-    <div class="popup-overlay" id="depositPopup">
-        <div class="popup-content">
-            <button class="popup-close" id="closeDepositPopup">✕</button>
-            <h3 class="popup-title">Пополнение баланса</h3>
-            <form class="deposit-form" id="depositForm">
-                <div class="form-group">
-                    <label class="form-label">Сумма (STARS)</label>
-                    <select class="form-select" id="depositAmount">
-                        <option value="" disabled selected>Выберите сумму</option>
-                        <option value="5">5 STARS (0.03 TON / 0.1 USDT)</option>
-                        <option value="10">10 STARS (0.06 TON / 0.2 USDT)</option>
-                        <option value="25">25 STARS (0.15 TON / 0.5 USDT)</option>
-                        <option value="50">50 STARS (0.3 TON / 1.0 USDT)</option>
-                        <option value="100">100 STARS (0.6 TON / 2.0 USDT)</option>
-                    </select>
-                    <div class="error-message" id="amountError">Пожалуйста, выберите сумму</div>
-                </div>
-                
-                <div class="payment-methods">
-                    <div class="payment-title">Способы оплаты:</div>
-                    <div class="payment-options">
-                        <div class="payment-option" data-method="ton_crypto">
-                            <div class="payment-icon">💎</div>
-                            <div class="payment-name">TON Crypto Bot</div>
-                            <div class="payment-rate" id="ton-rate">-</div>
-                        </div>
-                        <div class="payment-option" data-method="usdt_crypto">
-                            <div class="payment-icon">💵</div>
-                            <div class="payment-name">USDT CryptoBot</div>
-                            <div class="payment-rate" id="usdt-rate">-</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="deposit-btn" id="submitDeposit" disabled>Пополнить</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Попап истории транзакций -->
-    <div class="popup-overlay" id="historyPopup">
-        <div class="popup-content">
-            <button class="popup-close" id="closeHistoryPopup">✕</button>
-            <h3 class="popup-title">История транзакций</h3>
-            <div class="history-list" id="historyList">
-                <div class="empty-history">История транзакций пуста</div>
-            </div>
-        </div>
-    </div>
-
-<script>
-    // Инициализация Telegram WebApp
-    const tg = window.Telegram.WebApp;
-    
-    // Конфигурация Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
-        authDomain: "vrot-x-7a48f.firebaseapp.com",
-        databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
-        projectId: "vrot-x-7a48f",
-        storageBucket: "vrot-x-7a48f.firebasestorage.app",
-        messagingSenderId: "622297225288",
-        appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
-    };
-
-    // Инициализация Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
-    // ID админа (замените на ваш)
-    const ADMIN_ID = "1515638372";
-    
-    // Конфигурация Crypto Bot
-    const CRYPTO_BOT_TOKEN = "404319:AAeqRD0pfN18mgODHlFbuNXf11u4qUKbgHC";
-    const BOT_USERNAME = "Free1_USDT_bot";
-    
-    // Курсы обмена
-    const RATES = {
-        ton: 0.006, // 1 STAR = 0.006 TON
-        usdt: 0.02  // 1 STAR = 0.02 USDT
-    };
-
-    // Функция для работы с cookies
-    function setCookie(name, value, days) {
-        let expires = "";
-        if (days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            expires = "; expires=" + date.toUTCString();
-        }
-        document.cookie = name + "=" + (value || "") + expires + "; path=/";
-    }
-
-    function getCookie(name) {
-        const nameEQ = name + "=";
-        const ca = document.cookie.split(';');
-        for (let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-        }
-        return null;
-    }
-
-    // Функция для очистки текста от спецсимволов
-    function sanitizeText(text) {
-        return text.replace(/[^\p{L}\p{N}\s]/gu, '').trim() || 'Пользователь';
-    }
-
-    // Функция для отображения инициалов
-    function showInitials(element, name) {
-        element.src = '';
-        element.style.backgroundColor = '#2a2a3a';
-        element.style.display = 'flex';
-        element.style.alignItems = 'center';
-        element.style.justifyContent = 'center';
-        element.style.color = '#40e0d0';
-        element.style.fontWeight = 'bold';
-        element.textContent = name.charAt(0).toUpperCase();
-    }
-
-    // Создание звездного фона
-    function createStars() {
-        const space = document.getElementById('space-background');
-        const starCount = 30;
-        
-        for (let i = 0; i < starCount; i++) {
-            const star = document.createElement('div');
-            star.classList.add('star');
             
-            const size = Math.random() * 8 + 2;
-            star.style.width = `${size}px`;
-            star.style.height = `${size}px`;
-            star.style.left = `${Math.random() * 100}%`;
-            star.style.top = `${Math.random() * 100}%`;
-            star.style.animationDelay = `${Math.random() * 5}s`;
-            star.style.animationDuration = `${10 + Math.random() * 20}s`;
-            
-            space.appendChild(star);
-        }
-    }
-
-    // Управление попапом пополнения
-    function setupDepositPopup() {
-        const popup = document.getElementById('depositPopup');
-        const depositBtn = document.getElementById('depositBtn');
-        const closeBtn = document.getElementById('closeDepositPopup');
-        const depositForm = document.getElementById('depositForm');
-        const depositAmount = document.getElementById('depositAmount');
-        const amountError = document.getElementById('amountError');
-        const submitBtn = document.getElementById('submitDeposit');
-        const paymentOptions = document.querySelectorAll('.payment-option');
-        const tonRate = document.getElementById('ton-rate');
-        const usdtRate = document.getElementById('usdt-rate');
-        
-        let selectedMethod = null;
-        let selectedAmount = null;
-
-        // Открытие попапа
-        depositBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            popup.classList.add('active');
-        });
-        
-        // Закрытие попапа
-        closeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            popup.classList.remove('active');
-            resetForm();
-        });
-        
-        // Изменение выбранной суммы
-        depositAmount.addEventListener('change', () => {
-            selectedAmount = depositAmount.value;
-            
-            if (selectedAmount) {
-                amountError.style.display = 'none';
-                enablePaymentOptions();
-                updateRates(selectedAmount);
-            } else {
-                amountError.style.display = 'block';
-                disablePaymentOptions();
-            }
-        });
-        
-        // Отправка формы
-        depositForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!selectedMethod || !selectedAmount) return;
-            
-            const amount = parseInt(selectedAmount);
-            const cryptoAmount = calculateCryptoAmount(amount, selectedMethod);
-            
-            try {
-                // Создаем счет в Crypto Bot
-                const response = await createCryptoInvoice(amount, cryptoAmount, selectedMethod);
-                
-                if (response.ok) {
-                    // Открываем страницу оплаты
-                    window.open(response.result.pay_url, "_blank");
+            <div class="content">
+                <!-- Состояние: Нет заявки -->
+                <div id="no-application" class="hidden">
+                    <div class="status-card">
+                        <h3 class="status-title"><i class="emoji">👋</i>Приветствуем!</h3>
+                        <p class="status-description">У вас еще нет активной заявки на участие в бета-тестировании. Заполните форму ниже, и мы рассмотрим вашу заявку в ближайшее время.</p>
                     
-                    // Закрываем попап
-                    popup.classList.remove('active');
-                    resetForm();
-                    
-                    // Сворачиваем мини-приложение
-                    if (window.Telegram && window.Telegram.WebApp) {
-                        window.Telegram.WebApp.close();
-                    }
-                } else {
-                    alert("Ошибка создания счета: " + response.error);
-                }
-            } catch (error) {
-                alert("Ошибка подключения к платежной системе");
-                console.error(error);
-            }
-        });
-        
-        // Расчет суммы в крипте
-        function calculateCryptoAmount(starsAmount, method) {
-            if (method === 'ton_crypto') {
-                return starsAmount * RATES.ton;
-            } else if (method === 'usdt_crypto') {
-                return starsAmount * RATES.usdt;
-            }
-            return 0;
-        }
-        
-        // Обновление курсов
-        function updateRates(amount) {
-            const tonAmount = (amount * RATES.ton).toFixed(3);
-            const usdtAmount = (amount * RATES.usdt).toFixed(2);
-            
-            tonRate.textContent = `${tonAmount} TON`;
-            usdtRate.textContent = `${usdtAmount} USDT`;
-        }
-        
-        // Активация методов оплаты
-        function enablePaymentOptions() {
-            paymentOptions.forEach(option => {
-                option.classList.add('active');
-            });
-            
-            // Добавляем обработчики выбора метода
-            paymentOptions.forEach(option => {
-                option.addEventListener('click', selectPaymentMethod);
-            });
-        }
-        
-        // Деактивация методов оплаты
-        function disablePaymentOptions() {
-            paymentOptions.forEach(option => {
-                option.classList.remove('active');
-                option.style.backgroundColor = '#2a2a3a';
-            });
-            
-            // Удаляем обработчики выбора метода
-            paymentOptions.forEach(option => {
-                option.removeEventListener('click', selectPaymentMethod);
-            });
-            
-            selectedMethod = null;
-            submitBtn.disabled = true;
-            
-            // Сбрасываем курсы
-            tonRate.textContent = '-';
-            usdtRate.textContent = '-';
-        }
-        
-        // Выбор метода оплаты
-        function selectPaymentMethod(e) {
-            const option = e.currentTarget;
-            
-            // Сбрасываем выделение у всех вариантов
-            paymentOptions.forEach(opt => {
-                opt.style.backgroundColor = '#2a2a3a';
-            });
-            
-            // Выделяем выбранный вариант
-            option.style.backgroundColor = '#333344';
-            selectedMethod = option.getAttribute('data-method');
-            
-            // Активируем кнопку отправки
-            submitBtn.disabled = false;
-        }
-        
-        // Создание счета в Crypto Bot
-        async function createCryptoInvoice(starsAmount, cryptoAmount, method) {
-            const asset = method === 'ton_crypto' ? 'TON' : 'USDT';
-            const description = `Пополнение ${starsAmount} STARS`;
-            
-            try {
-                const response = await fetch("https://pay.crypt.bot/api/createInvoice", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Crypto-Pay-API-Token": CRYPTO_BOT_TOKEN
-                    },
-                    body: JSON.stringify({
-                        asset: asset,
-                        amount: cryptoAmount,
-                        description: description,
-                        paid_btn_name: "openBot",
-                        paid_btn_url: `https://t.me/${BOT_USERNAME}`,
-                        payload: JSON.stringify({ 
-                            type: "stars_payment",
-                            amount: starsAmount,
-                            user_id: getCookie('tg_user_id') || 'unknown'
-                        })
-                    })
-                });
-                
-                return await response.json();
-            } catch (error) {
-                console.error('Ошибка создания счета:', error);
-                throw error;
-            }
-        }
-        
-        // Сброс формы
-        function resetForm() {
-            depositAmount.value = '';
-            amountError.style.display = 'none';
-            selectedMethod = null;
-            selectedAmount = null;
-            submitBtn.disabled = true;
-            disablePaymentOptions();
-        }
-    }
-
-    // Управление попапом истории
-    function setupHistoryPopup() {
-        const popup = document.getElementById('historyPopup');
-        const historyBtn = document.getElementById('historyBtn');
-        const closeBtn = document.getElementById('closeHistoryPopup');
-        const historyList = document.getElementById('historyList');
-
-        // Открытие попапа
-        historyBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            loadHistory();
-            popup.classList.add('active');
-        });
-        
-        // Закрытие попапа
-        closeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            popup.classList.remove('active');
-        });
-        
-        // Загрузка истории
-        async function loadHistory() {
-            try {
-                const userId = getCookie('tg_user_id') || 'demo';
-                const historyRef = database.ref('history/' + userId);
-                
-                const snapshot = await historyRef.once('value');
-                
-                if (snapshot.exists()) {
-                    const historyData = snapshot.val();
-                    let hasTransactions = false;
-                    let html = '';
-                    
-                    // Перебираем все записи в истории
-                    Object.keys(historyData).forEach(key => {
-                        const item = historyData[key];
-                        
-                        // Пропускаем технические поля
-                        if (key === 'created_at') return;
-                        
-                        hasTransactions = true;
-                        
-                        html += `
-                            <div class="history-item">
-                                <div class="history-header">
-                                    <div class="history-user">${item.user || 'Неизвестный'}</div>
-                                    <div class="history-date">${formatDate(item.date)}</div>
+                        <form id="application-form">
+                            <div class="form-group">
+                                <label class="form-label">Ваш Telegram username</label>
+                                <div style="display: flex;">
+                                    <span style="padding: 12px 10px; background: #f5f6fa; border: 1px solid #ddd; border-right: none; border-radius: 8px 0 0 8px;">@</span>
+                                    <input type="text" class="form-control" id="username" placeholder="username" style="border-radius: 0 8px 8px 0;" required>
                                 </div>
-                                <div class="history-amount">${item.amount || 0} STARS</div>
-                                <div class="history-description">${item.description || 'Нет описания'}</div>
                             </div>
-                        `;
+                            
+                            <div class="form-group">
+                                <label class="form-label">Почему вы хотите участвовать в тестировании?</label>
+                                <textarea class="form-control" id="description" placeholder="Расскажите о себе и почему мы должны выбрать именно вас..." required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Отправить заявку</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Состояние: Заявка на модерации -->
+                <div id="pending-application" class="hidden">
+                    <div class="status-card pending">
+                        <h3 class="status-title">
+                            <i class="fas fa-hourglass-half"></i> Заявка на рассмотрении
+                            <span class="status-badge badge-pending">На модерации</span>
+                        </h3>
+                        <p class="status-description">Ваша заявка находится на рассмотрении. Обычно это занимает 1-3 рабочих дня. Мы уведомим вас в Telegram, когда примем решение.</p>
+                        
+                        <div class="user-info">
+                            <div class="info-row">
+                                <div class="info-label">Telegram:</div>
+                                <div class="info-value" id="pending-username">@username</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Комментарий:</div>
+                                <div class="info-value" id="pending-description">Описание отсутствует</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Дата подачи:</div>
+                                <div class="info-value" id="pending-date">01.01.2023</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Состояние: Заявка одобрена -->
+                <div id="approved-application" class="hidden">
+                    <div class="status-card approved">
+                        <h3 class="status-title">
+                            <i class="fas fa-check-circle"></i> Заявка одобрена!
+                            <span class="status-badge badge-approved">Одобрено</span>
+                        </h3>
+                        <p class="status-description">Поздравляем! Ваша заявка на участие в бета-тестировании была одобрена. В ближайшее время мы отправим вам инструкции по Telegram.</p>
+                        
+                        <div class="user-info">
+                            <div class="info-row">
+                                <div class="info-label">Telegram:</div>
+                                <div class="info-value" id="approved-username">@username</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Комментарий:</div>
+                                <div class="info-value" id="approved-description">Описание отсутствует</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Дата одобрения:</div>
+                                <div class="info-value" id="approved-date">01.01.2023</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="start-testing" class="btn btn-primary" style="margin-top: 20px;">
+                        <i class="fas fa-rocket"></i> Начать тестирование
+                    </button>
+                </div>
+                
+                <!-- Состояние: Заявка отклонена -->
+                <div id="rejected-application" class="hidden">
+                    <div class="status-card rejected">
+                        <h3 class="status-title">
+                            <i class="fas fa-times-circle"></i> Заявка отклонена
+                            <span class="status-badge badge-rejected">Отклонено</span>
+                        </h3>
+                        <p class="status-description">К сожалению, ваша заявка на участие в бета-тестировании была отклонена. Вы можете подать новую заявку, если считаете, что это ошибка.</p>
+                        
+                        <div class="user-info">
+                            <div class="info-row">
+                                <div class="info-label">Telegram:</div>
+                                <div class="info-value" id="rejected-username">@username</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Комментарий:</div>
+                                <div class="info-value" id="rejected-description">Описание отсутствует</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">Дата отклонения:</div>
+                                <div class="info-value" id="rejected-date">01.01.2023</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="new-application" class="btn btn-primary" style="margin-top: 20px;">
+                        <i class="fas fa-redo"></i> Подать новую заявку
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Конфигурация
+        const API_URL = 'https://app.nocodb.com/#/weamcfo6/p27jdsmk69wuimh/merm7h6tgmnhaeq'; // Замените на ваш URL NocoDB
+        const API_TOKEN = 'bocQfycJpJsTG_tbwEf8ma8E5rhoig0njMDXFWtJ'; // Замените на ваш API токен
+        const TABLE_NAME = 'merm7h6tgmnhaeq'; // Имя таблицы
+        
+        // Элементы DOM
+        const noApplicationView = document.getElementById('no-application');
+        const pendingApplicationView = document.getElementById('pending-application');
+        const approvedApplicationView = document.getElementById('approved-application');
+        const rejectedApplicationView = document.getElementById('rejected-application');
+        const applicationForm = document.getElementById('application-form');
+        const newApplicationBtn = document.getElementById('new-application');
+        const startTestingBtn = document.getElementById('start-testing');
+        
+        // Проверка статуса пользователя при загрузке страницы
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Здесь должна быть логика проверки пользователя
+            // Например, по Telegram WebApp или кукам
+            
+            // Пример: проверяем localStorage для демонстрации
+            const userId = localStorage.getItem('beta_user_id');
+            
+            if (userId) {
+                // Загружаем данные пользователя из таблицы
+                try {
+                    const response = await axios.get(`${API_URL}${TABLE_NAME}?where=(user_id,eq,${userId})`, {
+                        headers: {
+                            'xc-token': API_TOKEN
+                        }
                     });
                     
-                    if (hasTransactions) {
-                        historyList.innerHTML = html;
+                    if (response.data.list && response.data.list.length > 0) {
+                        const application = response.data.list[0];
+                        showApplicationStatus(application);
                     } else {
-                        historyList.innerHTML = '<div class="empty-history">История транзакций пуста</div>';
+                        showNoApplication();
                     }
-                } else {
-                    historyList.innerHTML = '<div class="empty-history">История транзакций пуста</div>';
+                } catch (error) {
+                    console.error('Ошибка при загрузке данных:', error);
+                    showNoApplication();
                 }
-            } catch (error) {
-                console.error('Ошибка загрузки истории:', error);
-                historyList.innerHTML = '<div class="empty-history">Ошибка загрузки истории</div>';
-            }
-        }
-        
-        // Форматирование даты
-        function formatDate(timestamp) {
-            if (!timestamp) return 'Дата неизвестна';
-            
-            const date = new Date(timestamp);
-            return date.toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-    }
-
-    // Загрузка данных пользователя
-    function loadUserData() {
-        let tgUser = {};
-        let isDemoMode = false;
-        
-        // 1. Получаем данные пользователя из Telegram WebApp
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            
-            if (tg.initDataUnsafe?.user) {
-                tgUser = tg.initDataUnsafe.user;
-                console.log('Данные из initDataUnsafe:', tgUser);
-            } else if (tg.initData) {
-                try {
-                    const initData = new URLSearchParams(tg.initData);
-                    const userJson = initData.get('user');
-                    if (userJson) {
-                        tgUser = JSON.parse(decodeURIComponent(userJson));
-                        console.log('Данные из initData:', tgUser);
-                    }
-                } catch (e) {
-                    console.error('Ошибка парсинга initData:', e);
-                }
-            }
-        }
-
-        // 2. Если нет данных из Telegram - используем сохраненные данные или демо-режим
-        if (!tgUser.id) {
-            const savedUser = localStorage.getItem('tg_user');
-            if (savedUser) {
-                tgUser = JSON.parse(savedUser);
-                console.log('Используем сохраненные данные:', tgUser);
             } else {
-                tgUser = {
-                    id: 'demo_' + Math.random().toString(36).substr(2, 9),
-                    first_name: 'Гость',
-                    username: undefined,
-                    photo_url: undefined
-                };
-                isDemoMode = true;
-                console.log('Демо-режим:', tgUser);
+                showNoApplication();
             }
-        }
-
-        // 3. Сохраняем данные пользователя
-        if (!isDemoMode) {
-            localStorage.setItem('tg_user', JSON.stringify(tgUser));
-            setCookie('tg_user_id', tgUser.id, 30);
-        }
-
-        // 4. Отображаем данные пользователя
-        const userName = tgUser.first_name ? sanitizeText(tgUser.first_name) : 'Пользователь';
-        const userUsername = tgUser.username ? `(@${sanitizeText(tgUser.username)})` : '(-)';
-
-        document.getElementById('name').textContent = userName;
-        document.getElementById('username').textContent = userUsername;
-
-        // 5. Устанавливаем аватар
-        const avatarImg = document.getElementById('userAvatar');
-        if (tgUser.photo_url) {
-            avatarImg.src = tgUser.photo_url + '?t=' + Date.now();
-            avatarImg.onerror = function() {
-                showInitials(avatarImg, userName);
-            };
-        } else {
-            showInitials(avatarImg, userName);
-        }
-
-        // 6. Работа с Firebase
-        const userId = tgUser.id;
-        const userRef = database.ref('users/' + userId);
-
-        // Проверяем/создаем пользователя в БД
-        userRef.once('value').then(snapshot => {
-            if (!snapshot.exists()) {
-                userRef.set({
-                    tg_id: userId,
-                    tg_username: tgUser.username || 'не указан',
-                    tg_name: userName,
-                    stars: 0
+        });
+        
+        // Обработка отправки формы
+        applicationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const description = document.getElementById('description').value.trim();
+            
+            if (!username || !description) {
+                alert('Пожалуйста, заполните все поля');
+                return;
+            }
+            
+            // Генерируем user_id (в реальном приложении это может быть Telegram ID)
+            const userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('beta_user_id', userId);
+            
+            // Отправляем данные в NocoDB
+            try {
+                const response = await axios.post(`${API_URL}${TABLE_NAME}`, {
+                    user_id: userId,
+                    username: username,
+                    descript: description,
+                    status: 0, // На модерации
+                    created_at: new Date().toISOString()
+                }, {
+                    headers: {
+                        'xc-token': API_TOKEN
+                    }
                 });
-                console.log('Новый пользователь создан в Firebase');
-            }
-        });
-
-        // Подписываемся на изменения баланса
-        userRef.on('value', (snapshot) => {
-            const userData = snapshot.val();
-            if (userData) {
-                const balanceLoader = document.getElementById('balanceLoader');
-                const balanceAmount = document.getElementById('balanceAmount');
                 
-                balanceLoader.style.display = 'none';
-                balanceAmount.style.display = 'inline';
-                balanceAmount.textContent = userData.stars || '0';
+                // Показываем статус заявки
+                showApplicationStatus({
+                    user_id: userId,
+                    username: username,
+                    descript: description,
+                    status: 0,
+                    created_at: new Date().toISOString()
+                });
+                
+            } catch (error) {
+                console.error('Ошибка при отправке заявки:', error);
+                alert('Произошла ошибка при отправке заявки. Пожалуйста, попробуйте позже.');
             }
         });
-    }
-
-    // Запуск приложения
-    document.addEventListener('DOMContentLoaded', () => {
-        createStars();
         
-        try {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.expand();
-            }
-        } catch (e) {
-            console.log('Не удалось расширить WebApp');
+        // Кнопка новой заявки
+        newApplicationBtn.addEventListener('click', () => {
+            showNoApplication();
+        });
+        
+        // Кнопка начала тестирования
+        startTestingBtn.addEventListener('click', () => {
+            alert('Перенаправляем вас в приложение...');
+            // Здесь должна быть логика перехода в приложение
+        });
+        
+        // Функции отображения состояний
+        function showNoApplication() {
+            noApplicationView.classList.remove('hidden');
+            pendingApplicationView.classList.add('hidden');
+            approvedApplicationView.classList.add('hidden');
+            rejectedApplicationView.classList.add('hidden');
         }
         
-        setupDepositPopup();
-        setupHistoryPopup();
-        loadUserData();
-    });
-</script>
+        function showApplicationStatus(application) {
+            const username = application.username.startsWith('@') ? application.username : '@' + application.username;
+            const date = new Date(application.created_at).toLocaleDateString('ru-RU');
+            
+            if (application.status === 0) {
+                // На модерации
+                document.getElementById('pending-username').textContent = username;
+                document.getElementById('pending-description').textContent = application.descript || 'Описание отсутствует';
+                document.getElementById('pending-date').textContent = date;
+                
+                noApplicationView.classList.add('hidden');
+                pendingApplicationView.classList.remove('hidden');
+                approvedApplicationView.classList.add('hidden');
+                rejectedApplicationView.classList.add('hidden');
+            } else if (application.status === 1) {
+                // Одобрено
+                document.getElementById('approved-username').textContent = username;
+                document.getElementById('approved-description').textContent = application.descript || 'Описание отсутствует';
+                document.getElementById('approved-date').textContent = date;
+                
+                noApplicationView.classList.add('hidden');
+                pendingApplicationView.classList.add('hidden');
+                approvedApplicationView.classList.remove('hidden');
+                rejectedApplicationView.classList.add('hidden');
+            } else if (application.status === -1) {
+                // Отклонено
+                document.getElementById('rejected-username').textContent = username;
+                document.getElementById('rejected-description').textContent = application.descript || 'Описание отсутствует';
+                document.getElementById('rejected-date').textContent = date;
+                
+                noApplicationView.classList.add('hidden');
+                pendingApplicationView.classList.add('hidden');
+                approvedApplicationView.classList.add('hidden');
+                rejectedApplicationView.classList.remove('hidden');
+            }
+        }
+        
+        // Интеграция с Telegram WebApp (если используется)
+        if (window.Telegram && window.Telegram.WebApp) {
+            Telegram.WebApp.expand();
+            
+            const user = Telegram.WebApp.initDataUnsafe.user;
+            if (user) {
+                // Автозаполнение Telegram username
+                const usernameInput = document.getElementById('username');
+                if (usernameInput && user.username) {
+                    usernameInput.value = user.username;
+                }
+                
+                // Используем Telegram ID как user_id
+                localStorage.setItem('beta_user_id', user.id);
+            }
+        }
+    </script>
 </body>
 </html>
