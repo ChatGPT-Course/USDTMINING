@@ -137,6 +137,130 @@
             color: #b8b8b8;
         }
         
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: rgba(46, 17, 81, 0.9);
+            padding: 20px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .amount-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .amount-btn {
+            background: rgba(123, 44, 191, 0.3);
+            border: 1px solid #7b2cbf;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .amount-btn.selected {
+            background: #7b2cbf;
+            font-weight: bold;
+        }
+        
+        .username-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #7b2cbf;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .confirm-checkbox {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .confirm-checkbox input {
+            margin-right: 10px;
+        }
+        
+        .transaction-item {
+            background: rgba(123, 44, 191, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #7b2cbf;
+        }
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .transaction-amount {
+            font-weight: bold;
+        }
+        
+        .transaction-amount.positive {
+            color: #4caf50;
+        }
+        
+        .transaction-amount.negative {
+            color: #f44336;
+        }
+        
+        .transaction-date {
+            font-size: 12px;
+            color: #b8b8b8;
+        }
+        
+        .transaction-description {
+            font-size: 14px;
+            color: #d1d1d1;
+        }
+        
         @keyframes float {
             0% {
                 transform: translateY(0px);
@@ -186,6 +310,57 @@
         </div>
     </div>
 
+    <!-- Модальное окно вывода средств -->
+    <div id="withdraw-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Вывод средств</div>
+                <button class="close-modal" id="close-withdraw-modal">&times;</button>
+            </div>
+            
+            <div id="withdraw-step-1">
+                <p>Выберите сумму для вывода:</p>
+                <div class="amount-buttons">
+                    <button class="amount-btn" data-amount="50">50 ⭐</button>
+                    <button class="amount-btn" data-amount="100">100 ⭐</button>
+                    <button class="amount-btn" data-amount="200">200 ⭐</button>
+                    <button class="amount-btn" data-amount="300">300 ⭐</button>
+                    <button class="amount-btn" data-amount="400">400 ⭐</button>
+                    <button class="amount-btn" data-amount="500">500 ⭐</button>
+                    <button class="amount-btn" data-amount="1000">1000 ⭐</button>
+                </div>
+                
+                <button class="btn" id="next-step-btn" disabled>Далее</button>
+            </div>
+            
+            <div id="withdraw-step-2" style="display: none;">
+                <p>Введите юзернейм получателя:</p>
+                <input type="text" id="username-input" class="username-input" placeholder="@username">
+                
+                <div class="confirm-checkbox">
+                    <input type="checkbox" id="confirm-checkbox">
+                    <label for="confirm-checkbox">Сумма и юзернейм корректны</label>
+                </div>
+                
+                <button class="btn" id="submit-withdraw-btn" disabled>Вывести</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно истории операций -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">История операций</div>
+                <button class="close-modal" id="close-history-modal">&times;</button>
+            </div>
+            
+            <div id="transactions-list">
+                <p id="no-transactions">Загрузка истории операций...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -193,7 +368,7 @@
             authDomain: "vrot-x-7a48f.firebaseapp.com",
             databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
             projectId: "vrot-x-7a48f",
-            storageBucket: "vrot-x-7a48f.firebasestorage.app",
+            storageBucket: "vrot-x-7a48f.appspot.com",
             messagingSenderId: "622297225288",
             appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
         };
@@ -204,53 +379,102 @@
         
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть приложение на весь экран
+        if (tg && tg.initDataUnsafe) {
+            tg.expand(); // Развернуть приложение на весь экран
+        } else {
+            console.warn('Telegram WebApp не инициализирован. Работаем в тестовом режиме.');
+        }
         
-        // Проверяем, есть ли пользователь в базе, если нет - создаем
-        async function initUser() {
-            const user = tg.initDataUnsafe.user;
-            if (!user) {
-                alert('Ошибка: пользователь не авторизован через Telegram');
-                return;
-            }
+        // Глобальные переменные
+        let currentUserId = null;
+        let selectedWithdrawAmount = 0;
+        
+        // Инициализация частиц на фоне
+        function initParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
             
-            const userId = user.id.toString();
-            const userRef = database.ref('users/' + userId);
-            
-            // Проверяем существование пользователя
-            const snapshot = await userRef.once('value');
-            
-            if (!snapshot.exists()) {
-                // Создаем нового пользователя
-                const newUser = {
-                    id: userId,
-                    first_name: user.first_name || '',
-                    last_name: user.last_name || '',
-                    username: user.username || '',
-                    photo_url: user.photo_url || '',
-                    balance: 0,
-                    created_at: firebase.database.ServerValue.TIMESTAMP,
-                    transactions: {}
-                };
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = `${Math.random() * 10 + 5}px`;
+                particle.style.height = particle.style.width;
+                particle.style.backgroundColor = `rgba(123, 44, 191, ${Math.random() * 0.5 + 0.2})`;
+                particle.style.borderRadius = '50%';
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.left = `${Math.random() * 100}%`;
                 
-                await userRef.set(newUser);
-                console.log('Новый пользователь создан:', newUser);
+                const duration = Math.random() * 30 + 20;
+                const delay = Math.random() * 10;
+                particle.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+                
+                particlesContainer.appendChild(particle);
             }
+        }
+        
+        // Проверяем и создаем пользователя при необходимости
+        async function initUser() {
+            let user = null;
             
-            return userId;
+            try {
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    user = tg.initDataUnsafe.user;
+                } else {
+                    // Тестовые данные, если не в Telegram WebApp
+                    user = {
+                        id: 123456789,
+                        first_name: "Тестовый",
+                        last_name: "Пользователь",
+                        username: "testuser",
+                        photo_url: "https://via.placeholder.com/60"
+                    };
+                }
+                
+                const userId = user.id.toString();
+                const userRef = database.ref('users/' + userId);
+                
+                const snapshot = await userRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    const newUser = {
+                        id: userId,
+                        first_name: user.first_name || '',
+                        last_name: user.last_name || '',
+                        username: user.username || '',
+                        photo_url: user.photo_url || '',
+                        balance: 1000, // Начальный баланс для теста
+                        created_at: firebase.database.ServerValue.TIMESTAMP,
+                        transactions: {}
+                    };
+                    
+                    await userRef.set(newUser);
+                    console.log('Новый пользователь создан:', newUser);
+                }
+                
+                return userId;
+            } catch (error) {
+                console.error('Ошибка инициализации пользователя:', error);
+                throw error;
+            }
         }
         
         // Загружаем данные пользователя
         async function loadUserData(userId) {
-            const userRef = database.ref('users/' + userId);
-            
-            // Устанавливаем слушатель для реального обновления данных
-            userRef.on('value', (snapshot) => {
-                const userData = snapshot.val();
-                if (userData) {
-                    updateUI(userData);
-                }
-            });
+            try {
+                const userRef = database.ref('users/' + userId);
+                
+                userRef.on('value', (snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        updateUI(userData);
+                    }
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+                throw error;
+            }
         }
         
         // Обновляем интерфейс данными пользователя
@@ -270,89 +494,203 @@
                 document.getElementById('user-avatar').src = 'https://via.placeholder.com/60';
             }
             
-            // Показываем профиль после загрузки данных
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile').style.display = 'block';
         }
         
-        // Инициализация частиц на фоне
-        function initParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 20;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.style.position = 'absolute';
-                particle.style.width = `${Math.random() * 10 + 5}px`;
-                particle.style.height = particle.style.width;
-                particle.style.backgroundColor = `rgba(123, 44, 191, ${Math.random() * 0.5 + 0.2})`;
-                particle.style.borderRadius = '50%';
-                particle.style.top = `${Math.random() * 100}%`;
-                particle.style.left = `${Math.random() * 100}%`;
+        // Создаем новую транзакцию
+        async function createTransaction(userId, type, amount, description = '') {
+            try {
+                const transactionsRef = database.ref('history/' + userId);
+                const newTransactionRef = transactionsRef.push();
                 
-                // Анимация движения
-                const duration = Math.random() * 30 + 20;
-                const delay = Math.random() * 10;
-                particle.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+                const now = new Date();
+                const day = now.getDate().toString().padStart(2, '0');
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const year = now.getFullYear();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
                 
-                particlesContainer.appendChild(particle);
+                const transactionData = {
+                    id: newTransactionRef.key,
+                    userId: userId,
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    date: `${day}.${month}.${year} ${hours}:${minutes} мск`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await newTransactionRef.set(transactionData);
+                
+                // Обновляем баланс пользователя
+                const userRef = database.ref('users/' + userId);
+                const snapshot = await userRef.once('value');
+                const userData = snapshot.val();
+                
+                let newBalance = userData.balance || 0;
+                if (type === 'deposit') {
+                    newBalance += amount;
+                } else if (type === 'withdraw') {
+                    newBalance -= amount;
+                }
+                
+                await userRef.update({
+                    balance: newBalance
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Ошибка создания транзакции:', error);
+                throw error;
             }
         }
         
-        // Обработчики кнопок
+        // Загружаем историю транзакций
+        async function loadTransactions(userId) {
+            try {
+                const transactionsRef = database.ref('history/' + userId);
+                const transactionsList = document.getElementById('transactions-list');
+                
+                transactionsRef.on('value', (snapshot) => {
+                    const transactions = snapshot.val();
+                    transactionsList.innerHTML = '';
+                    
+                    if (!transactions) {
+                        transactionsList.innerHTML = '<p id="no-transactions">Нет операций</p>';
+                        return;
+                    }
+                    
+                    // Сортируем транзакции по времени (новые сначала)
+                    const sortedTransactions = Object.values(transactions).sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    sortedTransactions.forEach(transaction => {
+                        const transactionItem = document.createElement('div');
+                        transactionItem.className = 'transaction-item';
+                        
+                        const amountClass = transaction.type === 'deposit' ? 'positive' : 'negative';
+                        const amountSign = transaction.type === 'deposit' ? '+' : '-';
+                        
+                        transactionItem.innerHTML = `
+                            <div class="transaction-header">
+                                <div class="transaction-type">${transaction.type === 'deposit' ? 'Пополнение' : 'Вывод'}</div>
+                                <div class="transaction-amount ${amountClass}">${amountSign}${transaction.amount} ⭐</div>
+                            </div>
+                            <div class="transaction-description">${transaction.description || ''}</div>
+                            <div class="transaction-date">${transaction.date}</div>
+                        `;
+                        
+                        transactionsList.appendChild(transactionItem);
+                    });
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки истории транзакций:', error);
+                throw error;
+            }
+        }
+        
+        // Настройка обработчиков кнопок
         function setupButtons(userId) {
-            document.getElementById('deposit-btn').addEventListener('click', () => {
-                tg.showPopup({
-                    title: 'Пополнение баланса',
-                    message: 'Введите сумму для пополнения:',
-                    buttons: [
-                        {id: 'deposit_100', type: 'default', text: '100 ⭐'},
-                        {id: 'deposit_500', type: 'default', text: '500 ⭐'},
-                        {id: 'deposit_custom', type: 'default', text: 'Другая сумма'},
-                        {type: 'cancel'}
-                    ]
-                }, (buttonId) => {
-                    if (buttonId === 'deposit_custom') {
-                        tg.showPopup({
-                            title: 'Введите сумму',
-                            message: 'Сколько Stars вы хотите внести?',
-                            buttons: [
-                                {id: 'confirm', type: 'default', text: 'Подтвердить'},
-                                {type: 'cancel'}
-                            ]
-                        }, (buttonId) => {
-                            if (buttonId === 'confirm') {
-                                // Здесь должна быть логика пополнения
-                                alert('Функция пополнения будет реализована позже');
-                            }
-                        });
-                    } else if (buttonId.startsWith('deposit_')) {
-                        const amount = parseInt(buttonId.split('_')[1]);
-                        // Здесь должна быть логика пополнения
-                        alert(`Пополнение на ${amount} Stars будет реализовано позже`);
-                    }
-                });
-            });
-            
+            // Кнопка вывода
             document.getElementById('withdraw-btn').addEventListener('click', () => {
-                tg.showPopup({
-                    title: 'Вывод средств',
-                    message: 'Введите сумму для вывода:',
-                    buttons: [
-                        {id: 'withdraw', type: 'default', text: 'Запросить вывод'},
-                        {type: 'cancel'}
-                    ]
-                }, (buttonId) => {
-                    if (buttonId === 'withdraw') {
-                        // Здесь должна быть логика вывода
-                        alert('Функция вывода будет реализована позже');
-                    }
+                document.getElementById('withdraw-modal').style.display = 'flex';
+                document.getElementById('withdraw-step-1').style.display = 'block';
+                document.getElementById('withdraw-step-2').style.display = 'none';
+                document.getElementById('next-step-btn').disabled = true;
+                selectedWithdrawAmount = 0;
+                
+                // Сброс выбранных сумм
+                document.querySelectorAll('.amount-btn').forEach(btn => {
+                    btn.classList.remove('selected');
                 });
             });
             
+            // Кнопка истории операций
             document.getElementById('history-btn').addEventListener('click', () => {
-                // Здесь будет переход к истории операций
-                alert('История операций будет отображаться здесь');
+                document.getElementById('history-modal').style.display = 'flex';
+                loadTransactions(userId);
+            });
+            
+            // Кнопка пополнения (заглушка)
+            document.getElementById('deposit-btn').addEventListener('click', () => {
+                alert('Функция пополнения будет доступна в ближайшее время');
+            });
+            
+            // Закрытие модального окна вывода
+            document.getElementById('close-withdraw-modal').addEventListener('click', () => {
+                document.getElementById('withdraw-modal').style.display = 'none';
+            });
+            
+            // Закрытие модального окна истории
+            document.getElementById('close-history-modal').addEventListener('click', () => {
+                document.getElementById('history-modal').style.display = 'none';
+            });
+            
+            // Выбор суммы для вывода
+            document.querySelectorAll('.amount-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedWithdrawAmount = parseInt(btn.dataset.amount);
+                    document.getElementById('next-step-btn').disabled = false;
+                });
+            });
+            
+            // Переход к следующему шагу вывода
+            document.getElementById('next-step-btn').addEventListener('click', () => {
+                document.getElementById('withdraw-step-1').style.display = 'none';
+                document.getElementById('withdraw-step-2').style.display = 'block';
+                document.getElementById('username-input').value = '';
+                document.getElementById('confirm-checkbox').checked = false;
+                document.getElementById('submit-withdraw-btn').disabled = true;
+            });
+            
+            // Проверка ввода юзернейма
+            document.getElementById('username-input').addEventListener('input', (e) => {
+                let value = e.target.value;
+                if (value && !value.startsWith('@')) {
+                    value = '@' + value.replace(/@/g, '');
+                    e.target.value = value;
+                }
+                
+                document.getElementById('confirm-checkbox').checked = false;
+                document.getElementById('submit-withdraw-btn').disabled = true;
+            });
+            
+            // Чекбокс подтверждения
+            document.getElementById('confirm-checkbox').addEventListener('change', (e) => {
+                document.getElementById('submit-withdraw-btn').disabled = !e.target.checked;
+            });
+            
+            // Отправка заявки на вывод
+            document.getElementById('submit-withdraw-btn').addEventListener('click', async () => {
+                const username = document.getElementById('username-input').value;
+                
+                try {
+                    // Проверяем баланс
+                    const userRef = database.ref('users/' + userId);
+                    const snapshot = await userRef.once('value');
+                    const userData = snapshot.val();
+                    
+                    if (userData.balance < selectedWithdrawAmount) {
+                        alert('Недостаточно средств на балансе');
+                        return;
+                    }
+                    
+                    // Создаем транзакцию
+                    await createTransaction(
+                        userId, 
+                        'withdraw', 
+                        selectedWithdrawAmount, 
+                        `Заявка вывода для ${username}`
+                    );
+                    
+                    alert(`Заявка на вывод ${selectedWithdrawAmount} ⭐ для ${username} создана!`);
+                    document.getElementById('withdraw-modal').style.display = 'none';
+                } catch (error) {
+                    console.error('Ошибка при выводе средств:', error);
+                    alert('Произошла ошибка при создании заявки');
+                }
             });
         }
         
@@ -361,9 +699,9 @@
             initParticles();
             
             try {
-                const userId = await initUser();
-                await loadUserData(userId);
-                setupButtons(userId);
+                currentUserId = await initUser();
+                await loadUserData(currentUserId);
+                setupButtons(currentUserId);
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
