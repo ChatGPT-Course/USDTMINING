@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лотерея - StarGame</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #0f0c29;
+            color: white;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(46, 17, 81, 0.7);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .balance {
+            background: rgba(123, 44, 191, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .lottery-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .title {
+            text-align: center;
+            margin: 20px 0 30px;
+            font-size: 24px;
+            color: #f7f7f7;
+        }
+        
+        .tickets {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .ticket {
+            background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(123, 44, 191, 0.5);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ticket:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(123, 44, 191, 0.4);
+        }
+        
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .ticket-name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .ticket-price {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .ticket-description {
+            font-size: 14px;
+            color: #b8b8b8;
+            margin-bottom: 15px;
+        }
+        
+        .ticket-prize-range {
+            font-size: 14px;
+            color: #f7f7f7;
+            margin-bottom: 5px;
+        }
+        
+        .buy-btn {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        .buy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
+        }
+        
+        /* Модальное окно приза */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            border: 2px solid #7b2cbf;
+        }
+        
+        .prize-amount {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 30px 0;
+            color: #ffd700;
+        }
+        
+        .scratch-area {
+            background: #333;
+            padding: 40px;
+            border-radius: 10px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .scratch-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                #7b2cbf,
+                #7b2cbf 10px,
+                #5a189a 10px,
+                #5a189a 20px
+            );
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: white;
+        }
+        
+        .close-modal {
+            background: #7b2cbf;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .close-modal:hover {
+            background: #5a189a;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #b8b8b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" id="back-btn">← Назад</button>
+        <div class="balance" id="user-balance">0 ⭐</div>
+    </div>
+    
+    <div class="lottery-container">
+        <h1 class="title">Лотерейные билеты</h1>
+        
+        <div id="loading" class="loading">
+            Загрузка данных...
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div class="tickets">
+                <div class="ticket" data-type="start">
+                    <div class="ticket-header">
+                        <div class="ticket-name">Старт</div>
+                        <div class="ticket-price">10 ⭐</div>
+                    </div>
+                    <div class="ticket-description">
+                        Идеальный вариант для новичков. Маленькая ставка - небольшой, но гарантированный выигрыш!
+                    </div>
+                    <div class="ticket-prize-range">Выигрыш: 1-20 ⭐</div>
+                    <button class="buy-btn">Купить билет</button>
+                </div>
+                
+                <div class="ticket" data-type="advanced">
+                    <div class="ticket-header">
+                        <div class="ticket-name">Продвинутый</div>
+                        <div class="ticket-price">49 ⭐</div>
+                    </div>
+                    <div class="ticket-description">
+                        Для тех, кто готов рискнуть ради большего выигрыша. Хорошие шансы на приличный приз!
+                    </div>
+                    <div class="ticket-prize-range">Выигрыш: 10-200 ⭐</div>
+                    <button class="buy-btn">Купить билет</button>
+                </div>
+                
+                <div class="ticket" data-type="pro">
+                    <div class="ticket-header">
+                        <div class="ticket-name">Профессионал</div>
+                        <div class="ticket-price">99 ⭐</div>
+                    </div>
+                    <div class="ticket-description">
+                        Максимальный риск - максимальная награда! Шанс сорвать крупный куш!
+                    </div>
+                    <div class="ticket-prize-range">Выигрыш: 20-500 ⭐</div>
+                    <button class="buy-btn">Купить билет</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно приза -->
+    <div id="prize-modal" class="modal">
+        <div class="modal-content">
+            <h2>Ваш выигрыш!</h2>
+            <p>Потрите экран, чтобы узнать сумму</p>
+            
+            <div class="scratch-area">
+                <div class="scratch-layer" id="scratch-layer">Потрите здесь</div>
+                <div class="prize-amount" id="prize-amount"></div>
+            </div>
+            
+            <button class="close-modal" id="close-modal">Забрать приз</button>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+            authDomain: "vrot-x-7a48f.firebaseapp.com",
+            databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+            projectId: "vrot-x-7a48f",
+            storageBucket: "vrot-x-7a48f.appspot.com",
+            messagingSenderId: "622297225288",
+            appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+        };
+        
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Глобальные переменные
+        let currentUserId = null;
+        let currentBalance = 0;
+        let currentTicketType = '';
+        let prizeAmount = 0;
+        let isScratched = false;
+        
+        // Получаем ID пользователя из cookie
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        
+        // Загружаем данные пользователя
+        async function loadUserData(userId) {
+            try {
+                const userRef = database.ref('users/' + userId);
+                
+                userRef.on('value', (snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        currentBalance = userData.balance || 0;
+                        document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('content').style.display = 'block';
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
+            }
+        }
+        
+        // Генерируем случайный приз в зависимости от типа билета
+        function generatePrize(ticketType) {
+            let min, max;
+            
+            switch(ticketType) {
+                case 'start':
+                    min = 1;
+                    max = 20;
+                    break;
+                case 'advanced':
+                    // 60% chance for 10-50, 40% for 51-200
+                    if (Math.random() < 0.6) {
+                        min = 10;
+                        max = 50;
+                    } else {
+                        min = 51;
+                        max = 200;
+                    }
+                    break;
+                case 'pro':
+                    // 50% chance for 20-100, 50% for 101-500
+                    if (Math.random() < 0.5) {
+                        min = 20;
+                        max = 100;
+                    } else {
+                        min = 101;
+                        max = 500;
+                    }
+                    break;
+                default:
+                    min = 1;
+                    max = 10;
+            }
+            
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        // Создаем транзакцию (покупка билета или выигрыш)
+        async function createTransaction(userId, type, amount, description = '') {
+            try {
+                const transactionsRef = database.ref('history/' + userId);
+                const newTransactionRef = transactionsRef.push();
+                
+                const now = new Date();
+                const day = now.getDate().toString().padStart(2, '0');
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const year = now.getFullYear();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                
+                const transactionData = {
+                    id: newTransactionRef.key,
+                    userId: userId,
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    date: `${day}.${month}.${year} ${hours}:${minutes} мск`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await newTransactionRef.set(transactionData);
+                
+                // Обновляем баланс пользователя
+                const userRef = database.ref('users/' + userId);
+                const snapshot = await userRef.once('value');
+                const userData = snapshot.val();
+                
+                let newBalance = userData.balance || 0;
+                if (type === 'deposit' || type === 'win') {
+                    newBalance += amount;
+                } else if (type === 'withdraw' || type === 'game_bet') {
+                    newBalance -= amount;
+                }
+                
+                await userRef.update({
+                    balance: newBalance
+                });
+                
+                return newBalance;
+            } catch (error) {
+                console.error('Ошибка создания транзакции:', error);
+                throw error;
+            }
+        }
+        
+        // Покупка билета
+        async function buyTicket(ticketType) {
+            const ticketPrices = {
+                'start': 10,
+                'advanced': 49,
+                'pro': 99
+            };
+            
+            const price = ticketPrices[ticketType];
+            
+            if (currentBalance < price) {
+                alert('Недостаточно средств на балансе');
+                return false;
+            }
+            
+            try {
+                // Списываем средства за билет
+                await createTransaction(
+                    currentUserId, 
+                    'game_bet', 
+                    price, 
+                    `Покупка лотерейного билета "${getTicketName(ticketType)}"`
+                );
+                
+                // Генерируем выигрыш
+                prizeAmount = generatePrize(ticketType);
+                currentTicketType = ticketType;
+                isScratched = false;
+                
+                return true;
+            } catch (error) {
+                console.error('Ошибка при покупке билета:', error);
+                alert('Произошла ошибка при покупке билета');
+                return false;
+            }
+        }
+        
+        // Получаем название билета по типу
+        function getTicketName(ticketType) {
+            const names = {
+                'start': 'Старт',
+                'advanced': 'Продвинутый',
+                'pro': 'Профессионал'
+            };
+            return names[ticketType] || 'Билет';
+        }
+        
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Кнопка "Назад"
+            document.getElementById('back-btn').addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+            
+            // Покупка билетов
+            document.querySelectorAll('.ticket .buy-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const ticket = e.target.closest('.ticket');
+                    const ticketType = ticket.dataset.type;
+                    
+                    const success = await buyTicket(ticketType);
+                    if (success) {
+                        // Показываем модальное окно с призом
+                        document.getElementById('prize-modal').style.display = 'flex';
+                        document.getElementById('prize-amount').textContent = `${prizeAmount} ⭐`;
+                        document.getElementById('scratch-layer').style.display = 'flex';
+                    }
+                });
+            });
+            
+            // Закрытие модального окна
+            document.getElementById('close-modal').addEventListener('click', async () => {
+                if (isScratched) {
+                    // Зачисляем выигрыш
+                    await createTransaction(
+                        currentUserId, 
+                        'win', 
+                        prizeAmount, 
+                        `Выигрыш в лотерее "${getTicketName(currentTicketType)}"`
+                    );
+                    
+                    document.getElementById('prize-modal').style.display = 'none';
+                } else {
+                    alert('Потрите экран, чтобы узнать свой выигрыш!');
+                }
+            });
+            
+            // Эффект "стирания" защитного слоя
+            const scratchLayer = document.getElementById('scratch-layer');
+            let isDrawing = false;
+            
+            scratchLayer.addEventListener('mousedown', () => {
+                isDrawing = true;
+            });
+            
+            scratchLayer.addEventListener('mouseup', () => {
+                isDrawing = false;
+            });
+            
+            scratchLayer.addEventListener('mousemove', (e) => {
+                if (isDrawing) {
+                    const rect = scratchLayer.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Создаем "дырку" в защитном слое
+                    const hole = document.createElement('div');
+                    hole.style.position = 'absolute';
+                    hole.style.left = `${x - 15}px`;
+                    hole.style.top = `${y - 15}px`;
+                    hole.style.width = '30px';
+                    hole.style.height = '30px';
+                    hole.style.borderRadius = '50%';
+                    hole.style.backgroundColor = 'transparent';
+                    hole.style.pointerEvents = 'none';
+                    
+                    scratchLayer.appendChild(hole);
+                    
+                    // Проверяем, сколько площади уже "стёрто"
+                    setTimeout(() => {
+                        checkScratchProgress();
+                    }, 100);
+                }
+            });
+            
+            // Для сенсорных устройств
+            scratchLayer.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isDrawing = true;
+            });
+            
+            scratchLayer.addEventListener('touchend', () => {
+                isDrawing = false;
+            });
+            
+            scratchLayer.addEventListener('touchmove', (e) => {
+                if (isDrawing) {
+                    const rect = scratchLayer.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const x = touch.clientX - rect.left;
+                    const y = touch.clientY - rect.top;
+                    
+                    const hole = document.createElement('div');
+                    hole.style.position = 'absolute';
+                    hole.style.left = `${x - 15}px`;
+                    hole.style.top = `${y - 15}px`;
+                    hole.style.width = '30px';
+                    hole.style.height = '30px';
+                    hole.style.borderRadius = '50%';
+                    hole.style.backgroundColor = 'transparent';
+                    hole.style.pointerEvents = 'none';
+                    
+                    scratchLayer.appendChild(hole);
+                    
+                    setTimeout(() => {
+                        checkScratchProgress();
+                    }, 100);
+                }
+            });
+        }
+        
+        // Проверяем, сколько площади уже стёрто
+        function checkScratchProgress() {
+            const scratchLayer = document.getElementById('scratch-layer');
+            const holes = scratchLayer.querySelectorAll('div');
+            let transparentArea = 0;
+            
+            // Это упрощенная проверка - в реальном приложении нужно более точное вычисление
+            if (holes.length > 10) {
+                scratchLayer.style.display = 'none';
+                isScratched = true;
+            }
+        }
+        
+        // Основная функция инициализации
+        async function initApp() {
+            currentUserId = getCookie('user_id');
+            
+            if (!currentUserId) {
+                // Если нет ID в cookie, перенаправляем на главную
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            await loadUserData(currentUserId);
+            setupEventListeners();
+        }
+        
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
