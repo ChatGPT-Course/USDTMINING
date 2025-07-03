@@ -465,13 +465,12 @@
         let currentTicketType = '';
         let prizeAmounts = [];
         let selectedCardIndex = -1;
-        let isCardSelected = false;
         
-        // Призы для каждого типа билета (обновленные)
+        // Призы для каждого типа билета
         const PRIZES = {
             start: [1,1,1,1,1,2,2,2,2,3,3,3,4,4,5,5,7,8,10,12,15,20,25,30,50],
-            advanced: [1,1,1,1,2,2,2,2,3,3,3,4,4,5,10,15,20,25,30,40,50,75,100,150,250],
-            pro: [1,1,1,1,2,2,2,3,3,4,4,5,8,10,15,25,50,75,100,125,150,200,250,500,750]
+            advanced: [1,1,1,2,2,3,3,4,5,6,8,10,12,15,20,30,40,50,60,70,80,90,100,125,200],
+            pro: [1,1,2,2,3,3,5,10,15,20,25,30,40,50,75,100,125,150,175,200,225,250,300,400,500]
         };
         
         // Цены билетов
@@ -483,13 +482,20 @@
         
         // Получаем ID пользователя из URL или cookie
         function getUserId() {
+            // Попробуем получить из URL
             const urlParams = new URLSearchParams(window.location.search);
             let userId = urlParams.get('user_id');
             
+            // Если нет в URL, попробуем из cookie
             if (!userId) {
                 const value = `; ${document.cookie}`;
                 const parts = value.split(`; user_id=`);
                 if (parts.length === 2) userId = parts.pop().split(';').shift();
+            }
+            
+            if (!userId) {
+                console.error("User ID not found in URL or cookies");
+                return null;
             }
             
             return userId;
@@ -510,13 +516,19 @@
                             document.getElementById('content').style.display = 'block';
                             resolve(userData);
                         } else {
-                            reject(new Error("Пользователь не найден"));
+                            const error = new Error("Пользователь не найден");
+                            document.getElementById('loading').textContent = error.message;
+                            reject(error);
                         }
                     }, (error) => {
+                        console.error("Ошибка чтения данных:", error);
+                        document.getElementById('loading').textContent = 'Ошибка загрузки данных';
                         reject(error);
                     });
                     
                 } catch (error) {
+                    console.error('Ошибка загрузки данных:', error);
+                    document.getElementById('loading').textContent = 'Ошибка: ' + error.message;
                     reject(error);
                 }
             });
@@ -587,7 +599,6 @@
             
             document.getElementById('ok-btn').style.display = 'none';
             document.getElementById('prize-modal').style.display = 'flex';
-            isCardSelected = false;
         }
         
         // Перемешиваем массив
@@ -601,12 +612,9 @@
         
         // Открываем выбранную карточку
         function revealCard(cardIndex) {
-            if (isCardSelected) return;
-            
             const card = document.querySelector(`.grid-item[data-index="${cardIndex}"]`);
             if (!card || card.classList.contains('revealed')) return;
             
-            isCardSelected = true;
             const amount = parseInt(card.dataset.amount);
             const ticketPrice = TICKET_PRICES[currentTicketType];
             
@@ -645,49 +653,10 @@
             return names[ticketType] || 'Билет';
         }
         
-        // Форматируем список призов для отображения
-        function formatPrizeList(prizes) {
-            const counts = {};
-            prizes.forEach(prize => {
-                counts[prize] = (counts[prize] || 0) + 1;
-            });
-            
-            return Object.entries(counts)
-                .sort((a, b) => b[0] - a[0])
-                .map(([prize, count]) => `${prize}⭐ ×${count}`)
-                .join(', ');
-        }
-        
-        // Рассчитываем шансы для каждого билета
-        function calculateChances(ticketType) {
-            const prizes = PRIZES[ticketType];
-            const price = TICKET_PRICES[ticketType];
-            
-            const total = prizes.length;
-            let winCount = 0;
-            let bigWinCount = 0;
-            
-            prizes.forEach(prize => {
-                if (prize >= price) winCount++;
-                if (prize >= price * 2) bigWinCount++;
-            });
-            
-            return {
-                winChance: Math.round((winCount / total) * 100),
-                bigWinChance: Math.round((bigWinCount / total) * 100),
-                min: Math.min(...prizes),
-                max: Math.max(...prizes)
-            };
-        }
-        
         // Настройка обработчиков событий
         function setupEventListeners() {
             // Кнопка "Назад"
-            const backBtn = document.getElementById('back-btn');
-            backBtn.style.border = '2px solid #7b2cbf';
-            backBtn.style.borderRadius = '8px';
-            backBtn.style.padding = '5px 10px';
-            backBtn.addEventListener('click', () => {
+            document.getElementById('back-btn').addEventListener('click', () => {
                 window.location.href = 'index.html' + (currentUserId ? `?user_id=${currentUserId}` : '');
             });
             
@@ -698,6 +667,7 @@
                     currentTicketType = ticket.dataset.type;
                     const price = TICKET_PRICES[currentTicketType];
                     
+                    // Показываем подтверждение
                     document.getElementById('confirm-title').textContent = `Купить билет "${getTicketName(currentTicketType)}"`;
                     document.getElementById('confirm-text').textContent = `Вы уверены, что хотите купить этот билет за ${price} ⭐?`;
                     document.getElementById('confirm-modal').style.display = 'flex';
@@ -715,14 +685,18 @@
                 }
                 
                 try {
+                    // Списываем средства
                     await createTransaction(
                         currentUserId, 
                         'game_bet', 
                         price, 
                         `Покупка лотерейного билета "${getTicketName(currentTicketType)}"`
                     );
+                    
+                    // Показываем сетку с призами
                     showPrizeGrid(currentTicketType);
                 } catch (error) {
+                    console.error('Ошибка при покупке билета:', error);
                     alert('Произошла ошибка при покупке билета');
                 }
             });
@@ -735,7 +709,7 @@
             // Выбор карточки
             document.addEventListener('click', (e) => {
                 const card = e.target.closest('.grid-item');
-                if (card && !card.classList.contains('revealed') && !isCardSelected) {
+                if (card && !card.classList.contains('revealed')) {
                     selectedCardIndex = parseInt(card.dataset.index);
                     revealCard(selectedCardIndex);
                 }
@@ -747,52 +721,23 @@
             });
         }
         
-        // Инициализация контента лотереи
-        function initLotteryContent() {
-            const container = document.querySelector('.lottery-container');
-            
-            // Для каждого типа билета создаем карточку
-            Object.entries(PRIZES).forEach(([type, prizes]) => {
-                const ticketDiv = document.createElement('div');
-                ticketDiv.className = 'ticket';
-                ticketDiv.dataset.type = type;
-                
-                const chances = calculateChances(type);
-                const price = TICKET_PRICES[type];
-                
-                ticketDiv.innerHTML = `
-                    <div class="ticket-header">
-                        <div class="ticket-name">${getTicketName(type)}</div>
-                        <div class="ticket-price">${price} ⭐</div>
-                    </div>
-                    <div class="ticket-description">
-                        ${formatPrizeList(prizes)}
-                    </div>
-                    <div class="ticket-chances">
-                        Шанс выиграша: ${chances.winChance}% (${chances.min}-${chances.max}⭐)
-                    </div>
-                    <button class="buy-btn">Купить билет за ${price} ⭐</button>
-                `;
-                
-                container.querySelector('.tickets').appendChild(ticketDiv);
-            });
-        }
-        
         // Основная функция инициализации
         async function initApp() {
             currentUserId = getUserId();
             
             if (!currentUserId) {
-                document.getElementById('loading').textContent = 'Ошибка: ID пользователя не найден';
+                document.getElementById('loading').textContent = 'Ошибка: ID пользователя не найден. Пожалуйста, войдите через главную страницу.';
+                document.getElementById('back-btn').style.display = 'block';
                 return;
             }
             
             try {
                 await loadUserData(currentUserId);
-                initLotteryContent();
                 setupEventListeners();
             } catch (error) {
-                document.getElementById('loading').textContent = 'Ошибка загрузки данных';
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
+                document.getElementById('back-btn').style.display = 'block';
             }
         }
         
