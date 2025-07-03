@@ -456,7 +456,7 @@
         };
         
         // Инициализация Firebase
-        firebase.initializeApp(firebaseConfig);
+        const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
         // Глобальные переменные
@@ -480,45 +480,68 @@
             pro: 150
         };
         
-        // Получаем ID пользователя из cookie
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
+        // Получаем ID пользователя из URL или cookie
+        function getUserId() {
+            // Попробуем получить из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let userId = urlParams.get('user_id');
+            
+            // Если нет в URL, попробуем из cookie
+            if (!userId) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; user_id=`);
+                if (parts.length === 2) userId = parts.pop().split(';').shift();
+            }
+            
+            if (!userId) {
+                console.error("User ID not found in URL or cookies");
+                return null;
+            }
+            
+            return userId;
         }
         
         // Загружаем данные пользователя
         async function loadUserData(userId) {
-            try {
-                const userRef = database.ref('users/' + userId);
-                
-                userRef.on('value', (snapshot) => {
-                    const userData = snapshot.val();
-                    if (userData) {
-                        currentBalance = userData.balance || 0;
-                        document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
-                        document.getElementById('loading').style.display = 'none';
-                        document.getElementById('content').style.display = 'block';
-                    }
-                });
-            } catch (error) {
-                console.error('Ошибка загрузки данных:', error);
-                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
-            }
+            return new Promise((resolve, reject) => {
+                try {
+                    const userRef = database.ref('users/' + userId);
+                    
+                    userRef.on('value', (snapshot) => {
+                        const userData = snapshot.val();
+                        if (userData) {
+                            currentBalance = userData.balance || 0;
+                            document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                            document.getElementById('loading').style.display = 'none';
+                            document.getElementById('content').style.display = 'block';
+                            resolve(userData);
+                        } else {
+                            const error = new Error("Пользователь не найден");
+                            document.getElementById('loading').textContent = error.message;
+                            reject(error);
+                        }
+                    }, (error) => {
+                        console.error("Ошибка чтения данных:", error);
+                        document.getElementById('loading').textContent = 'Ошибка загрузки данных';
+                        reject(error);
+                    });
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки данных:', error);
+                    document.getElementById('loading').textContent = 'Ошибка: ' + error.message;
+                    reject(error);
+                }
+            });
         }
         
-        // Создаем транзакцию (покупка билета или выигрыш)
+        // Создаем транзакцию
         async function createTransaction(userId, type, amount, description = '') {
             try {
                 const transactionsRef = database.ref('history/' + userId);
                 const newTransactionRef = transactionsRef.push();
                 
                 const now = new Date();
-                const day = now.getDate().toString().padStart(2, '0');
-                const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                const year = now.getFullYear();
-                const hours = now.getHours().toString().padStart(2, '0');
-                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const dateStr = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} мск`;
                 
                 const transactionData = {
                     id: newTransactionRef.key,
@@ -526,13 +549,13 @@
                     type: type,
                     amount: amount,
                     description: description,
-                    date: `${day}.${month}.${year} ${hours}:${minutes} мск`,
+                    date: dateStr,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 };
                 
                 await newTransactionRef.set(transactionData);
                 
-                // Обновляем баланс пользователя
+                // Обновляем баланс
                 const userRef = database.ref('users/' + userId);
                 const snapshot = await userRef.once('value');
                 const userData = snapshot.val();
@@ -540,15 +563,15 @@
                 let newBalance = userData.balance || 0;
                 if (type === 'deposit' || type === 'win') {
                     newBalance += amount;
-                } else if (type === 'withdraw' || type === 'game_bet') {
+                } else {
                     newBalance -= amount;
                 }
                 
-                await userRef.update({
-                    balance: newBalance
-                });
+                await userRef.update({ balance: newBalance });
+                currentBalance = newBalance;
+                document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
                 
-                return newBalance;
+                return transactionData;
             } catch (error) {
                 console.error('Ошибка создания транзакции:', error);
                 throw error;
@@ -608,7 +631,6 @@
                     card.classList.add('loss');
                 }
                 
-                // Показываем кнопку "Хорошо"
                 document.getElementById('ok-btn').style.display = 'block';
                 
                 // Зачисляем выигрыш
@@ -621,7 +643,7 @@
             }, 1000);
         }
         
-        // Получаем название билета по типу
+        // Получаем название билета
         function getTicketName(ticketType) {
             const names = {
                 'start': 'Старт',
@@ -635,18 +657,19 @@
         function setupEventListeners() {
             // Кнопка "Назад"
             document.getElementById('back-btn').addEventListener('click', () => {
-                window.location.href = 'index.html';
+                window.location.href = 'index.html' + (currentUserId ? `?user_id=${currentUserId}` : '');
             });
             
-            // Покупка билетов (открытие подтверждения)
+            // Покупка билетов
             document.querySelectorAll('.ticket .buy-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const ticket = e.target.closest('.ticket');
                     currentTicketType = ticket.dataset.type;
+                    const price = TICKET_PRICES[currentTicketType];
                     
                     // Показываем подтверждение
                     document.getElementById('confirm-title').textContent = `Купить билет "${getTicketName(currentTicketType)}"`;
-                    document.getElementById('confirm-text').textContent = `Вы уверены, что хотите купить этот билет за ${TICKET_PRICES[currentTicketType]} ⭐?`;
+                    document.getElementById('confirm-text').textContent = `Вы уверены, что хотите купить этот билет за ${price} ⭐?`;
                     document.getElementById('confirm-modal').style.display = 'flex';
                 });
             });
@@ -654,7 +677,6 @@
             // Подтверждение покупки
             document.getElementById('confirm-yes').addEventListener('click', async () => {
                 document.getElementById('confirm-modal').style.display = 'none';
-                
                 const price = TICKET_PRICES[currentTicketType];
                 
                 if (currentBalance < price) {
@@ -663,7 +685,7 @@
                 }
                 
                 try {
-                    // Списываем средства за билет
+                    // Списываем средства
                     await createTransaction(
                         currentUserId, 
                         'game_bet', 
@@ -687,7 +709,7 @@
             // Выбор карточки
             document.addEventListener('click', (e) => {
                 const card = e.target.closest('.grid-item');
-                if (card && !card.classList.contains('revealed') {
+                if (card && !card.classList.contains('revealed')) {
                     selectedCardIndex = parseInt(card.dataset.index);
                     revealCard(selectedCardIndex);
                 }
@@ -701,16 +723,22 @@
         
         // Основная функция инициализации
         async function initApp() {
-            currentUserId = getCookie('user_id');
+            currentUserId = getUserId();
             
             if (!currentUserId) {
-                // Если нет ID в cookie, перенаправляем на главную
-                window.location.href = 'index.html';
+                document.getElementById('loading').textContent = 'Ошибка: ID пользователя не найден. Пожалуйста, войдите через главную страницу.';
+                document.getElementById('back-btn').style.display = 'block';
                 return;
             }
             
-            await loadUserData(currentUserId);
-            setupEventListeners();
+            try {
+                await loadUserData(currentUserId);
+                setupEventListeners();
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
+                document.getElementById('back-btn').style.display = 'block';
+            }
         }
         
         // Запуск приложения
