@@ -13,6 +13,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -81,14 +82,6 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(123, 44, 191, 0.5);
             transition: all 0.3s;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .ticket:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(123, 44, 191, 0.4);
         }
         
         .ticket-header {
@@ -116,23 +109,36 @@
             margin-bottom: 15px;
         }
         
-        .ticket-prize-range {
+        .prize-list {
             font-size: 14px;
             color: #f7f7f7;
-            margin-bottom: 5px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .prize-item {
+            background: rgba(123, 44, 191, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
         }
         
         .buy-btn {
             background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
             width: 100%;
             margin-top: 10px;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
         
         .buy-btn:hover {
@@ -140,7 +146,7 @@
             box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
         }
         
-        /* Модальное окно приза */
+        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -156,66 +162,118 @@
         
         .modal-content {
             background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
-            padding: 30px;
+            padding: 25px;
             border-radius: 16px;
-            width: 90%;
+            width: 95%;
             max-width: 400px;
             text-align: center;
             position: relative;
             border: 2px solid #7b2cbf;
         }
         
-        .prize-amount {
-            font-size: 42px;
+        .modal-title {
+            font-size: 20px;
             font-weight: bold;
-            margin: 30px 0;
-            color: #ffd700;
+            margin-bottom: 15px;
         }
         
-        .scratch-area {
-            background: #333;
-            padding: 40px;
-            border-radius: 10px;
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
             margin: 20px 0;
+        }
+        
+        .grid-item {
+            aspect-ratio: 1;
+            background: rgba(123, 44, 191, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
             position: relative;
             overflow: hidden;
-            cursor: pointer;
         }
         
-        .scratch-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                45deg,
-                #7b2cbf,
-                #7b2cbf 10px,
-                #5a189a 10px,
-                #5a189a 20px
-            );
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            color: white;
+        .grid-item:hover {
+            background: rgba(123, 44, 191, 0.5);
         }
         
-        .close-modal {
+        .grid-item.selected {
+            animation: pulse 0.5s;
+        }
+        
+        .grid-item.revealed {
+            transform: rotateY(180deg);
+            background: rgba(46, 125, 50, 0.3);
+            border: 2px solid #2e7d32;
+        }
+        
+        .grid-item.revealed.loss {
+            background: rgba(211, 47, 47, 0.3);
+            border: 2px solid #d32f2f;
+        }
+        
+        .modal-text {
+            margin: 15px 0;
+            font-size: 14px;
+            color: #b8b8b8;
+        }
+        
+        .ok-btn {
             background: #7b2cbf;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 25px;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .ok-btn:hover {
+            background: #5a189a;
+        }
+        
+        .confirm-modal .modal-content {
+            max-width: 350px;
+        }
+        
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
             margin-top: 20px;
+        }
+        
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
             transition: all 0.3s;
         }
         
-        .close-modal:hover {
-            background: #5a189a;
+        .confirm-yes {
+            background: #7b2cbf;
+            color: white;
+        }
+        
+        .confirm-no {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         .loading {
@@ -249,49 +307,139 @@
                     <div class="ticket-description">
                         Идеальный вариант для новичков. Маленькая ставка - небольшой, но гарантированный выигрыш!
                     </div>
-                    <div class="ticket-prize-range">Выигрыш: 1-20 ⭐</div>
-                    <button class="buy-btn">Купить билет</button>
+                    <div class="prize-list">
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">4</div>
+                        <div class="prize-item">4</div>
+                        <div class="prize-item">5</div>
+                        <div class="prize-item">5</div>
+                        <div class="prize-item">7</div>
+                        <div class="prize-item">8</div>
+                        <div class="prize-item">10</div>
+                        <div class="prize-item">12</div>
+                        <div class="prize-item">15</div>
+                        <div class="prize-item">20</div>
+                        <div class="prize-item">25</div>
+                        <div class="prize-item">30</div>
+                        <div class="prize-item">50</div>
+                    </div>
+                    <button class="buy-btn">Купить билет за 10 ⭐</button>
                 </div>
                 
                 <div class="ticket" data-type="advanced">
                     <div class="ticket-header">
                         <div class="ticket-name">Продвинутый</div>
-                        <div class="ticket-price">49 ⭐</div>
+                        <div class="ticket-price">50 ⭐</div>
                     </div>
                     <div class="ticket-description">
                         Для тех, кто готов рискнуть ради большего выигрыша. Хорошие шансы на приличный приз!
                     </div>
-                    <div class="ticket-prize-range">Выигрыш: 10-200 ⭐</div>
-                    <button class="buy-btn">Купить билет</button>
+                    <div class="prize-list">
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">4</div>
+                        <div class="prize-item">5</div>
+                        <div class="prize-item">6</div>
+                        <div class="prize-item">8</div>
+                        <div class="prize-item">10</div>
+                        <div class="prize-item">12</div>
+                        <div class="prize-item">15</div>
+                        <div class="prize-item">20</div>
+                        <div class="prize-item">30</div>
+                        <div class="prize-item">40</div>
+                        <div class="prize-item">50</div>
+                        <div class="prize-item">60</div>
+                        <div class="prize-item">70</div>
+                        <div class="prize-item">80</div>
+                        <div class="prize-item">90</div>
+                        <div class="prize-item">100</div>
+                        <div class="prize-item">125</div>
+                        <div class="prize-item">200</div>
+                    </div>
+                    <button class="buy-btn">Купить билет за 50 ⭐</button>
                 </div>
                 
                 <div class="ticket" data-type="pro">
                     <div class="ticket-header">
                         <div class="ticket-name">Профессионал</div>
-                        <div class="ticket-price">99 ⭐</div>
+                        <div class="ticket-price">150 ⭐</div>
                     </div>
                     <div class="ticket-description">
                         Максимальный риск - максимальная награда! Шанс сорвать крупный куш!
                     </div>
-                    <div class="ticket-prize-range">Выигрыш: 20-500 ⭐</div>
-                    <button class="buy-btn">Купить билет</button>
+                    <div class="prize-list">
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">1</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">2</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">3</div>
+                        <div class="prize-item">5</div>
+                        <div class="prize-item">10</div>
+                        <div class="prize-item">15</div>
+                        <div class="prize-item">20</div>
+                        <div class="prize-item">25</div>
+                        <div class="prize-item">30</div>
+                        <div class="prize-item">40</div>
+                        <div class="prize-item">50</div>
+                        <div class="prize-item">75</div>
+                        <div class="prize-item">100</div>
+                        <div class="prize-item">125</div>
+                        <div class="prize-item">150</div>
+                        <div class="prize-item">175</div>
+                        <div class="prize-item">200</div>
+                        <div class="prize-item">225</div>
+                        <div class="prize-item">250</div>
+                        <div class="prize-item">300</div>
+                        <div class="prize-item">400</div>
+                        <div class="prize-item">500</div>
+                    </div>
+                    <button class="buy-btn">Купить билет за 150 ⭐</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Модальное окно приза -->
+    <!-- Модальное окно выбора карточки -->
     <div id="prize-modal" class="modal">
         <div class="modal-content">
-            <h2>Ваш выигрыш!</h2>
-            <p>Потрите экран, чтобы узнать сумму</p>
+            <div class="modal-title">Выберите карточку</div>
+            <div class="modal-text">Выберите одну из 25 карточек, чтобы узнать свой выигрыш</div>
             
-            <div class="scratch-area">
-                <div class="scratch-layer" id="scratch-layer">Потрите здесь</div>
-                <div class="prize-amount" id="prize-amount"></div>
+            <div class="grid-container" id="prize-grid">
+                <!-- Карточки будут сгенерированы скриптом -->
             </div>
             
-            <button class="close-modal" id="close-modal">Забрать приз</button>
+            <button class="ok-btn" id="ok-btn" style="display: none;">Хорошо</button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно подтверждения покупки -->
+    <div id="confirm-modal" class="modal confirm-modal">
+        <div class="modal-content">
+            <div class="modal-title" id="confirm-title">Подтвердите покупку</div>
+            <div class="modal-text" id="confirm-text">Вы уверены, что хотите купить этот билет?</div>
+            
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-yes" id="confirm-yes">Да</button>
+                <button class="confirm-btn confirm-no" id="confirm-no">Нет</button>
+            </div>
         </div>
     </div>
 
@@ -315,8 +463,22 @@
         let currentUserId = null;
         let currentBalance = 0;
         let currentTicketType = '';
-        let prizeAmount = 0;
-        let isScratched = false;
+        let prizeAmounts = [];
+        let selectedCardIndex = -1;
+        
+        // Призы для каждого типа билета
+        const PRIZES = {
+            start: [1,1,1,1,1,2,2,2,2,3,3,3,4,4,5,5,7,8,10,12,15,20,25,30,50],
+            advanced: [1,1,1,2,2,3,3,4,5,6,8,10,12,15,20,30,40,50,60,70,80,90,100,125,200],
+            pro: [1,1,2,2,3,3,5,10,15,20,25,30,40,50,75,100,125,150,175,200,225,250,300,400,500]
+        };
+        
+        // Цены билетов
+        const TICKET_PRICES = {
+            start: 10,
+            advanced: 50,
+            pro: 150
+        };
         
         // Получаем ID пользователя из cookie
         function getCookie(name) {
@@ -343,43 +505,6 @@
                 console.error('Ошибка загрузки данных:', error);
                 document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
             }
-        }
-        
-        // Генерируем случайный приз в зависимости от типа билета
-        function generatePrize(ticketType) {
-            let min, max;
-            
-            switch(ticketType) {
-                case 'start':
-                    min = 1;
-                    max = 20;
-                    break;
-                case 'advanced':
-                    // 60% chance for 10-50, 40% for 51-200
-                    if (Math.random() < 0.6) {
-                        min = 10;
-                        max = 50;
-                    } else {
-                        min = 51;
-                        max = 200;
-                    }
-                    break;
-                case 'pro':
-                    // 50% chance for 20-100, 50% for 101-500
-                    if (Math.random() < 0.5) {
-                        min = 20;
-                        max = 100;
-                    } else {
-                        min = 101;
-                        max = 500;
-                    }
-                    break;
-                default:
-                    min = 1;
-                    max = 10;
-            }
-            
-            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
         
         // Создаем транзакцию (покупка билета или выигрыш)
@@ -430,41 +555,70 @@
             }
         }
         
-        // Покупка билета
-        async function buyTicket(ticketType) {
-            const ticketPrices = {
-                'start': 10,
-                'advanced': 49,
-                'pro': 99
-            };
+        // Показываем сетку призов
+        function showPrizeGrid(ticketType) {
+            const gridContainer = document.getElementById('prize-grid');
+            gridContainer.innerHTML = '';
             
-            const price = ticketPrices[ticketType];
+            // Перемешиваем призы
+            prizeAmounts = [...PRIZES[ticketType]];
+            shuffleArray(prizeAmounts);
             
-            if (currentBalance < price) {
-                alert('Недостаточно средств на балансе');
-                return false;
+            // Создаем карточки
+            for (let i = 0; i < 25; i++) {
+                const card = document.createElement('div');
+                card.className = 'grid-item';
+                card.dataset.index = i;
+                card.dataset.amount = prizeAmounts[i];
+                card.textContent = '?';
+                gridContainer.appendChild(card);
             }
             
-            try {
-                // Списываем средства за билет
-                await createTransaction(
+            document.getElementById('ok-btn').style.display = 'none';
+            document.getElementById('prize-modal').style.display = 'flex';
+        }
+        
+        // Перемешиваем массив
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // Открываем выбранную карточку
+        function revealCard(cardIndex) {
+            const card = document.querySelector(`.grid-item[data-index="${cardIndex}"]`);
+            if (!card || card.classList.contains('revealed')) return;
+            
+            const amount = parseInt(card.dataset.amount);
+            const ticketPrice = TICKET_PRICES[currentTicketType];
+            
+            card.classList.add('selected');
+            
+            setTimeout(() => {
+                card.textContent = amount + ' ⭐';
+                card.classList.add('revealed');
+                card.classList.remove('selected');
+                
+                if (amount >= ticketPrice) {
+                    card.classList.add('win');
+                } else {
+                    card.classList.add('loss');
+                }
+                
+                // Показываем кнопку "Хорошо"
+                document.getElementById('ok-btn').style.display = 'block';
+                
+                // Зачисляем выигрыш
+                createTransaction(
                     currentUserId, 
-                    'game_bet', 
-                    price, 
-                    `Покупка лотерейного билета "${getTicketName(ticketType)}"`
+                    'win', 
+                    amount, 
+                    `Выигрыш в лотерее "${getTicketName(currentTicketType)}"`
                 );
-                
-                // Генерируем выигрыш
-                prizeAmount = generatePrize(ticketType);
-                currentTicketType = ticketType;
-                isScratched = false;
-                
-                return true;
-            } catch (error) {
-                console.error('Ошибка при покупке билета:', error);
-                alert('Произошла ошибка при покупке билета');
-                return false;
-            }
+            }, 1000);
         }
         
         // Получаем название билета по типу
@@ -484,125 +638,65 @@
                 window.location.href = 'index.html';
             });
             
-            // Покупка билетов
+            // Покупка билетов (открытие подтверждения)
             document.querySelectorAll('.ticket .buy-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
+                btn.addEventListener('click', (e) => {
                     const ticket = e.target.closest('.ticket');
-                    const ticketType = ticket.dataset.type;
+                    currentTicketType = ticket.dataset.type;
                     
-                    const success = await buyTicket(ticketType);
-                    if (success) {
-                        // Показываем модальное окно с призом
-                        document.getElementById('prize-modal').style.display = 'flex';
-                        document.getElementById('prize-amount').textContent = `${prizeAmount} ⭐`;
-                        document.getElementById('scratch-layer').style.display = 'flex';
-                    }
+                    // Показываем подтверждение
+                    document.getElementById('confirm-title').textContent = `Купить билет "${getTicketName(currentTicketType)}"`;
+                    document.getElementById('confirm-text').textContent = `Вы уверены, что хотите купить этот билет за ${TICKET_PRICES[currentTicketType]} ⭐?`;
+                    document.getElementById('confirm-modal').style.display = 'flex';
                 });
             });
             
-            // Закрытие модального окна
-            document.getElementById('close-modal').addEventListener('click', async () => {
-                if (isScratched) {
-                    // Зачисляем выигрыш
+            // Подтверждение покупки
+            document.getElementById('confirm-yes').addEventListener('click', async () => {
+                document.getElementById('confirm-modal').style.display = 'none';
+                
+                const price = TICKET_PRICES[currentTicketType];
+                
+                if (currentBalance < price) {
+                    alert('Недостаточно средств на балансе');
+                    return;
+                }
+                
+                try {
+                    // Списываем средства за билет
                     await createTransaction(
                         currentUserId, 
-                        'win', 
-                        prizeAmount, 
-                        `Выигрыш в лотерее "${getTicketName(currentTicketType)}"`
+                        'game_bet', 
+                        price, 
+                        `Покупка лотерейного билета "${getTicketName(currentTicketType)}"`
                     );
                     
-                    document.getElementById('prize-modal').style.display = 'none';
-                } else {
-                    alert('Потрите экран, чтобы узнать свой выигрыш!');
+                    // Показываем сетку с призами
+                    showPrizeGrid(currentTicketType);
+                } catch (error) {
+                    console.error('Ошибка при покупке билета:', error);
+                    alert('Произошла ошибка при покупке билета');
                 }
             });
             
-            // Эффект "стирания" защитного слоя
-            const scratchLayer = document.getElementById('scratch-layer');
-            let isDrawing = false;
-            
-            scratchLayer.addEventListener('mousedown', () => {
-                isDrawing = true;
+            // Отмена покупки
+            document.getElementById('confirm-no').addEventListener('click', () => {
+                document.getElementById('confirm-modal').style.display = 'none';
             });
             
-            scratchLayer.addEventListener('mouseup', () => {
-                isDrawing = false;
-            });
-            
-            scratchLayer.addEventListener('mousemove', (e) => {
-                if (isDrawing) {
-                    const rect = scratchLayer.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    // Создаем "дырку" в защитном слое
-                    const hole = document.createElement('div');
-                    hole.style.position = 'absolute';
-                    hole.style.left = `${x - 15}px`;
-                    hole.style.top = `${y - 15}px`;
-                    hole.style.width = '30px';
-                    hole.style.height = '30px';
-                    hole.style.borderRadius = '50%';
-                    hole.style.backgroundColor = 'transparent';
-                    hole.style.pointerEvents = 'none';
-                    
-                    scratchLayer.appendChild(hole);
-                    
-                    // Проверяем, сколько площади уже "стёрто"
-                    setTimeout(() => {
-                        checkScratchProgress();
-                    }, 100);
+            // Выбор карточки
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.grid-item');
+                if (card && !card.classList.contains('revealed') {
+                    selectedCardIndex = parseInt(card.dataset.index);
+                    revealCard(selectedCardIndex);
                 }
             });
             
-            // Для сенсорных устройств
-            scratchLayer.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                isDrawing = true;
+            // Кнопка "Хорошо"
+            document.getElementById('ok-btn').addEventListener('click', () => {
+                document.getElementById('prize-modal').style.display = 'none';
             });
-            
-            scratchLayer.addEventListener('touchend', () => {
-                isDrawing = false;
-            });
-            
-            scratchLayer.addEventListener('touchmove', (e) => {
-                if (isDrawing) {
-                    const rect = scratchLayer.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    const x = touch.clientX - rect.left;
-                    const y = touch.clientY - rect.top;
-                    
-                    const hole = document.createElement('div');
-                    hole.style.position = 'absolute';
-                    hole.style.left = `${x - 15}px`;
-                    hole.style.top = `${y - 15}px`;
-                    hole.style.width = '30px';
-                    hole.style.height = '30px';
-                    hole.style.borderRadius = '50%';
-                    hole.style.backgroundColor = 'transparent';
-                    hole.style.pointerEvents = 'none';
-                    
-                    scratchLayer.appendChild(hole);
-                    
-                    setTimeout(() => {
-                        checkScratchProgress();
-                    }, 100);
-                }
-            });
-        }
-        
-        // Проверяем, сколько площади уже стёрто
-        function checkScratchProgress() {
-            const scratchLayer = document.getElementById('scratch-layer');
-            const holes = scratchLayer.querySelectorAll('div');
-            let transparentArea = 0;
-            
-            // Это упрощенная проверка - в реальном приложении нужно более точное вычисление
-            if (holes.length > 10) {
-                scratchLayer.style.display = 'none';
-                isScratched = true;
-            }
         }
         
         // Основная функция инициализации
