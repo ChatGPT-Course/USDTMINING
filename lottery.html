@@ -109,19 +109,20 @@
             margin-bottom: 15px;
         }
         
-        .prize-list {
+        .prize-stats {
             font-size: 14px;
             color: #f7f7f7;
             margin-bottom: 15px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
         }
         
-        .prize-item {
-            background: rgba(123, 44, 191, 0.2);
-            padding: 3px 8px;
-            border-radius: 4px;
+        .prize-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px dashed rgba(123, 44, 191, 0.3);
         }
         
         .buy-btn {
@@ -196,6 +197,8 @@
             transition: all 0.3s;
             position: relative;
             overflow: hidden;
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
         
         .grid-item:hover {
@@ -215,6 +218,13 @@
         .grid-item.revealed.loss {
             background: rgba(211, 47, 47, 0.3);
             border: 2px solid #d32f2f;
+        }
+        
+        .grid-item.other-revealed {
+            background: rgba(100, 100, 100, 0.3);
+            border: 1px solid #555;
+            color: #888;
+            transform: rotateY(180deg);
         }
         
         .modal-text {
@@ -272,8 +282,13 @@
         
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.1); }
             100% { transform: scale(1); }
+        }
+        
+        @keyframes flip {
+            0% { transform: rotateY(0); }
+            100% { transform: rotateY(180deg); }
         }
         
         .loading {
@@ -281,6 +296,11 @@
             padding: 20px;
             font-size: 16px;
             color: #b8b8b8;
+        }
+        
+        .prize-amount {
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
         }
     </style>
 </head>
@@ -307,32 +327,8 @@
                     <div class="ticket-description">
                         Идеальный вариант для новичков. Маленькая ставка - небольшой, но гарантированный выигрыш!
                     </div>
-                    <div class="prize-list">
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">4</div>
-                        <div class="prize-item">4</div>
-                        <div class="prize-item">5</div>
-                        <div class="prize-item">5</div>
-                        <div class="prize-item">7</div>
-                        <div class="prize-item">8</div>
-                        <div class="prize-item">10</div>
-                        <div class="prize-item">12</div>
-                        <div class="prize-item">15</div>
-                        <div class="prize-item">20</div>
-                        <div class="prize-item">25</div>
-                        <div class="prize-item">30</div>
-                        <div class="prize-item">50</div>
+                    <div class="prize-stats" id="start-stats">
+                        <!-- Статистика будет заполнена скриптом -->
                     </div>
                     <button class="buy-btn">Купить билет за 10 ⭐</button>
                 </div>
@@ -345,32 +341,8 @@
                     <div class="ticket-description">
                         Для тех, кто готов рискнуть ради большего выигрыша. Хорошие шансы на приличный приз!
                     </div>
-                    <div class="prize-list">
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">4</div>
-                        <div class="prize-item">5</div>
-                        <div class="prize-item">6</div>
-                        <div class="prize-item">8</div>
-                        <div class="prize-item">10</div>
-                        <div class="prize-item">12</div>
-                        <div class="prize-item">15</div>
-                        <div class="prize-item">20</div>
-                        <div class="prize-item">30</div>
-                        <div class="prize-item">40</div>
-                        <div class="prize-item">50</div>
-                        <div class="prize-item">60</div>
-                        <div class="prize-item">70</div>
-                        <div class="prize-item">80</div>
-                        <div class="prize-item">90</div>
-                        <div class="prize-item">100</div>
-                        <div class="prize-item">125</div>
-                        <div class="prize-item">200</div>
+                    <div class="prize-stats" id="advanced-stats">
+                        <!-- Статистика будет заполнена скриптом -->
                     </div>
                     <button class="buy-btn">Купить билет за 50 ⭐</button>
                 </div>
@@ -383,32 +355,8 @@
                     <div class="ticket-description">
                         Максимальный риск - максимальная награда! Шанс сорвать крупный куш!
                     </div>
-                    <div class="prize-list">
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">1</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">2</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">3</div>
-                        <div class="prize-item">5</div>
-                        <div class="prize-item">10</div>
-                        <div class="prize-item">15</div>
-                        <div class="prize-item">20</div>
-                        <div class="prize-item">25</div>
-                        <div class="prize-item">30</div>
-                        <div class="prize-item">40</div>
-                        <div class="prize-item">50</div>
-                        <div class="prize-item">75</div>
-                        <div class="prize-item">100</div>
-                        <div class="prize-item">125</div>
-                        <div class="prize-item">150</div>
-                        <div class="prize-item">175</div>
-                        <div class="prize-item">200</div>
-                        <div class="prize-item">225</div>
-                        <div class="prize-item">250</div>
-                        <div class="prize-item">300</div>
-                        <div class="prize-item">400</div>
-                        <div class="prize-item">500</div>
+                    <div class="prize-stats" id="pro-stats">
+                        <!-- Статистика будет заполнена скриптом -->
                     </div>
                     <button class="buy-btn">Купить билет за 150 ⭐</button>
                 </div>
@@ -465,6 +413,7 @@
         let currentTicketType = '';
         let prizeAmounts = [];
         let selectedCardIndex = -1;
+        let canSelectCard = true;
         
         // Призы для каждого типа билета
         const PRIZES = {
@@ -514,6 +463,10 @@
                             document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
                             document.getElementById('loading').style.display = 'none';
                             document.getElementById('content').style.display = 'block';
+                            
+                            // Заполняем статистику призов
+                            fillPrizeStats();
+                            
                             resolve(userData);
                         } else {
                             const error = new Error("Пользователь не найден");
@@ -534,27 +487,51 @@
             });
         }
         
+        // Заполняем статистику призов для каждого билета
+        function fillPrizeStats() {
+            fillPrizeStatsForType('start');
+            fillPrizeStatsForType('advanced');
+            fillPrizeStatsForType('pro');
+        }
+        
+        function fillPrizeStatsForType(type) {
+            const prizes = PRIZES[type];
+            const prizeStats = {};
+            
+            // Считаем количество каждого приза
+            prizes.forEach(prize => {
+                prizeStats[prize] = (prizeStats[prize] || 0) + 1;
+            });
+            
+            // Сортируем призы по возрастанию
+            const sortedPrizes = Object.keys(prizeStats).sort((a, b) => a - b);
+            
+            const container = document.getElementById(`${type}-stats`);
+            container.innerHTML = '';
+            
+            // Добавляем статистику в контейнер
+            sortedPrizes.forEach(prize => {
+                const count = prizeStats[prize];
+                const chance = (count / 25 * 100).toFixed(1);
+                
+                const statElement = document.createElement('div');
+                statElement.className = 'prize-stat';
+                
+                const prizeElement = document.createElement('span');
+                prizeElement.textContent = `${prize} ⭐`;
+                
+                const chanceElement = document.createElement('span');
+                chanceElement.textContent = `${chance}%`;
+                
+                statElement.appendChild(prizeElement);
+                statElement.appendChild(chanceElement);
+                container.appendChild(statElement);
+            });
+        }
+        
         // Создаем транзакцию
         async function createTransaction(userId, type, amount, description = '') {
             try {
-                const transactionsRef = database.ref('history/' + userId);
-                const newTransactionRef = transactionsRef.push();
-                
-                const now = new Date();
-                const dateStr = `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth()+1).toString().padStart(2, '0')}.${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} мск`;
-                
-                const transactionData = {
-                    id: newTransactionRef.key,
-                    userId: userId,
-                    type: type,
-                    amount: amount,
-                    description: description,
-                    date: dateStr,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-                
-                await newTransactionRef.set(transactionData);
-                
                 // Обновляем баланс
                 const userRef = database.ref('users/' + userId);
                 const snapshot = await userRef.once('value');
@@ -571,9 +548,9 @@
                 currentBalance = newBalance;
                 document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
                 
-                return transactionData;
+                return { success: true };
             } catch (error) {
-                console.error('Ошибка создания транзакции:', error);
+                console.error('Ошибка обновления баланса:', error);
                 throw error;
             }
         }
@@ -593,12 +570,14 @@
                 card.className = 'grid-item';
                 card.dataset.index = i;
                 card.dataset.amount = prizeAmounts[i];
+                card.innerHTML = `<div class="prize-amount">${prizeAmounts[i]} ⭐</div>`;
                 card.textContent = '?';
                 gridContainer.appendChild(card);
             }
             
             document.getElementById('ok-btn').style.display = 'none';
             document.getElementById('prize-modal').style.display = 'flex';
+            canSelectCard = true;
         }
         
         // Перемешиваем массив
@@ -612,16 +591,21 @@
         
         // Открываем выбранную карточку
         function revealCard(cardIndex) {
+            if (!canSelectCard) return;
+            
             const card = document.querySelector(`.grid-item[data-index="${cardIndex}"]`);
             if (!card || card.classList.contains('revealed')) return;
             
             const amount = parseInt(card.dataset.amount);
             const ticketPrice = TICKET_PRICES[currentTicketType];
             
+            canSelectCard = false;
+            selectedCardIndex = cardIndex;
+            
             card.classList.add('selected');
             
             setTimeout(() => {
-                card.textContent = amount + ' ⭐';
+                card.textContent = '';
                 card.classList.add('revealed');
                 card.classList.remove('selected');
                 
@@ -631,7 +615,8 @@
                     card.classList.add('loss');
                 }
                 
-                document.getElementById('ok-btn').style.display = 'block';
+                // Показываем все остальные карточки
+                revealAllCards();
                 
                 // Зачисляем выигрыш
                 createTransaction(
@@ -639,8 +624,23 @@
                     'win', 
                     amount, 
                     `Выигрыш в лотерее "${getTicketName(currentTicketType)}"`
-                );
-            }, 1000);
+                ).then(() => {
+                    document.getElementById('ok-btn').style.display = 'block';
+                });
+            }, 500);
+        }
+        
+        // Показываем все карточки после выбора
+        function revealAllCards() {
+            const cards = document.querySelectorAll('.grid-item');
+            cards.forEach((card, index) => {
+                if (index !== selectedCardIndex && !card.classList.contains('revealed')) {
+                    setTimeout(() => {
+                        card.classList.add('other-revealed');
+                        card.textContent = '';
+                    }, 200 + (index * 50));
+                }
+            });
         }
         
         // Получаем название билета
@@ -709,9 +709,8 @@
             // Выбор карточки
             document.addEventListener('click', (e) => {
                 const card = e.target.closest('.grid-item');
-                if (card && !card.classList.contains('revealed')) {
-                    selectedCardIndex = parseInt(card.dataset.index);
-                    revealCard(selectedCardIndex);
+                if (card && !card.classList.contains('revealed') && canSelectCard) {
+                    revealCard(parseInt(card.dataset.index));
                 }
             });
             
