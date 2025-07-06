@@ -19,10 +19,9 @@
         body {
             background-color: #0f0c29;
             color: white;
-            overflow-x: hidden;
+            overflow: hidden;
             position: relative;
-            min-height: 100vh;
-            padding-bottom: 20px;
+            height: 100vh;
         }
         
         .header {
@@ -59,32 +58,30 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-        }
-        
-        .title {
-            text-align: center;
-            margin: 20px 0 30px;
-            font-size: 24px;
-            color: #f7f7f7;
+            height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
         }
         
         .game-area {
             background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
             border-radius: 16px;
-            padding: 25px;
+            padding: 20px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(123, 44, 191, 0.5);
-            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
         
         .bet-section {
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
         
         .bet-controls {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         
         .bet-input {
@@ -137,16 +134,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 20px 0;
-            min-height: 200px;
+            margin: 10px 0;
+            flex: 1;
+            justify-content: center;
         }
         
         .coin-container {
             position: relative;
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             perspective: 1000px;
-            margin: 20px 0;
+            margin: 10px 0;
         }
         
         .coin {
@@ -154,7 +152,6 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 1s ease-in-out;
         }
         
         .coin-face {
@@ -166,10 +163,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 60px;
+            font-size: 50px;
             background: linear-gradient(135deg, #f9d423 0%, #e14fad 100%);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            border: 5px solid #ffd700;
+            border: 4px solid #ffd700;
         }
         
         .coin-face.back {
@@ -177,10 +174,47 @@
             background: linear-gradient(135deg, #e14fad 0%, #f9d423 100%);
         }
         
+        .multiplier-track {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .multiplier-segment {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .multiplier-value {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+        
+        .multiplier-value.active {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+        }
+        
+        .multiplier-value.inactive {
+            background: rgba(255, 255, 255, 0.1);
+            color: #b8b8b8;
+        }
+        
+        .arrow {
+            font-size: 18px;
+            color: #b8b8b8;
+        }
+        
         .choice-buttons {
             display: flex;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 10px;
+            margin-top: 10px;
             justify-content: center;
         }
         
@@ -188,14 +222,16 @@
             background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
             color: white;
             border: none;
-            padding: 15px 25px;
+            padding: 12px 20px;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             gap: 8px;
+            flex: 1;
+            justify-content: center;
         }
         
         .choice-btn:hover {
@@ -213,9 +249,9 @@
         
         .result-section {
             text-align: center;
-            margin-top: 20px;
-            font-size: 18px;
-            min-height: 27px;
+            margin-top: 10px;
+            font-size: 16px;
+            min-height: 24px;
         }
         
         .win {
@@ -231,15 +267,16 @@
         .stats {
             background: rgba(123, 44, 191, 0.2);
             border-radius: 12px;
-            padding: 15px;
-            margin-top: 20px;
+            padding: 12px;
+            margin-top: 10px;
         }
         
         .stat-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 6px 0;
             border-bottom: 1px dashed rgba(123, 44, 191, 0.3);
+            font-size: 14px;
         }
         
         .stat-label {
@@ -250,25 +287,23 @@
             font-weight: bold;
         }
         
-        .multiplier {
-            font-size: 24px;
-            font-weight: bold;
-            color: #ffd700;
-            margin: 10px 0;
-            text-align: center;
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
         
         .action-btn {
             background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 12px;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
-            margin-top: 15px;
             transition: all 0.3s;
-            width: 100%;
+            flex: 1;
+            text-align: center;
         }
         
         .action-btn:hover {
@@ -276,10 +311,12 @@
             box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
         }
         
-        /* Анимации */
-        @keyframes flip {
-            0% { transform: rotateY(0); }
-            100% { transform: rotateY(180deg); }
+        .action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
         
         @keyframes spin {
@@ -287,14 +324,15 @@
             100% { transform: rotateY(1800deg); }
         }
         
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        .spinning {
+            animation: spin 2.5s cubic-bezier(0.4, 0.2, 0.2, 1);
         }
         
-        .pulse {
-            animation: pulse 0.5s infinite;
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #b8b8b8;
         }
         
         /* Модальные окна */
@@ -350,13 +388,6 @@
         .ok-btn:hover {
             background: #5a189a;
         }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-            color: #b8b8b8;
-        }
     </style>
 </head>
 <body>
@@ -366,8 +397,6 @@
     </div>
     
     <div class="game-container">
-        <h1 class="title">Орёл и Решка</h1>
-        
         <div id="loading" class="loading">
             Загрузка данных...
         </div>
@@ -395,7 +424,11 @@
                         </div>
                     </div>
                     
-                    <div class="multiplier" id="multiplier">x1.95</div>
+                    <div class="multiplier-track" id="multiplier-track">
+                        <div class="multiplier-segment">
+                            <div class="multiplier-value inactive">1.95x</div>
+                        </div>
+                    </div>
                     
                     <div class="choice-buttons">
                         <button id="heads-btn" class="choice-btn" disabled>
@@ -422,8 +455,10 @@
                     </div>
                 </div>
                 
-                <button id="cashout-btn" class="action-btn" style="display: none;">Забрать выигрыш</button>
-                <button id="new-game-btn" class="action-btn" style="display: none;">Новая игра</button>
+                <div class="action-buttons" id="action-buttons" style="display: none;">
+                    <button id="cashout-btn" class="action-btn">Забрать выигрыш</button>
+                    <button id="next-round-btn" class="action-btn secondary">Следующий ход</button>
+                </div>
             </div>
         </div>
     </div>
@@ -458,7 +493,9 @@
         let currentChoice = null;
         let gameActive = false;
         let winAmount = 0;
-        let multiplier = 1.95;
+        let currentMultiplier = 1.95;
+        let multiplierLevel = 0;
+        const multipliers = [1.95, 3.0, 5.0, 8.0, 15.0];
         
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -487,7 +524,7 @@
                         const userData = snapshot.val();
                         if (userData) {
                             currentBalance = userData.balance || 0;
-                            document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                            updateBalance();
                             document.getElementById('loading').style.display = 'none';
                             document.getElementById('content').style.display = 'block';
                             resolve(userData);
@@ -510,6 +547,10 @@
             });
         }
         
+        function updateBalance() {
+            document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+        }
+        
         async function createTransaction(userId, type, amount, description = '') {
             try {
                 const userRef = database.ref('users/' + userId);
@@ -525,7 +566,30 @@
                 
                 await userRef.update({ balance: newBalance });
                 currentBalance = newBalance;
-                document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                updateBalance();
+                
+                // Записываем транзакцию в историю
+                const transactionsRef = database.ref('history/' + userId);
+                const newTransactionRef = transactionsRef.push();
+                
+                const now = new Date();
+                const day = now.getDate().toString().padStart(2, '0');
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const year = now.getFullYear();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                
+                const transactionData = {
+                    id: newTransactionRef.key,
+                    userId: userId,
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    date: `${day}.${month}.${year} ${hours}:${minutes} мск`,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await newTransactionRef.set(transactionData);
                 
                 return { success: true };
             } catch (error) {
@@ -534,82 +598,114 @@
             }
         }
         
-        function flipCoin(result, callback) {
-            const coin = document.getElementById('coin');
-            const flipDuration = 1000; // 1 секунда для анимации
-            
-            // Сбрасываем предыдущие анимации
-            coin.style.transition = 'transform 1s ease-in-out';
-            coin.style.transform = 'rotateY(0)';
-            
-            // Запускаем анимацию вращения
-            setTimeout(() => {
-                coin.style.transition = 'transform 1s ease-in-out';
-                
-                if (result === 'heads') {
-                    coin.style.transform = 'rotateY(0)';
-                } else {
-                    coin.style.transform = 'rotateY(180deg)';
-                }
-                
-                // Вызываем callback после завершения анимации
-                setTimeout(callback, flipDuration);
-            }, 100);
-        }
-        
         function spinCoin(callback) {
             const coin = document.getElementById('coin');
-            const spinDuration = 2000; // 2 секунды для вращения
             
-            // Быстрое вращение
-            coin.style.transition = `transform ${spinDuration/1000}s ease-in-out`;
-            coin.style.transform = `rotateY(${Math.floor(Math.random() * 10 + 10) * 360}deg)`;
+            // Удаляем предыдущие анимации
+            coin.style.animation = 'none';
+            coin.offsetHeight; // Trigger reflow
+            
+            // Запускаем анимацию вращения
+            coin.style.animation = 'spin 2.5s cubic-bezier(0.4, 0.2, 0.2, 1)';
             
             // Вызываем callback после завершения анимации
-            setTimeout(callback, spinDuration);
+            setTimeout(callback, 2500);
         }
         
-        function placeBet() {
+        function updateMultiplierTrack() {
+            const track = document.getElementById('multiplier-track');
+            track.innerHTML = '';
+            
+            for (let i = 0; i <= multiplierLevel; i++) {
+                const segment = document.createElement('div');
+                segment.className = 'multiplier-segment';
+                
+                const value = document.createElement('div');
+                value.className = `multiplier-value ${i === multiplierLevel ? 'active' : 'inactive'}`;
+                value.textContent = `${multipliers[i]}x`;
+                
+                segment.appendChild(value);
+                
+                if (i < multipliers.length - 1 && i <= multiplierLevel) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'arrow';
+                    arrow.textContent = '→';
+                    segment.appendChild(arrow);
+                }
+                
+                track.appendChild(segment);
+            }
+            
+            // Добавляем следующий неактивный множитель, если есть
+            if (multiplierLevel < multipliers.length - 1) {
+                const segment = document.createElement('div');
+                segment.className = 'multiplier-segment';
+                
+                const value = document.createElement('div');
+                value.className = 'multiplier-value inactive';
+                value.textContent = `${multipliers[multiplierLevel + 1]}x`;
+                
+                segment.appendChild(value);
+                track.appendChild(segment);
+            }
+        }
+        
+        async function placeBet() {
             const betInput = document.getElementById('bet-amount');
             const betAmount = parseInt(betInput.value);
             
-            if (isNaN(betAmount) || betAmount < 1 || betAmount > 1000) {
-                alert('Введите корректную сумму ставки (от 1 до 1000 ⭐)');
+            if (isNaN(betAmount) {
+                showError('Введите сумму ставки');
+                return;
+            }
+            
+            if (betAmount < 1 || betAmount > 1000) {
+                showError('Сумма ставки должна быть от 1 до 1000 ⭐');
                 return;
             }
             
             if (betAmount > currentBalance) {
-                alert('Недостаточно средств на балансе');
+                showError('Недостаточно средств на балансе');
                 return;
             }
             
-            currentBet = betAmount;
-            gameActive = true;
-            
-            // Обновляем интерфейс
-            document.getElementById('current-bet').textContent = `${currentBet} ⭐`;
-            document.getElementById('possible-win').textContent = `${Math.floor(currentBet * multiplier)} ⭐`;
-            document.getElementById('bet-amount').disabled = true;
-            document.getElementById('place-bet-btn').disabled = true;
-            document.querySelectorAll('.quick-bet').forEach(btn => btn.disabled = true);
-            document.getElementById('heads-btn').disabled = false;
-            document.getElementById('tails-btn').disabled = false;
-            document.getElementById('result-text').textContent = 'Выберите орла или решку';
-            document.getElementById('result-text').className = 'result-section';
-            
-            // Анимация пульсации кнопок выбора
-            document.getElementById('heads-btn').classList.add('pulse');
-            document.getElementById('tails-btn').classList.add('pulse');
+            try {
+                // Списываем средства
+                await createTransaction(
+                    currentUserId, 
+                    'game_bet', 
+                    betAmount, 
+                    `Ставка в игре "Орёл и Решка"`
+                );
+                
+                currentBet = betAmount;
+                gameActive = true;
+                multiplierLevel = 0;
+                currentMultiplier = multipliers[0];
+                
+                // Обновляем интерфейс
+                document.getElementById('current-bet').textContent = `${currentBet} ⭐`;
+                document.getElementById('possible-win').textContent = `${Math.floor(currentBet * currentMultiplier)} ⭐`;
+                document.getElementById('bet-amount').disabled = true;
+                document.getElementById('place-bet-btn').disabled = true;
+                document.querySelectorAll('.quick-bet').forEach(btn => btn.disabled = true);
+                document.getElementById('heads-btn').disabled = false;
+                document.getElementById('tails-btn').disabled = false;
+                document.getElementById('result-text').textContent = 'Выберите орла или решку';
+                document.getElementById('result-text').className = 'result-section';
+                document.getElementById('action-buttons').style.display = 'none';
+                
+                updateMultiplierTrack();
+            } catch (error) {
+                console.error('Ошибка при создании ставки:', error);
+                showError('Произошла ошибка при создании ставки');
+            }
         }
         
         function makeChoice(choice) {
             if (!gameActive) return;
             
             currentChoice = choice;
-            
-            // Убираем пульсацию
-            document.getElementById('heads-btn').classList.remove('pulse');
-            document.getElementById('tails-btn').classList.remove('pulse');
             
             // Блокируем кнопки выбора
             document.getElementById('heads-btn').disabled = true;
@@ -623,10 +719,12 @@
                 // Определяем результат (50/50)
                 const result = Math.random() < 0.5 ? 'heads' : 'tails';
                 
-                // Анимируем окончательный результат
-                flipCoin(result, () => {
-                    processResult(result);
-                });
+                // Устанавливаем окончательное положение монеты
+                const coin = document.getElementById('coin');
+                coin.style.transform = result === 'heads' ? 'rotateY(0)' : 'rotateY(180deg)';
+                
+                // Обрабатываем результат
+                processResult(result);
             });
         }
         
@@ -635,21 +733,25 @@
             
             if (result === currentChoice) {
                 // Победа
-                winAmount = Math.floor(currentBet * multiplier);
+                winAmount = Math.floor(currentBet * currentMultiplier);
                 document.getElementById('result-text').textContent = `Поздравляем! Вы выиграли ${winAmount} ⭐`;
                 document.getElementById('result-text').className = 'result-section win';
                 
-                // Показываем кнопку "Забрать выигрыш"
-                document.getElementById('cashout-btn').style.display = 'block';
-                document.getElementById('new-game-btn').style.display = 'none';
+                // Показываем кнопки действий
+                document.getElementById('action-buttons').style.display = 'flex';
+                
+                // Обновляем возможный выигрыш для следующего уровня
+                if (multiplierLevel < multipliers.length - 1) {
+                    document.getElementById('possible-win').textContent = 
+                        `${Math.floor(currentBet * multipliers[multiplierLevel + 1])} ⭐`;
+                }
             } else {
                 // Проигрыш
                 document.getElementById('result-text').textContent = 'Увы, вы проиграли. Попробуйте ещё раз!';
                 document.getElementById('result-text').className = 'result-section lose';
                 
-                // Показываем кнопку "Новая игра"
-                document.getElementById('cashout-btn').style.display = 'none';
-                document.getElementById('new-game-btn').style.display = 'block';
+                // Сбрасываем игру
+                setTimeout(resetGame, 2000);
             }
         }
         
@@ -671,8 +773,30 @@
                 resetGame();
             } catch (error) {
                 console.error('Ошибка при выводе выигрыша:', error);
-                alert('Произошла ошибка при обработке выигрыша');
+                showError('Произошла ошибка при обработке выигрыша');
             }
+        }
+        
+        function nextRound() {
+            if (multiplierLevel >= multipliers.length - 1) {
+                cashout();
+                return;
+            }
+            
+            multiplierLevel++;
+            currentMultiplier = multipliers[multiplierLevel];
+            gameActive = true;
+            
+            // Обновляем интерфейс
+            document.getElementById('possible-win').textContent = 
+                `${Math.floor(currentBet * currentMultiplier)} ⭐`;
+            document.getElementById('heads-btn').disabled = false;
+            document.getElementById('tails-btn').disabled = false;
+            document.getElementById('result-text').textContent = 'Выберите орла или решку';
+            document.getElementById('result-text').className = 'result-section';
+            document.getElementById('action-buttons').style.display = 'none';
+            
+            updateMultiplierTrack();
         }
         
         function resetGame() {
@@ -680,6 +804,8 @@
             currentChoice = null;
             gameActive = false;
             winAmount = 0;
+            multiplierLevel = 0;
+            currentMultiplier = multipliers[0];
             
             // Сбрасываем интерфейс
             document.getElementById('current-bet').textContent = '0 ⭐';
@@ -690,18 +816,21 @@
             document.querySelectorAll('.quick-bet').forEach(btn => btn.disabled = false);
             document.getElementById('heads-btn').disabled = true;
             document.getElementById('tails-btn').disabled = true;
-            document.getElementById('cashout-btn').style.display = 'none';
-            document.getElementById('new-game-btn').style.display = 'none';
+            document.getElementById('action-buttons').style.display = 'none';
             document.getElementById('result-text').textContent = '';
             document.getElementById('result-text').className = 'result-section';
             
             // Сбрасываем монету
             const coin = document.getElementById('coin');
-            coin.style.transition = 'none';
+            coin.style.animation = 'none';
             coin.style.transform = 'rotateY(0)';
-            setTimeout(() => {
-                coin.style.transition = 'transform 1s ease-in-out';
-            }, 10);
+            
+            updateMultiplierTrack();
+        }
+        
+        function showError(message) {
+            document.getElementById('result-text').textContent = message;
+            document.getElementById('result-text').className = 'result-section lose';
         }
         
         function setupEventListeners() {
@@ -727,7 +856,7 @@
             
             document.getElementById('cashout-btn').addEventListener('click', cashout);
             
-            document.getElementById('new-game-btn').addEventListener('click', resetGame);
+            document.getElementById('next-round-btn').addEventListener('click', nextRound);
             
             document.getElementById('result-ok-btn').addEventListener('click', () => {
                 document.getElementById('result-modal').style.display = 'none';
@@ -754,6 +883,7 @@
             try {
                 await loadUserData(currentUserId);
                 setupEventListeners();
+                updateMultiplierTrack();
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
