@@ -534,6 +534,10 @@
                 card.dataset.index = i;
                 card.dataset.amount = prizeAmounts[i];
                 
+                const question = document.createElement('div');
+                question.className = 'grid-item-question';
+                question.textContent = '?';
+                
                 const amount = document.createElement('div');
                 amount.className = 'grid-item-amount';
                 amount.textContent = prizeAmounts[i];
@@ -542,6 +546,7 @@
                 emoji.className = 'grid-item-emoji';
                 emoji.textContent = '⭐';
                 
+                card.appendChild(question);
                 card.appendChild(amount);
                 card.appendChild(emoji);
                 gridContainer.appendChild(card);
@@ -576,6 +581,7 @@
             
             setTimeout(() => {
                 card.classList.remove('selected');
+                card.classList.add('revealed');
                 
                 if (amount >= ticketPrice) {
                     card.classList.add('win');
@@ -601,6 +607,7 @@
             cards.forEach((card, index) => {
                 if (index !== selectedCardIndex) {
                     setTimeout(() => {
+                        card.classList.add('revealed');
                         card.classList.add('other-revealed');
                     }, 200 + (index * 50));
                 }
