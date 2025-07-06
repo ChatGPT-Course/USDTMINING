@@ -570,8 +570,20 @@
                 card.className = 'grid-item';
                 card.dataset.index = i;
                 card.dataset.amount = prizeAmounts[i];
-                card.innerHTML = `<div class="prize-amount">${prizeAmounts[i]} ⭐</div>`;
-                card.textContent = '?';
+                
+                // Передняя сторона (вопросительный знак)
+                const front = document.createElement('div');
+                front.className = 'grid-item-front';
+                front.textContent = '?';
+                
+                // Задняя сторона (сумма) - изначально скрыта
+                const back = document.createElement('div');
+                back.className = 'grid-item-back';
+                back.textContent = prizeAmounts[i] + ' ⭐';
+                back.style.display = 'none'; // Изначально скрыта
+                
+                card.appendChild(front);
+                card.appendChild(back);
                 gridContainer.appendChild(card);
             }
             
@@ -636,13 +648,20 @@
             cards.forEach((card, index) => {
                 if (index !== selectedCardIndex && !card.classList.contains('revealed')) {
                     setTimeout(() => {
+                        card.classList.add('revealed');
                         card.classList.add('other-revealed');
-                        card.textContent = '';
+                        
+                        // Находим элемент с суммой и делаем его видимым
+                        const backSide = card.querySelector('.grid-item-back');
+                        if (backSide) {
+                            backSide.style.display = 'flex';
+                            backSide.style.opacity = '0.7';
+                        }
                     }, 200 + (index * 50));
                 }
             });
         }
-        
+            
         // Получаем название билета
         function getTicketName(ticketType) {
             const names = {
