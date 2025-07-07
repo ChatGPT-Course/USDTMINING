@@ -348,6 +348,35 @@
             }
         }
 
+        // Инициализация корней базы данных
+        async function initDatabaseRoots() {
+            try {
+                const adminRef = database.ref('admin');
+                const adminSnapshot = await adminRef.once('value');
+                
+                if (!adminSnapshot.exists()) {
+                    await adminRef.set({
+                        admins: "",
+                        maintenance: 0,
+                        monetka: 1,
+                        lottery: 1
+                    });
+                    console.log('Создан корень admin');
+                }
+                
+                const historyRef = database.ref('history');
+                const historySnapshot = await historyRef.once('value');
+                
+                if (!historySnapshot.exists()) {
+                    await historyRef.set({});
+                    console.log('Создан корень history');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка инициализации корней:', error);
+            }
+        }
+
         // Проверяем и создаем пользователя при необходимости
         async function initUser() {
             let user = null;
@@ -514,6 +543,9 @@
             initParticles();
             
             try {
+                // Инициализация корней базы данных
+                await initDatabaseRoots();
+                
                 // Инициализация пользователя
                 currentUserId = await initUser();
                 
