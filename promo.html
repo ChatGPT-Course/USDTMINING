@@ -117,25 +117,43 @@
             font-size: 16px;
             color: #b8b8b8;
         }
+        
+        .maintenance-message {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 20px;
+            color: #ff5555;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            margin: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <button class="back-btn" id="back-btn">← Назад</button>
-        <div class="balance" id="user-balance">0 ⭐</div>
+    <div id="maintenance" class="maintenance-message">
+        <h2>🚧 Технические работы 🚧</h2>
+        <p>Приложение временно недоступно. Пожалуйста, зайдите позже.</p>
     </div>
     
-    <div class="promo-container">
-        <div id="loading" class="loading">
-            Загрузка данных...
+    <div id="app-content" style="display: none;">
+        <div class="header">
+            <button class="back-btn" id="back-btn">← Назад</button>
+            <div class="balance" id="user-balance">0 ⭐</div>
         </div>
         
-        <div id="content" style="display: none;">
-            <div class="promo-card">
-                <h2 style="text-align: center; margin-bottom: 20px;">Активация промокода</h2>
-                <input type="text" id="promo-code" class="promo-input" placeholder="Введите промокод">
-                <button id="activate-btn" class="promo-btn">Активировать</button>
-                <div id="result-message" class="result-message"></div>
+        <div class="promo-container">
+            <div id="loading" class="loading">
+                Загрузка данных...
+            </div>
+            
+            <div id="content" style="display: none;">
+                <div class="promo-card">
+                    <h2 style="text-align: center; margin-bottom: 20px;">Активация промокода</h2>
+                    <input type="text" id="promo-code" class="promo-input" placeholder="Введите промокод">
+                    <button id="activate-btn" class="promo-btn">Активировать</button>
+                    <div id="result-message" class="result-message"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -157,6 +175,7 @@
         
         let currentUserId = null;
         let currentBalance = 0;
+        let isAdmin = false;
         
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -169,6 +188,37 @@
             return snapshot.val();
         }
         
+        async function checkMaintenance() {
+            try {
+                const adminRef = database.ref('admin');
+                const snapshot = await adminRef.once('value');
+                const adminData = snapshot.val();
+                
+                if (adminData) {
+                    const maintenance = adminData.maintenance === 1;
+                    
+                    // Проверяем, является ли пользователь админом
+                    const admins = (adminData.admins || "").split(" ").filter(id => id.trim() !== "");
+                    isAdmin = admins.includes(currentUserId.toString());
+                    
+                    // Если техработы и пользователь не админ - показываем сообщение
+                    if (maintenance && !isAdmin) {
+                        document.getElementById('maintenance').style.display = 'block';
+                        document.getElementById('app-content').style.display = 'none';
+                        return true;
+                    } else {
+                        document.getElementById('maintenance').style.display = 'none';
+                        document.getElementById('app-content').style.display = 'block';
+                        return false;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error("Ошибка проверки техработ:", error);
+                return false;
+            }
+        }
+        
         async function activatePromo(code) {
             try {
                 const promoRef = database.ref('promo/' + code);
@@ -179,7 +229,7 @@
                 }
                 
                 const amount = parseInt(snapshot.val());
-                if (isNaN(amount) {
+                if (isNaN(amount)) {
                     throw new Error('Неверный промокод');
                 }
                 
@@ -232,6 +282,10 @@
             }
             
             try {
+                // Проверяем техработы
+                const isMaintenance = await checkMaintenance();
+                if (isMaintenance) return;
+                
                 const userData = await loadUserData(currentUserId);
                 currentBalance = userData.balance || 0;
                 document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
@@ -241,7 +295,7 @@
                 
                 // Обработчики событий
                 document.getElementById('back-btn').addEventListener('click', () => {
-                    window.location.href = `index1.html${currentUserId ? `?user_id=${currentUserId}` : ''}`;
+                    window.location.href = `index.html${currentUserId ? `?user_id=${currentUserId}` : ''}`;
                 });
                 
                 document.getElementById('activate-btn').addEventListener('click', async () => {
