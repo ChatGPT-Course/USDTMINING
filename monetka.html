@@ -483,10 +483,19 @@
             messagingSenderId: "622297225288",
             appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
         };
-        
-        const app = firebase.initializeApp(firebaseConfig);
+    
+        // Инициализируем Firebase
+        let app;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.log("Firebase already initialized", error);
+            app = firebase.app();
+        }
         const database = firebase.database();
-        
+    
+        // Глобальные переменные
         let currentUserId = null;
         let currentBalance = 0;
         let currentBet = 0;
@@ -496,122 +505,115 @@
         let currentMultiplier = 1.95;
         let multiplierLevel = 0;
         const multipliers = [1.95, 3.0, 5.0, 8.0, 15.0];
-        
+    
         function getUserId() {
+            // 1. Проверяем URL параметры
             const urlParams = new URLSearchParams(window.location.search);
             let userId = urlParams.get('user_id');
             
+            // 2. Проверяем cookies
             if (!userId) {
-                const value = `; ${document.cookie}`;
-                const parts = value.split(`; user_id=`);
-                if (parts.length === 2) userId = parts.pop().split(';').shift();
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'user_id') {
+                        userId = value;
+                        break;
+                    }
+                }
             }
             
+            // 3. Проверяем Telegram WebApp
+            if (!userId && window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+                userId = Telegram.WebApp.initDataUnsafe.user?.id;
+                if (userId) userId = userId.toString();
+            }
+    
             if (!userId) {
-                console.error("User ID not found in URL or cookies");
-                return null;
+                // Если ID не найден, создаем временный для демонстрации
+                userId = "demo_user_" + Math.floor(Math.random() * 10000);
+                document.cookie = `user_id=${userId}; path=/; max-age=2592000`; // 30 дней
+                console.log("Created demo user ID:", userId);
             }
             
             return userId;
         }
-        
+    
         async function loadUserData(userId) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const userRef = database.ref('users/' + userId);
-                    
-                    userRef.on('value', (snapshot) => {
-                        const userData = snapshot.val();
-                        if (userData) {
-                            currentBalance = userData.balance || 0;
-                            updateBalance();
-                            document.getElementById('loading').style.display = 'none';
-                            document.getElementById('content').style.display = 'block';
-                            resolve(userData);
-                        } else {
-                            const error = new Error("Пользователь не найден");
-                            document.getElementById('loading').textContent = error.message;
-                            reject(error);
-                        }
-                    }, (error) => {
-                        console.error("Ошибка чтения данных:", error);
-                        document.getElementById('loading').textContent = 'Ошибка загрузки данных';
-                        reject(error);
-                    });
-                    
-                } catch (error) {
-                    console.error('Ошибка загрузки данных:', error);
-                    document.getElementById('loading').textContent = 'Ошибка: ' + error.message;
-                    reject(error);
-                }
-            });
+            const userRef = database.ref('users/' + userId);
+            const snapshot = await userRef.once('value');
+            
+            if (!snapshot.exists()) {
+                // Создаем нового пользователя с начальным балансом
+                const newUser = {
+                    balance: 1000,
+                    created_at: firebase.database.ServerValue.TIMESTAMP,
+                    isDemo: true
+                };
+                
+                await userRef.set(newUser);
+                return newUser;
+            }
+            
+            const userData = snapshot.val();
+            
+            // Если у пользователя нет баланса, устанавливаем 1000
+            if (userData.balance === undefined || userData.balance === null) {
+                await userRef.update({ balance: 1000 });
+                userData.balance = 1000;
+            }
+            
+            return userData;
         }
-        
+    
         function updateBalance() {
             document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
         }
-        
+    
         async function createTransaction(userId, type, amount, description = '') {
-            try {
-                const userRef = database.ref('users/' + userId);
-                const snapshot = await userRef.once('value');
-                const userData = snapshot.val();
-                
-                let newBalance = userData.balance || 0;
-                if (type === 'deposit' || type === 'win') {
-                    newBalance += amount;
-                } else {
-                    newBalance -= amount;
-                }
-                
-                await userRef.update({ balance: newBalance });
-                currentBalance = newBalance;
-                updateBalance();
-                
-                // Записываем транзакцию в историю
-                const transactionsRef = database.ref('history/' + userId);
-                const newTransactionRef = transactionsRef.push();
-                
-                const now = new Date();
-                const day = now.getDate().toString().padStart(2, '0');
-                const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                const year = now.getFullYear();
-                const hours = now.getHours().toString().padStart(2, '0');
-                const minutes = now.getMinutes().toString().padStart(2, '0');
-                
-                const transactionData = {
-                    id: newTransactionRef.key,
-                    userId: userId,
-                    type: type,
-                    amount: amount,
-                    description: description,
-                    date: `${day}.${month}.${year} ${hours}:${minutes} мск`,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-                
-                await newTransactionRef.set(transactionData);
-                
-                return { success: true };
-            } catch (error) {
-                console.error('Ошибка обновления баланса:', error);
-                throw error;
+            const userRef = database.ref('users/' + userId);
+            const snapshot = await userRef.once('value');
+            const userData = snapshot.val();
+            
+            let newBalance = userData.balance || 0;
+            if (type === 'deposit' || type === 'win') {
+                newBalance += amount;
+            } else {
+                newBalance -= amount;
             }
+            
+            await userRef.update({ balance: newBalance });
+            currentBalance = newBalance;
+            updateBalance();
+            
+            // Записываем транзакцию в историю
+            const transactionsRef = database.ref('history/' + userId);
+            const newTransactionRef = transactionsRef.push();
+            
+            const now = new Date();
+            const transactionData = {
+                id: newTransactionRef.key,
+                userId: userId,
+                type: type,
+                amount: amount,
+                description: description,
+                date: now.toLocaleString('ru-RU'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            await newTransactionRef.set(transactionData);
+            
+            return { success: true };
         }
-        
+    
         function spinCoin(callback) {
             const coin = document.getElementById('coin');
-            
-            // Удаляем предыдущие анимации
             coin.style.animation = 'none';
-            coin.offsetHeight; // Trigger reflow
-            
-            // Запускаем анимацию вращения
+            void coin.offsetWidth; // Trigger reflow
             coin.style.animation = 'spin 2.5s cubic-bezier(0.4, 0.2, 0.2, 1)';
-            
-            // Вызываем callback после завершения анимации
             setTimeout(callback, 2500);
         }
-        
+    
         function updateMultiplierTrack() {
             const track = document.getElementById('multiplier-track');
             track.innerHTML = '';
@@ -636,7 +638,7 @@
                 track.appendChild(segment);
             }
             
-            // Добавляем следующий неактивный множитель, если есть
+            // Добавляем следующий неактивный множитель
             if (multiplierLevel < multipliers.length - 1) {
                 const segment = document.createElement('div');
                 segment.className = 'multiplier-segment';
@@ -649,28 +651,21 @@
                 track.appendChild(segment);
             }
         }
-        
+    
         async function placeBet() {
-            const betInput = document.getElementById('bet-amount');
-            const betAmount = parseInt(betInput.value);
+            const betAmount = parseInt(document.getElementById('bet-amount').value);
             
-            if (isNaN(betAmount) {
-                showError('Введите сумму ставки');
-                return;
-            }
-            
-            if (betAmount < 1 || betAmount > 1000) {
-                showError('Сумма ставки должна быть от 1 до 1000 ⭐');
+            if (isNaN(betAmount) || betAmount < 1 || betAmount > 1000) {
+                showError('Введите сумму от 1 до 1000 ⭐');
                 return;
             }
             
             if (betAmount > currentBalance) {
-                showError('Недостаточно средств на балансе');
+                showError('Недостаточно средств');
                 return;
             }
             
             try {
-                // Списываем средства
                 await createTransaction(
                     currentUserId, 
                     'game_bet', 
@@ -697,64 +692,47 @@
                 
                 updateMultiplierTrack();
             } catch (error) {
-                console.error('Ошибка при создании ставки:', error);
-                showError('Произошла ошибка при создании ставки');
+                console.error('Ошибка ставки:', error);
+                showError('Ошибка при создании ставки');
             }
         }
-        
+    
         function makeChoice(choice) {
             if (!gameActive) return;
             
             currentChoice = choice;
-            
-            // Блокируем кнопки выбора
             document.getElementById('heads-btn').disabled = true;
             document.getElementById('tails-btn').disabled = true;
-            
-            // Показываем "Монета крутится..."
             document.getElementById('result-text').textContent = 'Монета крутится...';
             
-            // Запускаем анимацию вращения монеты
             spinCoin(() => {
-                // Определяем результат (50/50)
                 const result = Math.random() < 0.5 ? 'heads' : 'tails';
-                
-                // Устанавливаем окончательное положение монеты
                 const coin = document.getElementById('coin');
                 coin.style.transform = result === 'heads' ? 'rotateY(0)' : 'rotateY(180deg)';
-                
-                // Обрабатываем результат
                 processResult(result);
             });
         }
-        
+    
         function processResult(result) {
             gameActive = false;
             
             if (result === currentChoice) {
-                // Победа
                 winAmount = Math.floor(currentBet * currentMultiplier);
-                document.getElementById('result-text').textContent = `Поздравляем! Вы выиграли ${winAmount} ⭐`;
+                document.getElementById('result-text').textContent = `Победа! Выигрыш ${winAmount} ⭐`;
                 document.getElementById('result-text').className = 'result-section win';
-                
-                // Показываем кнопки действий
                 document.getElementById('action-buttons').style.display = 'flex';
                 
-                // Обновляем возможный выигрыш для следующего уровня
                 if (multiplierLevel < multipliers.length - 1) {
                     document.getElementById('possible-win').textContent = 
                         `${Math.floor(currentBet * multipliers[multiplierLevel + 1])} ⭐`;
                 }
             } else {
-                // Проигрыш
-                document.getElementById('result-text').textContent = 'Увы, вы проиграли. Попробуйте ещё раз!';
+                document.getElementById('result-text').textContent = 'Вы проиграли';
                 document.getElementById('result-text').className = 'result-section lose';
-                
-                // Сбрасываем игру
                 setTimeout(resetGame, 2000);
             }
         }
-        
+    
         async function cashout() {
             try {
                 await createTransaction(
@@ -764,19 +742,17 @@
                     `Выигрыш в игре "Орёл и Решка"`
                 );
                 
-                // Показываем модальное окно с результатом
-                document.getElementById('result-modal-title').textContent = 'Поздравляем!';
+                document.getElementById('result-modal-title').textContent = 'Победа!';
                 document.getElementById('result-modal-text').textContent = `Вы выиграли ${winAmount} ⭐!`;
                 document.getElementById('result-modal').style.display = 'flex';
                 
-                // Сбрасываем игру
                 resetGame();
             } catch (error) {
-                console.error('Ошибка при выводе выигрыша:', error);
-                showError('Произошла ошибка при обработке выигрыша');
+                console.error('Ошибка выплаты:', error);
+                showError('Ошибка при выплате');
             }
         }
-        
+    
         function nextRound() {
             if (multiplierLevel >= multipliers.length - 1) {
                 cashout();
@@ -787,7 +763,6 @@
             currentMultiplier = multipliers[multiplierLevel];
             gameActive = true;
             
-            // Обновляем интерфейс
             document.getElementById('possible-win').textContent = 
                 `${Math.floor(currentBet * currentMultiplier)} ⭐`;
             document.getElementById('heads-btn').disabled = false;
@@ -798,7 +773,7 @@
             
             updateMultiplierTrack();
         }
-        
+    
         function resetGame() {
             currentBet = 0;
             currentChoice = null;
@@ -807,7 +782,6 @@
             multiplierLevel = 0;
             currentMultiplier = multipliers[0];
             
-            // Сбрасываем интерфейс
             document.getElementById('current-bet').textContent = '0 ⭐';
             document.getElementById('possible-win').textContent = '0 ⭐';
             document.getElementById('bet-amount').value = '';
@@ -820,19 +794,18 @@
             document.getElementById('result-text').textContent = '';
             document.getElementById('result-text').className = 'result-section';
             
-            // Сбрасываем монету
             const coin = document.getElementById('coin');
             coin.style.animation = 'none';
             coin.style.transform = 'rotateY(0)';
             
             updateMultiplierTrack();
         }
-        
+    
         function showError(message) {
             document.getElementById('result-text').textContent = message;
             document.getElementById('result-text').className = 'result-section lose';
         }
-        
+    
         function setupEventListeners() {
             document.getElementById('back-btn').addEventListener('click', () => {
                 window.location.href = 'index1.html' + (currentUserId ? `?user_id=${currentUserId}` : '');
@@ -846,51 +819,41 @@
                 });
             });
             
-            document.getElementById('heads-btn').addEventListener('click', () => {
-                makeChoice('heads');
-            });
-            
-            document.getElementById('tails-btn').addEventListener('click', () => {
-                makeChoice('tails');
-            });
-            
+            document.getElementById('heads-btn').addEventListener('click', () => makeChoice('heads'));
+            document.getElementById('tails-btn').addEventListener('click', () => makeChoice('tails'));
             document.getElementById('cashout-btn').addEventListener('click', cashout);
-            
             document.getElementById('next-round-btn').addEventListener('click', nextRound);
-            
             document.getElementById('result-ok-btn').addEventListener('click', () => {
                 document.getElementById('result-modal').style.display = 'none';
             });
             
-            // Разрешаем только цифры в поле ставки
-            document.getElementById('bet-amount').addEventListener('input', function(e) {
+            document.getElementById('bet-amount').addEventListener('input', function() {
                 this.value = this.value.replace(/[^0-9]/g, '');
-                if (parseInt(this.value) > 1000) {
-                    this.value = '1000';
-                }
+                if (parseInt(this.value) > 1000) this.value = '1000';
             });
         }
-        
+    
         async function initApp() {
-            currentUserId = getUserId();
-            
-            if (!currentUserId) {
-                document.getElementById('loading').textContent = 'Ошибка: ID пользователя не найден. Пожалуйста, войдите через главную страницу.';
-                document.getElementById('back-btn').style.display = 'block';
-                return;
-            }
-            
             try {
-                await loadUserData(currentUserId);
+                currentUserId = getUserId();
+                const userData = await loadUserData(currentUserId);
+                
+                currentBalance = userData.balance || 1000;
+                updateBalance();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
                 setupEventListeners();
                 updateMultiplierTrack();
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
-                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
+                document.getElementById('loading').textContent = 'Ошибка загрузки. Обновите страницу.';
                 document.getElementById('back-btn').style.display = 'block';
             }
         }
-        
+    
+        // Запуск приложения
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
