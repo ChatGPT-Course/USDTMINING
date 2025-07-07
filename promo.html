@@ -129,13 +129,16 @@
             display: none;
         }
         
-        .promo-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(123, 44, 191, 0.2);
-            border-radius: 8px;
-            text-align: center;
+        .promo-stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
             font-size: 14px;
+        }
+        
+        .promo-stats p {
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -162,7 +165,13 @@
                     <input type="text" id="promo-code" class="promo-input" placeholder="Введите промокод">
                     <button id="activate-btn" class="promo-btn">Активировать</button>
                     <div id="result-message" class="result-message"></div>
-                    <div id="promo-info" class="promo-info" style="display: none;"></div>
+                    
+                    <div id="promo-info" class="promo-stats" style="display: none;">
+                        <p><strong>Информация о промокоде:</strong></p>
+                        <p id="promo-reward">Награда: 0 ⭐</p>
+                        <p id="promo-activations">Активаций: 0</p>
+                        <p id="promo-limit">Лимит: 0</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -229,7 +238,7 @@
             }
         }
         
-        async function activatePromo(code) {
+        async function checkPromoCode(code) {
             try {
                 const promoRef = database.ref('promo/' + code);
                 const snapshot = await promoRef.once('value');
@@ -239,48 +248,55 @@
                 }
                 
                 const promoData = snapshot.val();
-                let amount, activations;
-                
-                // Проверяем формат промокода (старый или новый)
-                if (typeof promoData === 'number') {
-                    // Старый формат: только сумма
-                    amount = promoData;
-                    activations = 1; // Для старых промокодов считаем 1 активацию
-                } else if (typeof promoData === 'object' && promoData.amount && promoData.activations) {
-                    // Новый формат: объект с amount и activations
-                    amount = promoData.amount;
-                    activations = promoData.activations;
-                } else {
-                    throw new Error('Неверный формат промокода');
+                if (!promoData.reward || isNaN(parseInt(promoData.reward))) {
+                    throw new Error('Неверный промокод');
                 }
                 
-                if (isNaN(amount) {
-                    throw new Error('Неверная сумма в промокоде');
+                // Проверяем лимит активаций
+                const activations = promoData.activations || {};
+                const activationCount = Object.keys(activations).length;
+                const limit = promoData.limit || 0;
+                
+                if (limit > 0 && activationCount >= limit) {
+                    throw new Error('Лимит активаций промокода исчерпан');
                 }
                 
-                if (activations <= 0) {
-                    throw new Error('Промокод закончился');
+                // Проверяем, активировал ли уже пользователь этот промокод
+                if (activations[currentUserId]) {
+                    throw new Error('Вы уже активировали этот промокод');
                 }
+                
+                return {
+                    reward: parseInt(promoData.reward),
+                    activations: activationCount,
+                    limit: limit
+                };
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        async function activatePromo(code) {
+            try {
+                // Проверяем промокод
+                const promoInfo = await checkPromoCode(code);
                 
                 // Активируем промокод
                 await createTransaction(
                     currentUserId, 
                     'deposit', 
-                    amount, 
+                    promoInfo.reward, 
                     `Активация промокода: ${code}`
                 );
                 
-                // Обновляем количество активаций
-                if (activations > 1) {
-                    await promoRef.update({
-                        activations: activations - 1
-                    });
-                } else {
-                    // Удаляем промокод если активаций не осталось
-                    await promoRef.remove();
-                }
+                // Обновляем информацию о промокоде
+                const promoRef = database.ref('promo/' + code);
+                const updates = {};
+                updates[`activations/${currentUserId}`] = firebase.database.ServerValue.TIMESTAMP;
                 
-                return { amount, activations: activations - 1 };
+                await promoRef.update(updates);
+                
+                return promoInfo.reward;
             } catch (error) {
                 throw error;
             }
@@ -309,32 +325,48 @@
             });
         }
         
-        async function checkPromoCode(code) {
+        async function initTestPromoCodes() {
+            const promoRef = database.ref('promo');
+            const snapshot = await promoRef.once('value');
+            
+            if (!snapshot.exists()) {
+                const testPromos = {
+                    'test1': {
+                        reward: 100,
+                        limit: 100,
+                        activations: {}
+                    },
+                    'test2': {
+                        reward: 200,
+                        limit: 50,
+                        activations: {}
+                    },
+                    'test3': {
+                        reward: 300,
+                        limit: 10,
+                        activations: {}
+                    }
+                };
+                
+                await promoRef.set(testPromos);
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultEl = document.getElementById('result-message');
+            resultEl.textContent = message;
+            resultEl.className = `result-message ${type}`;
+        }
+        
+        async function showPromoInfo(code) {
             try {
-                const promoRef = database.ref('promo/' + code);
-                const snapshot = await promoRef.once('value');
-                
-                if (!snapshot.exists()) {
-                    return null;
-                }
-                
-                const promoData = snapshot.val();
-                let amount, activations;
-                
-                if (typeof promoData === 'number') {
-                    amount = promoData;
-                    activations = 1;
-                } else if (typeof promoData === 'object' && promoData.amount && promoData.activations) {
-                    amount = promoData.amount;
-                    activations = promoData.activations;
-                } else {
-                    return null;
-                }
-                
-                return { amount, activations };
+                const promoInfo = await checkPromoCode(code);
+                document.getElementById('promo-reward').textContent = `Награда: ${promoInfo.reward} ⭐`;
+                document.getElementById('promo-activations').textContent = `Активаций: ${promoInfo.activations}`;
+                document.getElementById('promo-limit').textContent = `Лимит: ${promoInfo.limit > 0 ? promoInfo.limit : 'нет'}`;
+                document.getElementById('promo-info').style.display = 'block';
             } catch (error) {
-                console.error('Ошибка проверки промокода:', error);
-                return null;
+                document.getElementById('promo-info').style.display = 'none';
             }
         }
         
@@ -363,6 +395,15 @@
                     window.location.href = `index.html${currentUserId ? `?user_id=${currentUserId}` : ''}`;
                 });
                 
+                document.getElementById('promo-code').addEventListener('input', (e) => {
+                    const code = e.target.value.trim();
+                    if (code.length >= 3) {
+                        showPromoInfo(code);
+                    } else {
+                        document.getElementById('promo-info').style.display = 'none';
+                    }
+                });
+                
                 document.getElementById('activate-btn').addEventListener('click', async () => {
                     const code = document.getElementById('promo-code').value.trim();
                     if (!code) {
@@ -371,30 +412,12 @@
                     }
                     
                     try {
-                        const result = await activatePromo(code);
-                        showResult(`Промокод активирован! Получено ${result.amount} ⭐`, 'success');
+                        const amount = await activatePromo(code);
+                        showResult(`Промокод активирован! Получено ${amount} ⭐`, 'success');
                         document.getElementById('promo-code').value = '';
                         document.getElementById('promo-info').style.display = 'none';
                     } catch (error) {
                         showResult(error.message, 'error');
-                    }
-                });
-                
-                // Проверка промокода при вводе
-                document.getElementById('promo-code').addEventListener('input', async (e) => {
-                    const code = e.target.value.trim();
-                    if (code) {
-                        const promoInfo = await checkPromoCode(code);
-                        const infoElement = document.getElementById('promo-info');
-                        
-                        if (promoInfo) {
-                            infoElement.textContent = `Промокод дает ${promoInfo.amount} ⭐, осталось активаций: ${promoInfo.activations}`;
-                            infoElement.style.display = 'block';
-                        } else {
-                            infoElement.style.display = 'none';
-                        }
-                    } else {
-                        document.getElementById('promo-info').style.display = 'none';
                     }
                 });
                 
@@ -404,25 +427,6 @@
                 console.error('Ошибка инициализации:', error);
                 document.getElementById('loading').textContent = 'Ошибка загрузки данных';
             }
-        }
-        
-        async function initTestPromoCodes() {
-            const promoRef = database.ref('promo');
-            const snapshot = await promoRef.once('value');
-            
-            if (!snapshot.exists()) {
-                await promoRef.update({
-                    'test1': { amount: 100, activations: 5 },
-                    'test2': { amount: 200, activations: 3 },
-                    'test3': { amount: 300, activations: 1 }
-                });
-            }
-        }
-        
-        function showResult(message, type) {
-            const resultEl = document.getElementById('result-message');
-            resultEl.textContent = message;
-            resultEl.className = `result-message ${type}`;
         }
         
         document.addEventListener('DOMContentLoaded', initApp);
