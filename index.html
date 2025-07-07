@@ -649,12 +649,26 @@
                 const promoSnapshot = await promoRef.once('value');
                 
                 if (!promoSnapshot.exists()) {
-                    await promoRef.set({
-                        'test1': 100,
-                        'test2': 200,
-                        'test3': 300
-                    });
-                    console.log('Создан корень promo с тестовыми промокодами');
+                    const testPromos = {
+                        'test1': {
+                            reward: 100,
+                            limit: 100, // лимит активаций (0 - без лимита)
+                            activations: {} // здесь будут храниться ID пользователей и время активации
+                        },
+                        'test2': {
+                            reward: 200,
+                            limit: 50,
+                            activations: {}
+                        },
+                        'test3': {
+                            reward: 300,
+                            limit: 10,
+                            activations: {}
+                        }
+                    };
+                    
+                    await promoRef.set(testPromos);
+                    console.log('Создан корень promo с новой структурой промокодов');
                 }
             } catch (error) {
                 console.error('Ошибка инициализации корней:', error);
