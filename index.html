@@ -130,6 +130,14 @@
             background: rgba(255, 255, 255, 0.2);
         }
         
+        .btn-promo {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+        
+        .btn-promo:hover {
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+        
         .loading {
             text-align: center;
             padding: 20px;
@@ -137,157 +145,15 @@
             color: #b8b8b8;
         }
         
-        /* Модальные окна */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal-content {
-            background: rgba(46, 17, 81, 0.9);
-            padding: 25px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 85vh;
-            overflow-y: auto;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .modal-title {
+        .maintenance-message {
+            text-align: center;
+            padding: 40px 20px;
             font-size: 20px;
-            font-weight: bold;
-        }
-        
-        .close-modal {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        
-        .amount-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 25px;
-        }
-        
-        .amount-btn {
-            background: rgba(123, 44, 191, 0.3);
-            border: 1px solid #7b2cbf;
-            color: white;
-            padding: 12px 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-            font-size: 15px;
-        }
-        
-        .amount-btn.selected {
-            background: #7b2cbf;
-            font-weight: bold;
-        }
-        
-        .username-input-container {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        
-        .username-at {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #b8b8b8;
-            pointer-events: none;
-        }
-        
-        .username-input {
-            width: 100%;
-            padding: 12px 12px 12px 25px;
-            border-radius: 8px;
-            border: 1px solid #7b2cbf;
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-        }
-        
-        .confirm-checkbox {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .confirm-checkbox input {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-        }
-        
-        .transaction-item {
-            background: rgba(123, 44, 191, 0.2);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 3px solid #7b2cbf;
-        }
-        
-        .transaction-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        
-        .transaction-amount {
-            font-weight: bold;
-        }
-        
-        .transaction-amount.positive {
-            color: #4caf50;
-        }
-        
-        .transaction-amount.negative {
-            color: #f44336;
-        }
-        
-        .transaction-date {
-            font-size: 12px;
-            color: #b8b8b8;
-        }
-        
-        .transaction-description {
-            font-size: 14px;
-            color: #d1d1d1;
-        }
-        
-        .success-message {
-            text-align: center;
-            padding: 20px;
-            font-size: 18px;
-        }
-        
-        .success-icon {
-            font-size: 50px;
-            color: #4caf50;
-            margin-bottom: 20px;
+            color: #ff5555;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            margin: 20px;
+            display: none;
         }
         
         .game-cards {
@@ -305,11 +171,18 @@
             align-items: center;
             transition: all 0.3s;
             border: 1px solid rgba(123, 44, 191, 0.3);
+            cursor: pointer;
         }
         
         .game-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(123, 44, 191, 0.3);
+        }
+        
+        .game-card.disabled {
+            background: rgba(100, 100, 100, 0.5);
+            opacity: 0.7;
+            pointer-events: none;
         }
         
         .game-icon {
@@ -353,6 +226,11 @@
             background: #7b2cbf;
         }
         
+        .play-btn.disabled {
+            background: rgba(100, 100, 100, 0.5);
+            cursor: not-allowed;
+        }
+        
         @keyframes float {
             0% {
                 transform: translateY(0px);
@@ -377,6 +255,11 @@
             Загрузка данных...
         </div>
         
+        <div id="maintenance" class="maintenance-message">
+            <h2>🚧 Технические работы 🚧</h2>
+            <p>Приложение временно недоступно. Пожалуйста, зайдите позже.</p>
+        </div>
+        
         <div id="profile" style="display: none;">
             <div class="profile">
                 <div class="profile-header">
@@ -397,7 +280,10 @@
                     <button class="btn" id="withdraw-btn">Вывести</button>
                 </div>
                 
-                <button class="btn btn-secondary" id="history-btn">История операций</button>
+                <div class="buttons">
+                    <button class="btn btn-secondary" id="history-btn">История операций</button>
+                    <button class="btn btn-promo" id="promo-btn">Промокоды</button>
+                </div>
                 
                 <div class="game-cards">
                     <div class="game-card" onclick="window.location.href='monetka.html'">
@@ -422,77 +308,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно вывода средств -->
-    <div id="withdraw-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Вывод средств</div>
-                <button class="close-modal" id="close-withdraw-modal">&times;</button>
-            </div>
-            
-            <div id="withdraw-step-1">
-                <p style="margin-bottom: 15px;">Выберите сумму для вывода:</p>
-                <div class="amount-buttons">
-                    <button class="amount-btn" data-amount="50">50 ⭐</button>
-                    <button class="amount-btn" data-amount="100">100 ⭐</button>
-                    <button class="amount-btn" data-amount="200">200 ⭐</button>
-                    <button class="amount-btn" data-amount="300">300 ⭐</button>
-                    <button class="amount-btn" data-amount="400">400 ⭐</button>
-                    <button class="amount-btn" data-amount="500">500 ⭐</button>
-                    <button class="amount-btn" data-amount="750">750 ⭐</button>
-                    <button class="amount-btn" data-amount="1000">1000 ⭐</button>
-                    <button class="amount-btn" data-amount="1500">1500 ⭐</button>
-                </div>
-            </div>
-            
-            <div id="withdraw-step-2" style="display: none; margin-top: 20px;">
-                <p style="margin-bottom: 15px;">Введите юзернейм получателя:</p>
-                
-                <div class="username-input-container">
-                    <span class="username-at">@</span>
-                    <input type="text" id="username-input" class="username-input" placeholder="username">
-                </div>
-                
-                <button class="btn btn-secondary" id="my-account-btn" style="margin-bottom: 15px; width: 100%;">Мой аккаунт</button>
-                
-                <div class="confirm-checkbox">
-                    <input type="checkbox" id="confirm-checkbox">
-                    <label for="confirm-checkbox">Подтверждаю правильность данных</label>
-                </div>
-                
-                <button class="btn" id="submit-withdraw-btn" disabled>Вывести</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно успешного вывода -->
-    <div id="success-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header" style="justify-content: flex-end;">
-                <button class="close-modal" id="close-success-modal">&times;</button>
-            </div>
-            
-            <div class="success-message">
-                <div class="success-icon">✓</div>
-                <div id="success-text">Заявка на вывод успешно создана!</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно истории операций -->
-    <div id="history-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">История операций</div>
-                <button class="close-modal" id="close-history-modal">&times;</button>
-            </div>
-            
-            <div id="transactions-list">
-                <p id="no-transactions">Загрузка истории операций...</p>
-            </div>
-        </div>
-    </div>
-
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -506,29 +321,19 @@
         };
         
         // Инициализация Firebase
-        firebase.initializeApp(firebaseConfig);
+        const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        if (tg && tg.initDataUnsafe) {
-            tg.expand(); // Развернуть приложение на весь экран
-        } else {
-            console.warn('Telegram WebApp не инициализирован. Работаем в тестовом режиме.');
-        }
         
         // Глобальные переменные
         let currentUserId = null;
-        let selectedWithdrawAmount = 0;
         let currentUsername = '';
-        
-        // Сохранение ID пользователя в cookie
-        function setCookie(name, value, days) {
-            const expires = new Date();
-            expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-        }
-        
+        let isAdmin = false;
+        let gameStatus = {
+            monetka: true,
+            lottery: true,
+            maintenance: false
+        };
+
         // Инициализация частиц на фоне
         function initParticles() {
             const particlesContainer = document.getElementById('particles');
@@ -551,18 +356,18 @@
                 particlesContainer.appendChild(particle);
             }
         }
-        
+
         // Проверяем и создаем пользователя при необходимости
         async function initUser() {
             let user = null;
             
             try {
-                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    user = tg.initDataUnsafe.user;
+                if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+                    user = Telegram.WebApp.initDataUnsafe.user;
                 } else {
                     // Тестовые данные, если не в Telegram WebApp
                     user = {
-                        id: 123456789,
+                        id: Math.floor(Math.random() * 1000000000),
                         first_name: "Тестовый",
                         last_name: "Пользователь",
                         username: "testuser",
@@ -571,7 +376,7 @@
                 }
                 
                 const userId = user.id.toString();
-                setCookie('user_id', userId, 30); // Сохраняем ID на 30 дней
+                document.cookie = `user_id=${userId}; path=/; max-age=2592000`; // 30 дней
                 
                 const userRef = database.ref('users/' + userId);
                 const snapshot = await userRef.once('value');
@@ -583,7 +388,7 @@
                         last_name: user.last_name || '',
                         username: user.username || '',
                         photo_url: user.photo_url || '',
-                        balance: 1000, // Начальный баланс для теста
+                        balance: 1000,
                         created_at: firebase.database.ServerValue.TIMESTAMP,
                         transactions: {}
                     };
@@ -599,7 +404,88 @@
                 throw error;
             }
         }
-        
+
+        // Инициализация корней admin и promo
+        async function initDatabaseRoots() {
+            try {
+                const adminRef = database.ref('admin');
+                const adminSnapshot = await adminRef.once('value');
+                
+                if (!adminSnapshot.exists()) {
+                    await adminRef.set({
+                        admins: "",
+                        maintenance: 0,
+                        monetka: 1,
+                        lottery: 1
+                    });
+                    console.log('Создан корень admin');
+                }
+                
+                const promoRef = database.ref('promo');
+                const promoSnapshot = await promoRef.once('value');
+                
+                if (!promoSnapshot.exists()) {
+                    await promoRef.set({
+                        'test1': 100,
+                        'test2': 200,
+                        'test3': 300
+                    });
+                    console.log('Создан корень promo с тестовыми промокодами');
+                }
+            } catch (error) {
+                console.error('Ошибка инициализации корней:', error);
+            }
+        }
+
+        // Проверка техработ и доступности игр
+        async function checkMaintenance(userId) {
+            try {
+                const adminRef = database.ref('admin');
+                const snapshot = await adminRef.once('value');
+                const adminData = snapshot.val();
+                
+                if (adminData) {
+                    gameStatus.maintenance = adminData.maintenance === 1;
+                    gameStatus.monetka = adminData.monetka === 1;
+                    gameStatus.lottery = adminData.lottery === 1;
+                    
+                    // Проверяем, является ли пользователь админом
+                    const admins = (adminData.admins || "").split(" ").filter(id => id.trim() !== "");
+                    isAdmin = admins.includes(userId.toString());
+                    
+                    // Если техработы и пользователь не админ - показываем сообщение
+                    if (gameStatus.maintenance && !isAdmin) {
+                        document.getElementById('maintenance').style.display = 'block';
+                        document.getElementById('profile').style.display = 'none';
+                    } else {
+                        document.getElementById('maintenance').style.display = 'none';
+                        document.getElementById('profile').style.display = 'block';
+                        updateGameCards();
+                    }
+                }
+            } catch (error) {
+                console.error("Ошибка проверки техработ:", error);
+            }
+        }
+
+        // Обновление состояния игровых карточек
+        function updateGameCards() {
+            const monetkaCard = document.querySelector('.game-card[onclick*="monetka"]');
+            const lotteryCard = document.querySelector('.game-card[onclick*="lottery"]');
+            
+            if (!gameStatus.monetka && !isAdmin) {
+                monetkaCard.classList.add('disabled');
+                monetkaCard.querySelector('.play-btn').textContent = 'Недоступно';
+                monetkaCard.querySelector('.play-btn').classList.add('disabled');
+            }
+            
+            if (!gameStatus.lottery && !isAdmin) {
+                lotteryCard.classList.add('disabled');
+                lotteryCard.querySelector('.play-btn').textContent = 'Недоступно';
+                lotteryCard.querySelector('.play-btn').classList.add('disabled');
+            }
+        }
+
         // Загружаем данные пользователя
         async function loadUserData(userId) {
             try {
@@ -618,7 +504,7 @@
                 throw error;
             }
         }
-        
+
         // Обновляем интерфейс данными пользователя
         function updateUI(userData) {
             document.getElementById('user-name').textContent = 
@@ -639,229 +525,48 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile').style.display = 'block';
         }
-        
-        // Создаем новую транзакцию
-        async function createTransaction(userId, type, amount, description = '') {
-            try {
-                const transactionsRef = database.ref('history/' + userId);
-                const newTransactionRef = transactionsRef.push();
-                
-                const now = new Date();
-                const day = now.getDate().toString().padStart(2, '0');
-                const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                const year = now.getFullYear();
-                const hours = now.getHours().toString().padStart(2, '0');
-                const minutes = now.getMinutes().toString().padStart(2, '0');
-                
-                const transactionData = {
-                    id: newTransactionRef.key,
-                    userId: userId,
-                    type: type,
-                    amount: amount,
-                    description: description,
-                    date: `${day}.${month}.${year} ${hours}:${minutes} мск`,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-                
-                await newTransactionRef.set(transactionData);
-                
-                // Обновляем баланс пользователя
-                const userRef = database.ref('users/' + userId);
-                const snapshot = await userRef.once('value');
-                const userData = snapshot.val();
-                
-                let newBalance = userData.balance || 0;
-                if (type === 'deposit') {
-                    newBalance += amount;
-                } else if (type === 'withdraw') {
-                    newBalance -= amount;
-                }
-                
-                await userRef.update({
-                    balance: newBalance
-                });
-                
-                return transactionData;
-            } catch (error) {
-                console.error('Ошибка создания транзакции:', error);
-                throw error;
-            }
-        }
-        
-        // Загружаем историю транзакций
-        async function loadTransactions(userId) {
-            try {
-                const transactionsRef = database.ref('history/' + userId);
-                const transactionsList = document.getElementById('transactions-list');
-                
-                transactionsRef.on('value', (snapshot) => {
-                    const transactions = snapshot.val();
-                    transactionsList.innerHTML = '';
-                    
-                    if (!transactions) {
-                        transactionsList.innerHTML = '<p id="no-transactions">Нет операций</p>';
-                        return;
-                    }
-                    
-                    // Сортируем транзакции по времени (новые сначала)
-                    const sortedTransactions = Object.values(transactions).sort((a, b) => b.timestamp - a.timestamp);
-                    
-                    sortedTransactions.forEach(transaction => {
-                        const transactionItem = document.createElement('div');
-                        transactionItem.className = 'transaction-item';
-                        
-                        const amountClass = transaction.type === 'deposit' ? 'positive' : 'negative';
-                        const amountSign = transaction.type === 'deposit' ? '+' : '-';
-                        
-                        transactionItem.innerHTML = `
-                            <div class="transaction-header">
-                                <div class="transaction-type">${transaction.type === 'deposit' ? 'Пополнение' : 'Вывод'}</div>
-                                <div class="transaction-amount ${amountClass}">${amountSign}${transaction.amount} ⭐</div>
-                            </div>
-                            <div class="transaction-description">${transaction.description || ''}</div>
-                            <div class="transaction-date">${transaction.date}</div>
-                        `;
-                        
-                        transactionsList.appendChild(transactionItem);
-                    });
-                });
-            } catch (error) {
-                console.error('Ошибка загрузки истории транзакций:', error);
-                throw error;
-            }
-        }
-        
+
         // Настройка обработчиков кнопок
         function setupButtons(userId) {
             // Кнопка вывода
             document.getElementById('withdraw-btn').addEventListener('click', () => {
-                document.getElementById('withdraw-modal').style.display = 'flex';
-                document.getElementById('withdraw-step-1').style.display = 'block';
-                document.getElementById('withdraw-step-2').style.display = 'none';
-                selectedWithdrawAmount = 0;
-                
-                // Сброс выбранных сумм
-                document.querySelectorAll('.amount-btn').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
+                alert('Функция вывода будет доступна в ближайшее время');
             });
             
             // Кнопка истории операций
             document.getElementById('history-btn').addEventListener('click', () => {
-                document.getElementById('history-modal').style.display = 'flex';
-                loadTransactions(userId);
+                alert('История операций будет доступна в ближайшее время');
             });
             
-            // Кнопка пополнения (заглушка)
+            // Кнопка пополнения
             document.getElementById('deposit-btn').addEventListener('click', () => {
                 alert('Функция пополнения будет доступна в ближайшее время');
             });
             
-            // Закрытие модального окна вывода
-            document.getElementById('close-withdraw-modal').addEventListener('click', () => {
-                document.getElementById('withdraw-modal').style.display = 'none';
-            });
-            
-            // Закрытие модального окна успеха
-            document.getElementById('close-success-modal').addEventListener('click', () => {
-                document.getElementById('success-modal').style.display = 'none';
-            });
-            
-            // Закрытие модального окна истории
-            document.getElementById('close-history-modal').addEventListener('click', () => {
-                document.getElementById('history-modal').style.display = 'none';
-            });
-            
-            // Выбор суммы для вывода
-            document.querySelectorAll('.amount-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    selectedWithdrawAmount = parseInt(btn.dataset.amount);
-                    
-                    // Показываем следующий шаг
-                    document.getElementById('withdraw-step-2').style.display = 'block';
-                    document.getElementById('username-input').value = '';
-                    document.getElementById('confirm-checkbox').checked = false;
-                    document.getElementById('submit-withdraw-btn').disabled = true;
-                });
-            });
-            
-            // Кнопка "Мой аккаунт"
-            document.getElementById('my-account-btn').addEventListener('click', () => {
-                if (currentUsername) {
-                    document.getElementById('username-input').value = currentUsername;
-                    document.getElementById('confirm-checkbox').checked = false;
-                    document.getElementById('submit-withdraw-btn').disabled = true;
-                    
-                    // Проверяем, достаточно ли символов
-                    if (currentUsername.length >= 3) {
-                        document.getElementById('confirm-checkbox').disabled = false;
-                    }
-                }
-            });
-            
-            // Проверка ввода юзернейма
-            document.getElementById('username-input').addEventListener('input', (e) => {
-                let value = e.target.value;
-                value = value.replace(/@/g, ''); // Удаляем @ если пользователь ввел
-                
-                if (value.length >= 3) {
-                    document.getElementById('confirm-checkbox').disabled = false;
-                } else {
-                    document.getElementById('confirm-checkbox').disabled = true;
-                    document.getElementById('confirm-checkbox').checked = false;
-                    document.getElementById('submit-withdraw-btn').disabled = true;
-                }
-            });
-            
-            // Чекбокс подтверждения
-            document.getElementById('confirm-checkbox').addEventListener('change', (e) => {
-                document.getElementById('submit-withdraw-btn').disabled = !e.target.checked;
-            });
-            
-            // Отправка заявки на вывод
-            document.getElementById('submit-withdraw-btn').addEventListener('click', async () => {
-                const username = document.getElementById('username-input').value;
-                
-                try {
-                    // Проверяем баланс
-                    const userRef = database.ref('users/' + userId);
-                    const snapshot = await userRef.once('value');
-                    const userData = snapshot.val();
-                    
-                    if (userData.balance < selectedWithdrawAmount) {
-                        alert('Недостаточно средств на балансе');
-                        return;
-                    }
-                    
-                    // Создаем транзакцию
-                    await createTransaction(
-                        userId, 
-                        'withdraw', 
-                        selectedWithdrawAmount, 
-                        `Заявка вывода для @${username}`
-                    );
-                    
-                    // Показываем окно успеха
-                    document.getElementById('withdraw-modal').style.display = 'none';
-                    document.getElementById('success-text').textContent = 
-                        `Заявка на вывод ${selectedWithdrawAmount} ⭐ для @${username} создана!`;
-                    document.getElementById('success-modal').style.display = 'flex';
-                } catch (error) {
-                    console.error('Ошибка при выводе средств:', error);
-                    alert('Произошла ошибка при создании заявки');
-                }
+            // Новая кнопка промокодов
+            document.getElementById('promo-btn').addEventListener('click', () => {
+                window.location.href = `promo.html?user_id=${userId}`;
             });
         }
-        
+
         // Основная функция инициализации
         async function initApp() {
             initParticles();
             
             try {
+                // Инициализация корней базы данных
+                await initDatabaseRoots();
+                
+                // Инициализация пользователя
                 currentUserId = await initUser();
+                
+                // Проверка техработ и доступности игр
+                await checkMaintenance(currentUserId);
+                
+                // Загрузка данных пользователя
                 await loadUserData(currentUserId);
+                
+                // Настройка кнопок
                 setupButtons(currentUserId);
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
