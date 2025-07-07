@@ -231,6 +231,88 @@
             cursor: not-allowed;
         }
         
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: rgba(46, 17, 81, 0.9);
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .transaction-item {
+            background: rgba(123, 44, 191, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #7b2cbf;
+        }
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .transaction-amount {
+            font-weight: bold;
+        }
+        
+        .transaction-amount.positive {
+            color: #4caf50;
+        }
+        
+        .transaction-amount.negative {
+            color: #f44336;
+        }
+        
+        .transaction-date {
+            font-size: 12px;
+            color: #b8b8b8;
+        }
+        
+        .transaction-description {
+            font-size: 14px;
+            color: #d1d1d1;
+        }
+        
         @keyframes float {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
@@ -302,6 +384,20 @@
         </div>
     </div>
 
+    <!-- Модальное окно истории операций -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">История операций</div>
+                <button class="close-modal" id="close-history-modal">&times;</button>
+            </div>
+            
+            <div id="transactions-list">
+                <p id="no-transactions">Загрузка истории операций...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -364,12 +460,15 @@
                     console.log('Создан корень admin');
                 }
                 
-                const historyRef = database.ref('history');
-                const historySnapshot = await historyRef.once('value');
-                
-                if (!historySnapshot.exists()) {
-                    await historyRef.set({});
-                    console.log('Создан корень history');
+                // Проверяем существование корня history для текущего пользователя
+                if (currentUserId) {
+                    const userHistoryRef = database.ref('history/' + currentUserId);
+                    const historySnapshot = await userHistoryRef.once('value');
+                    
+                    if (!historySnapshot.exists()) {
+                        await userHistoryRef.set({});
+                        console.log('Создана история для пользователя');
+                    }
                 }
                 
             } catch (error) {
@@ -515,6 +614,49 @@
             document.getElementById('profile').style.display = 'block';
         }
 
+        // Загружаем историю транзакций
+        async function loadTransactions(userId) {
+            try {
+                const transactionsRef = database.ref('history/' + userId);
+                const transactionsList = document.getElementById('transactions-list');
+                
+                transactionsRef.on('value', (snapshot) => {
+                    const transactions = snapshot.val();
+                    transactionsList.innerHTML = '';
+                    
+                    if (!transactions) {
+                        transactionsList.innerHTML = '<p id="no-transactions">Нет операций</p>';
+                        return;
+                    }
+                    
+                    // Сортируем транзакции по времени (новые сначала)
+                    const sortedTransactions = Object.values(transactions).sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    sortedTransactions.forEach(transaction => {
+                        const transactionItem = document.createElement('div');
+                        transactionItem.className = 'transaction-item';
+                        
+                        const amountClass = transaction.type === 'deposit' ? 'positive' : 'negative';
+                        const amountSign = transaction.type === 'deposit' ? '+' : '-';
+                        
+                        transactionItem.innerHTML = `
+                            <div class="transaction-header">
+                                <div class="transaction-type">${transaction.type === 'deposit' ? 'Пополнение' : 'Вывод'}</div>
+                                <div class="transaction-amount ${amountClass}">${amountSign}${transaction.amount} ⭐</div>
+                            </div>
+                            <div class="transaction-description">${transaction.description || ''}</div>
+                            <div class="transaction-date">${transaction.date}</div>
+                        `;
+                        
+                        transactionsList.appendChild(transactionItem);
+                    });
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки истории транзакций:', error);
+                throw error;
+            }
+        }
+
         // Настройка обработчиков кнопок
         function setupButtons(userId) {
             // Кнопка вывода
@@ -524,7 +666,8 @@
             
             // Кнопка истории операций
             document.getElementById('history-btn').addEventListener('click', () => {
-                window.location.href = `history.html?user_id=${userId}`;
+                document.getElementById('history-modal').style.display = 'flex';
+                loadTransactions(userId);
             });
             
             // Кнопка пополнения
@@ -536,6 +679,11 @@
             document.getElementById('promo-btn').addEventListener('click', () => {
                 window.location.href = `promo.html?user_id=${userId}`;
             });
+            
+            // Закрытие модального окна истории
+            document.getElementById('close-history-modal').addEventListener('click', () => {
+                document.getElementById('history-modal').style.display = 'none';
+            });
         }
 
         // Основная функция инициализации
@@ -543,11 +691,11 @@
             initParticles();
             
             try {
-                // Инициализация корней базы данных
-                await initDatabaseRoots();
-                
                 // Инициализация пользователя
                 currentUserId = await initUser();
+                
+                // Инициализация корней базы данных
+                await initDatabaseRoots();
                 
                 // Проверка техработ и доступности игр
                 const isMaintenance = await checkMaintenance(currentUserId);
