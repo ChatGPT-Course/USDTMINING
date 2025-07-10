@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -129,6 +128,13 @@
             flex-direction: column;
             gap: 8px;
             border-left: 4px solid;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .ticket-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.3);
         }
         
         .ticket-item.open {
@@ -177,7 +183,7 @@
             color: #b8b8b8;
         }
         
-        /* Модальное окно создания тикета */
+        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -268,6 +274,62 @@
             box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
         }
         
+        .ticket-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+        
+        .ticket-info-item {
+            margin-bottom: 10px;
+        }
+        
+        .ticket-info-label {
+            font-size: 14px;
+            color: #b8b8b8;
+            margin-bottom: 5px;
+        }
+        
+        .ticket-info-value {
+            font-size: 16px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(46, 17, 81, 0.9);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        .notification-icon {
+            font-size: 20px;
+        }
+        
+        .notification.success {
+            color: #4caf50;
+        }
+        
+        .notification.error {
+            color: #f44336;
+        }
+        
         .loading {
             text-align: center;
             padding: 20px;
@@ -282,7 +344,7 @@
         <div class="header">
             <button class="back-btn" id="back-btn">← Назад</button>
             <h1>Помощь</h1>
-            <div style="width: 70px;"></div> <!-- Для выравнивания -->
+            <div style="width: 70px;"></div>
         </div>
         
         <button class="btn" id="create-ticket-btn">Создать тикет</button>
@@ -317,13 +379,56 @@
                 <textarea id="ticket-description" placeholder="Подробно опишите вашу проблему"></textarea>
             </div>
             
-            <div class="form-group">
-                <label for="ticket-contact">Контакт для связи</label>
-                <input type="text" id="ticket-contact" placeholder="Телеграм @username или телефон">
+            <div class="ticket-info">
+                <div class="ticket-info-item">
+                    <div class="ticket-info-value">Ответ технической поддержки поступит вам от бота</div>
+                </div>
             </div>
             
             <button class="submit-btn" id="submit-ticket-btn">Отправить</button>
         </div>
+    </div>
+    
+    <!-- Модальное окно просмотра тикета -->
+    <div id="view-ticket-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="view-ticket-title">Тикет #000000</div>
+                <button class="close-modal" id="close-view-modal">&times;</button>
+            </div>
+            
+            <div class="ticket-info">
+                <div class="ticket-info-item">
+                    <div class="ticket-info-label">Статус</div>
+                    <div class="ticket-info-value" id="view-ticket-status">Открыт</div>
+                </div>
+                
+                <div class="ticket-info-item">
+                    <div class="ticket-info-label">Дата создания</div>
+                    <div class="ticket-info-value" id="view-ticket-date">01.01.2023, 12:00:00</div>
+                </div>
+                
+                <div class="ticket-info-item">
+                    <div class="ticket-info-label">Тема</div>
+                    <div class="ticket-info-value" id="view-ticket-theme">Проблема с выводом</div>
+                </div>
+                
+                <div class="ticket-info-item">
+                    <div class="ticket-info-label">Описание</div>
+                    <div class="ticket-info-value" id="view-ticket-description">Не могу вывести средства...</div>
+                </div>
+                
+                <div class="ticket-info-item">
+                    <div class="ticket-info-value">Ответ технической поддержки поступит вам от бота</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Уведомление -->
+    <div id="notification" class="notification">
+        <div class="notification-icon">✓</div>
+        <div class="notification-message">Тикет успешно создан!</div>
     </div>
 
     <script>
@@ -343,7 +448,8 @@
         
         let currentUserId = null;
         let currentUserData = null;
-        let currentTicketStatus = 'open'; // По умолчанию показываем открытые тикеты
+        let currentTicketStatus = 'open';
+        let allTickets = [];
 
         // Инициализация частиц на фоне
         function initParticles() {
@@ -368,7 +474,7 @@
             }
         }
 
-        // Получение ID пользователя из URL или куки
+        // Получение ID пользователя
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
             let userId = urlParams.get('user_id');
@@ -399,7 +505,7 @@
             }
         }
 
-        // Инициализация корня tickets в базе данных
+        // Инициализация корня tickets
         async function initTicketsRoot() {
             try {
                 const ticketsRef = database.ref('tickets');
@@ -422,7 +528,7 @@
                 
                 await newTicketRef.set({
                     ...ticketData,
-                    status: 1, // 1 - открытый, 0 - закрытый
+                    status: 1,
                     date_create: new Date().toLocaleString('ru-RU')
                 });
                 
@@ -458,10 +564,11 @@
                     }
                 });
                 
-                // Сортируем по дате (новые сначала)
-                return userTickets.sort((a, b) => {
+                allTickets = userTickets.sort((a, b) => {
                     return new Date(b.date_create) - new Date(a.date_create);
                 });
+                
+                return allTickets;
             } catch (error) {
                 console.error('Ошибка загрузки тикетов:', error);
                 return [];
@@ -482,6 +589,7 @@
             tickets.forEach(ticket => {
                 const ticketItem = document.createElement('div');
                 ticketItem.className = `ticket-item ${ticket.status === 1 ? 'open' : 'closed'}`;
+                ticketItem.dataset.id = ticket.id;
                 
                 ticketItem.innerHTML = `
                     <div class="ticket-header">
@@ -496,6 +604,40 @@
                 
                 ticketList.appendChild(ticketItem);
             });
+            
+            // Добавляем обработчики кликов на тикеты
+            document.querySelectorAll('.ticket-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const ticketId = e.currentTarget.dataset.id;
+                    const ticket = allTickets.find(t => t.id === ticketId);
+                    if (ticket) {
+                        showTicketDetails(ticket);
+                    }
+                });
+            });
+        }
+
+        // Показ деталей тикета
+        function showTicketDetails(ticket) {
+            document.getElementById('view-ticket-title').textContent = `Тикет #${ticket.id.substring(0, 6)}`;
+            document.getElementById('view-ticket-status').textContent = ticket.status === 1 ? 'Открыт' : 'Закрыт';
+            document.getElementById('view-ticket-date').textContent = ticket.date_create;
+            document.getElementById('view-ticket-theme').textContent = ticket.tema;
+            document.getElementById('view-ticket-description').textContent = ticket.discript;
+            
+            document.getElementById('view-ticket-modal').style.display = 'flex';
+        }
+
+        // Показать уведомление
+        function showNotification(message, isSuccess = true) {
+            const notification = document.getElementById('notification');
+            notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
+            notification.querySelector('.notification-message').textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
         }
 
         // Настройка обработчиков событий
@@ -510,19 +652,22 @@
                 document.getElementById('create-ticket-modal').style.display = 'flex';
             });
             
-            // Закрытие модального окна
+            // Закрытие модальных окон
             document.getElementById('close-modal').addEventListener('click', () => {
                 document.getElementById('create-ticket-modal').style.display = 'none';
+            });
+            
+            document.getElementById('close-view-modal').addEventListener('click', () => {
+                document.getElementById('view-ticket-modal').style.display = 'none';
             });
             
             // Отправка тикета
             document.getElementById('submit-ticket-btn').addEventListener('click', async () => {
                 const theme = document.getElementById('ticket-theme').value.trim();
                 const description = document.getElementById('ticket-description').value.trim();
-                const contact = document.getElementById('ticket-contact').value.trim();
                 
-                if (!theme || !description || !contact) {
-                    alert('Пожалуйста, заполните все поля');
+                if (!theme || !description) {
+                    showNotification('Пожалуйста, заполните все поля', false);
                     return;
                 }
                 
@@ -531,22 +676,18 @@
                     name_creator: `${currentUserData.first_name || ''} ${currentUserData.last_name || ''}`.trim(),
                     username_creator: currentUserData.username || '',
                     tema: theme,
-                    discript: description,
-                    contact: contact
+                    discript: description
                 };
                 
                 const success = await createNewTicket(ticketData);
                 if (success) {
-                    alert('Тикет успешно создан! Мы свяжемся с вами в ближайшее время.');
                     document.getElementById('create-ticket-modal').style.display = 'none';
-                    // Очищаем поля формы
                     document.getElementById('ticket-theme').value = '';
                     document.getElementById('ticket-description').value = '';
-                    document.getElementById('ticket-contact').value = '';
-                    // Обновляем список тикетов
+                    showNotification('Тикет успешно создан! Ответ придет от бота.');
                     updateTicketsList();
                 } else {
-                    alert('Произошла ошибка при создании тикета. Пожалуйста, попробуйте позже.');
+                    showNotification('Ошибка при создании тикета', false);
                 }
             });
             
@@ -574,15 +715,15 @@
             
             currentUserId = getUserId();
             if (!currentUserId) {
-                alert('Ошибка: не удалось определить пользователя');
-                window.location.href = 'index1.html';
+                showNotification('Ошибка: не удалось определить пользователя', false);
+                setTimeout(() => window.location.href = 'index1.html', 2000);
                 return;
             }
             
             currentUserData = await loadUserData(currentUserId);
             if (!currentUserData) {
-                alert('Ошибка: не удалось загрузить данные пользователя');
-                window.location.href = 'index1.html';
+                showNotification('Ошибка: не удалось загрузить данные пользователя', false);
+                setTimeout(() => window.location.href = 'index1.html', 2000);
                 return;
             }
             
