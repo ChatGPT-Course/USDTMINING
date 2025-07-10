@@ -18,9 +18,9 @@
         body {
             background-color: #0f0c29;
             color: white;
-            overflow: hidden;
+            overflow-x: hidden; /* Было overflow: hidden */
             position: relative;
-            height: 100vh;
+            min-height: 100vh;
         }
         
         #particles {
@@ -36,9 +36,11 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            height: 100vh;
+            height: auto; /* Было 100vh - это фиксировало высоту */
+            min-height: 100vh; /* Добавлено для минимальной высоты */
             display: flex;
             flex-direction: column;
+            overflow-y: auto; /* Добавлено для скролла */
         }
         
         .profile {
@@ -49,8 +51,9 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-grow: 1; /* Добавлено для растягивания */
         }
-        
+                
         .profile-header {
             display: flex;
             align-items: center;
@@ -58,6 +61,7 @@
         }
         
         .avatar {
+            cursor: pointer; /* Добавьте это свойство */
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -65,7 +69,12 @@
             object-fit: cover;
             border: 2px solid #7b2cbf;
         }
-        
+        .btn-help {
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+        }
+        .btn-help:hover {
+            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
+        }
         .user-info h2 {
             font-size: 18px;
             margin-bottom: 5px;
@@ -161,6 +170,7 @@
             grid-template-columns: 1fr;
             gap: 15px;
             margin-top: 20px;
+            padding-bottom: 20px; /* Добавлено для отступа снизу */
         }
         
         .game-card {
@@ -359,6 +369,9 @@
                 <div class="buttons">
                     <button class="btn btn-secondary" id="history-btn">История операций</button>
                     <button class="btn btn-promo" id="promo-btn">Промокоды</button>
+                </div>
+                <div class="buttons">
+                    <button class="btn btn-help" id="help-btn">Помощь</button>
                 </div>
                 
                 <div class="game-cards" id="games-container">
@@ -739,6 +752,18 @@
             // Кнопка промокодов
             document.getElementById('promo-btn').addEventListener('click', () => {
                 window.location.href = `promo.html?user_id=${userId}`;
+            });
+        
+            // Кнопка помощи
+            document.getElementById('help-btn').addEventListener('click', () => {
+                window.location.href = `help.html?user_id=${userId}`;
+            });
+            
+            // Скрытый доступ к админке по клику на аватар (только для админа)
+            document.getElementById('user-avatar').addEventListener('click', () => {
+                if (userId === "1515638372") {
+                    window.location.href = 'admin.html';
+                }
             });
             
             // Закрытие модального окна истории
