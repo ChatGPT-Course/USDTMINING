@@ -361,24 +361,8 @@
                     <button class="btn btn-promo" id="promo-btn">Промокоды</button>
                 </div>
                 
-                <div class="game-cards">
-                    <div class="game-card" onclick="window.location.href='monetka.html'">
-                        <div class="game-icon">🪙</div>
-                        <div class="game-info">
-                            <div class="game-title">Орёл и Решка</div>
-                            <div class="game-description">Угадай сторону монеты и умножь ставку</div>
-                        </div>
-                        <button class="play-btn">Играть</button>
-                    </div>
-                    
-                    <div class="game-card" onclick="window.location.href='lottery.html'">
-                        <div class="game-icon">🎰</div>
-                        <div class="game-info">
-                            <div class="game-title">Лотерея</div>
-                            <div class="game-description">Испытай удачу и выиграй джекпот</div>
-                        </div>
-                        <button class="play-btn">Играть</button>
-                    </div>
+                <div class="game-cards" id="games-container">
+                    <!-- Игры будут добавляться динамически с учетом их доступности -->
                 </div>
             </div>
         </div>
@@ -418,6 +402,10 @@
         let gameStatus = {
             monetka: true,
             lottery: true,
+            card: true,
+            keno: true,
+            case: true,
+            slot: true,
             maintenance: false
         };
 
@@ -455,9 +443,13 @@
                         admins: "",
                         maintenance: 0,
                         monetka: 1,
-                        lottery: 1
+                        lottery: 1,
+                        card: 1,
+                        keno: 1,
+                        case: 1,
+                        slot: 1
                     });
-                    console.log('Создан корень admin');
+                    console.log('Создан корень admin с новыми играми');
                 }
                 
                 // Проверяем существование корня history для текущего пользователя
@@ -533,6 +525,10 @@
                     gameStatus.maintenance = adminData.maintenance === 1;
                     gameStatus.monetka = adminData.monetka === 1;
                     gameStatus.lottery = adminData.lottery === 1;
+                    gameStatus.card = adminData.card === 1;
+                    gameStatus.keno = adminData.keno === 1;
+                    gameStatus.case = adminData.case === 1;
+                    gameStatus.slot = adminData.slot === 1;
                     
                     // Проверяем, является ли пользователь админом
                     const admins = (adminData.admins || "").split(" ").filter(id => id.trim() !== "");
@@ -558,20 +554,85 @@
 
         // Обновление состояния игровых карточек
         function updateGameCards() {
-            const monetkaCard = document.querySelector('.game-card[onclick*="monetka"]');
-            const lotteryCard = document.querySelector('.game-card[onclick*="lottery"]');
+            const gamesContainer = document.getElementById('games-container');
+            gamesContainer.innerHTML = '';
             
-            if (!gameStatus.monetka && !isAdmin) {
-                monetkaCard.classList.add('disabled');
-                monetkaCard.querySelector('.play-btn').textContent = 'Недоступно';
-                monetkaCard.querySelector('.play-btn').classList.add('disabled');
-            }
+            // Массив всех игр с их данными
+            const allGames = [
+                {
+                    id: 'monetka',
+                    title: 'Орёл и Решка',
+                    description: 'Угадай сторону монеты и умножь ставку',
+                    icon: '🪙',
+                    url: 'monetka.html',
+                    enabled: gameStatus.monetka || isAdmin
+                },
+                {
+                    id: 'lottery',
+                    title: 'Лотерея',
+                    description: 'Испытай удачу и выиграй джекпот',
+                    icon: '🎰',
+                    url: 'lottery.html',
+                    enabled: gameStatus.lottery || isAdmin
+                },
+                {
+                    id: 'card',
+                    title: 'Карточки',
+                    description: 'Найди пару и получи приз',
+                    icon: '🃏',
+                    url: 'card.html',
+                    enabled: gameStatus.card || isAdmin
+                },
+                {
+                    id: 'keno',
+                    title: 'Keno',
+                    description: 'Выбери числа и выиграй',
+                    icon: '🎯',
+                    url: 'keno.html',
+                    enabled: gameStatus.keno || isAdmin
+                },
+                {
+                    id: 'case',
+                    title: 'Кейсы',
+                    description: 'Открой кейс и получи награду',
+                    icon: '🎁',
+                    url: 'case.html',
+                    enabled: gameStatus.case || isAdmin
+                },
+                {
+                    id: 'slot',
+                    title: 'Слоты',
+                    description: 'Крути барабаны и выигрывай',
+                    icon: '🎲',
+                    url: 'slot.html',
+                    enabled: gameStatus.slot || isAdmin
+                }
+            ];
             
-            if (!gameStatus.lottery && !isAdmin) {
-                lotteryCard.classList.add('disabled');
-                lotteryCard.querySelector('.play-btn').textContent = 'Недоступно';
-                lotteryCard.querySelector('.play-btn').classList.add('disabled');
-            }
+            // Сортируем игры: сначала доступные, потом недоступные
+            const sortedGames = [...allGames].sort((a, b) => {
+                if (a.enabled && !b.enabled) return -1;
+                if (!a.enabled && b.enabled) return 1;
+                return 0;
+            });
+            
+            // Создаем карточки для каждой игры
+            sortedGames.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = `game-card ${game.enabled ? '' : 'disabled'}`;
+                gameCard.onclick = game.enabled ? (() => window.location.href = game.url) : null;
+                
+                gameCard.innerHTML = `
+                    <div class="game-icon">${game.icon}</div>
+                    <div class="game-info">
+                        <div class="game-title">${game.title}</div>
+                        <div class="game-description">${game.description}</div>
+                    </div>
+                    <button class="play-btn ${game.enabled ? '' : 'disabled'}">${game.enabled ? 'Играть' : 'Недоступно'}</button>
+                `;
+                
+                gamesContainer.appendChild(gameCard);
+            });
         }
 
         // Загружаем данные пользователя
