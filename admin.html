@@ -81,23 +81,20 @@
             display: block;
         }
         
-        /* Стили для списка пользователей */
-        .user-list {
+        .user-list, .ticket-list {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
         
-        .user-card {
+        .user-card, .ticket-item {
             background: rgba(46, 17, 81, 0.5);
             border-radius: 10px;
             padding: 15px;
-            display: flex;
-            align-items: center;
             transition: all 0.3s;
         }
         
-        .user-card:hover {
+        .user-card:hover, .ticket-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(123, 44, 191, 0.3);
         }
@@ -115,12 +112,12 @@
             flex: 1;
         }
         
-        .user-name {
+        .user-name, .ticket-theme {
             font-weight: bold;
             margin-bottom: 3px;
         }
         
-        .user-username {
+        .user-username, .ticket-user, .ticket-date {
             font-size: 13px;
             color: #b8b8b8;
         }
@@ -146,31 +143,14 @@
             transform: rotate(90deg);
         }
         
-        /* Стили для списка тикетов */
-        .ticket-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
         .ticket-item {
-            background: rgba(46, 17, 81, 0.5);
-            border-radius: 10px;
-            padding: 15px;
-            transition: all 0.3s;
             border-left: 4px solid #4caf50;
             cursor: pointer;
-        }
-        
-        .ticket-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.3);
         }
         
         .ticket-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 10px;
         }
         
@@ -179,22 +159,6 @@
             color: #b8b8b8;
         }
         
-        .ticket-user {
-            font-size: 14px;
-            color: #b8b8b8;
-        }
-        
-        .ticket-theme {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .ticket-date {
-            font-size: 12px;
-            color: #b8b8b8;
-        }
-        
-        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -265,15 +229,18 @@
             color: #b8b8b8;
         }
         
-        .form-group textarea {
+        .form-group textarea, .form-group input {
             width: 100%;
-            min-height: 150px;
             padding: 10px;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(0, 0, 0, 0.3);
             color: white;
             resize: vertical;
+        }
+        
+        .form-group textarea {
+            min-height: 150px;
         }
         
         .action-buttons {
@@ -367,14 +334,12 @@
             <div class="admin-tab" data-tab="tickets">Тикеты</div>
         </div>
         
-        <!-- Вкладка пользователей -->
         <div class="tab-content active" id="users-tab">
             <div class="user-list" id="user-list">
                 <div class="loading">Загрузка пользователей...</div>
             </div>
         </div>
         
-        <!-- Вкладка тикетов -->
         <div class="tab-content" id="tickets-tab">
             <div class="ticket-list" id="ticket-list">
                 <div class="loading">Загрузка тикетов...</div>
@@ -382,7 +347,6 @@
         </div>
     </div>
     
-    <!-- Модальное окно управления пользователем -->
     <div id="user-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -415,7 +379,6 @@
         </div>
     </div>
     
-    <!-- Модальное окно управления тикетом -->
     <div id="ticket-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -455,18 +418,30 @@
         </div>
     </div>
     
-    <!-- Уведомление -->
     <div id="notification" class="notification">
         <div class="notification-icon">✓</div>
         <div class="notification-message" id="notification-message"></div>
     </div>
 
     <script>
+        // Получение ID пользователя из куки
+        function getUserIdFromCookie() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'user_id') {
+                    return value;
+                }
+            }
+            return null;
+        }
+
         // Проверка прав доступа
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('user_id');
+        const adminId = "1515638372";
+        const currentUserId = getUserIdFromCookie();
         
-        if (userId !== "1515638372") {
+        if (currentUserId !== adminId) {
+            alert('Доступ запрещен');
             window.location.href = 'index1.html';
         }
 
@@ -518,19 +493,20 @@
                 userCard.dataset.userId = userId;
                 
                 userCard.innerHTML = `
-                    <img src="${user.photo_url || 'https://via.placeholder.com/50'}" class="user-avatar" alt="Аватар">
-                    <div class="user-info">
-                        <div class="user-name">${user.first_name || ''} ${user.last_name || ''}</div>
-                        <div class="user-username">@${user.username || 'нет'}</div>
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        <img src="${user.photo_url || 'https://via.placeholder.com/50'}" class="user-avatar" alt="Аватар">
+                        <div class="user-info">
+                            <div class="user-name">${user.first_name || ''} ${user.last_name || ''}</div>
+                            <div class="user-username">@${user.username || 'нет'}</div>
+                        </div>
+                        <div class="user-balance">${user.balance || 0} ⭐</div>
+                        <button class="user-settings">⚙️</button>
                     </div>
-                    <div class="user-balance">${user.balance || 0} ⭐</div>
-                    <button class="user-settings">⚙️</button>
                 `;
                 
                 userList.appendChild(userCard);
             });
             
-            // Добавляем обработчики кликов на шестеренки
             document.querySelectorAll('.user-settings').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -553,7 +529,6 @@
                     return;
                 }
                 
-                // Получаем данные пользователей для отображения имен
                 const usersSnapshot = await database.ref('users').once('value');
                 const users = usersSnapshot.val();
                 
@@ -569,7 +544,6 @@
             const ticketList = document.getElementById('ticket-list');
             ticketList.innerHTML = '';
             
-            // Фильтруем только открытые тикеты (status = 1)
             const openTickets = Object.entries(tickets).filter(([_, ticket]) => ticket.status === 1);
             
             if (openTickets.length === 0) {
@@ -577,7 +551,6 @@
                 return;
             }
             
-            // Сортируем по дате (новые сверху)
             openTickets.sort((a, b) => new Date(b[1].date_create) - new Date(a[1].date_create));
             
             openTickets.forEach(([ticketId, ticket]) => {
@@ -598,7 +571,6 @@
                 ticketList.appendChild(ticketItem);
             });
             
-            // Добавляем обработчики кликов на тикеты
             document.querySelectorAll('.ticket-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const ticketId = item.dataset.ticketId;
@@ -646,7 +618,6 @@
                     balance: Number(newBalance)
                 });
                 
-                // Добавляем запись в историю
                 const historyRef = database.ref(`history/${userId}`).push();
                 await historyRef.set({
                     type: 'admin_adjustment',
@@ -673,15 +644,12 @@
                     date_closed: new Date().toLocaleString('ru-RU')
                 });
                 
-                // Здесь должна быть логика отправки сообщения ботом
-                // Формируем текст сообщения для пользователя
                 const message = `----------------\n` +
                                `Ответ по тикету #${ticketId.substring(0, 6)}\n\n` +
                                `Сообщение: ${responseText}\n` +
                                `-----------------`;
                 
                 console.log('Сообщение для пользователя:', message);
-                // В реальном приложении здесь будет вызов API бота для отправки сообщения
                 
                 return true;
             } catch (error) {
@@ -742,19 +710,16 @@
 
         // Настройка обработчиков событий
         function setupEventListeners() {
-            // Кнопка назад
             document.getElementById('back-btn').addEventListener('click', () => {
                 window.history.back();
             });
             
-            // Переключение вкладок
             document.querySelectorAll('.admin-tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     switchTab(tab.dataset.tab);
                 });
             });
             
-            // Закрытие модальных окон
             document.getElementById('close-user-modal').addEventListener('click', () => {
                 document.getElementById('user-modal').style.display = 'none';
             });
@@ -763,7 +728,6 @@
                 document.getElementById('ticket-modal').style.display = 'none';
             });
             
-            // Сохранение баланса
             document.getElementById('save-balance-btn').addEventListener('click', async () => {
                 const newBalance = document.getElementById('balance-input').value.trim();
                 
@@ -782,7 +746,6 @@
                 }
             });
             
-            // Отправка ответа и закрытие тикета
             document.getElementById('send-response-btn').addEventListener('click', async () => {
                 const responseText = document.getElementById('ticket-response').value.trim();
                 
@@ -801,7 +764,6 @@
                 }
             });
             
-            // Просто закрытие тикета без ответа
             document.getElementById('close-ticket-btn').addEventListener('click', async () => {
                 const success = await closeTicketWithoutResponse(currentEditingTicketId);
                 if (success) {
@@ -818,6 +780,16 @@
         async function initApp() {
             setupEventListeners();
             await loadAllUsers();
+            
+            // Проверка подключения к Firebase
+            try {
+                const testRef = database.ref('test_connection');
+                await testRef.set({ timestamp: new Date().toISOString() });
+                console.log("Firebase подключен успешно");
+            } catch (error) {
+                console.error("Ошибка подключения к Firebase:", error);
+                showNotification("Ошибка подключения к базе данных", false);
+            }
         }
         
         // Запуск приложения
