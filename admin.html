@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | StarGame</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #0f0c29;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        
+        .back-btn {
+            background: rgba(123, 44, 191, 0.3);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .back-btn:hover {
+            background: #7b2cbf;
+        }
+        
+        .page-title {
+            font-size: 24px;
+            color: #fff;
+        }
+        
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .user-card {
+            background: rgba(46, 17, 81, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.3);
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #7b2cbf;
+            margin-right: 15px;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .user-username {
+            font-size: 13px;
+            color: #b8b8b8;
+        }
+        
+        .user-balance {
+            font-weight: bold;
+            margin-right: 15px;
+            color: #f7f7f7;
+        }
+        
+        .user-settings {
+            background: none;
+            border: none;
+            color: #b8b8b8;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 5px;
+        }
+        
+        .user-settings:hover {
+            color: #7b2cbf;
+            transform: rotate(90deg);
+        }
+        
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: rgba(46, 17, 81, 0.9);
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .user-details {
+            margin-top: 15px;
+        }
+        
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .detail-label {
+            width: 120px;
+            color: #b8b8b8;
+            font-size: 14px;
+        }
+        
+        .detail-value {
+            flex: 1;
+        }
+        
+        .balance-control {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .balance-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+        
+        .save-btn {
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+            color: #b8b8b8;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(46, 17, 81, 0.9);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        .notification-icon {
+            font-size: 20px;
+        }
+        
+        .notification.success {
+            color: #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" id="back-btn">← Назад</button>
+            <h1 class="page-title">Админ-панель</h1>
+            <div style="width: 48px;"></div> <!-- Для выравнивания -->
+        </div>
+        
+        <div class="user-list" id="user-list">
+            <div class="loading">Загрузка пользователей...</div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно управления пользователем -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Управление пользователем</div>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            
+            <div class="user-details">
+                <div class="detail-row">
+                    <div class="detail-label">ID:</div>
+                    <div class="detail-value" id="modal-user-id"></div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Имя:</div>
+                    <div class="detail-value" id="modal-user-name"></div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Юзернейм:</div>
+                    <div class="detail-value" id="modal-user-username"></div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Баланс:</div>
+                    <div class="detail-value" id="modal-user-balance"></div>
+                </div>
+                
+                <div class="balance-control">
+                    <input type="number" class="balance-input" id="balance-input" placeholder="Новый баланс">
+                    <button class="save-btn" id="save-balance-btn">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Уведомление -->
+    <div id="notification" class="notification">
+        <div class="notification-icon">✓</div>
+        <div class="notification-message">Баланс успешно обновлен!</div>
+    </div>
+
+    <script>
+        // Проверка прав доступа
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        
+        if (userId !== "1515638372") {
+            window.location.href = 'index1.html';
+        }
+
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+            authDomain: "vrot-x-7a48f.firebaseapp.com",
+            databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+            projectId: "vrot-x-7a48f",
+            storageBucket: "vrot-x-7a48f.appspot.com",
+            messagingSenderId: "622297225288",
+            appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+        };
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        let currentEditingUserId = null;
+
+        // Загрузка всех пользователей
+        async function loadAllUsers() {
+            try {
+                const usersRef = database.ref('users');
+                const snapshot = await usersRef.once('value');
+                const users = snapshot.val();
+                
+                if (!users) {
+                    document.getElementById('user-list').innerHTML = '<div style="text-align: center; color: #b8b8b8;">Пользователи не найдены</div>';
+                    return;
+                }
+                
+                renderUserList(users);
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                document.getElementById('user-list').innerHTML = '<div style="text-align: center; color: #f44336;">Ошибка загрузки</div>';
+            }
+        }
+
+        // Отображение списка пользователей
+        function renderUserList(users) {
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = '';
+            
+            Object.keys(users).forEach(userId => {
+                const user = users[userId];
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.dataset.userId = userId;
+                
+                userCard.innerHTML = `
+                    <img src="${user.photo_url || 'https://via.placeholder.com/50'}" class="user-avatar" alt="Аватар">
+                    <div class="user-info">
+                        <div class="user-name">${user.first_name || ''} ${user.last_name || ''}</div>
+                        <div class="user-username">@${user.username || 'нет'}</div>
+                    </div>
+                    <div class="user-balance">${user.balance || 0} ⭐</div>
+                    <button class="user-settings">⚙️</button>
+                `;
+                
+                userList.appendChild(userCard);
+            });
+            
+            // Добавляем обработчики кликов на шестеренки
+            document.querySelectorAll('.user-settings').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const userCard = e.currentTarget.closest('.user-card');
+                    const userId = userCard.dataset.userId;
+                    openUserModal(userId, users[userId]);
+                });
+            });
+        }
+
+        // Открытие модального окна пользователя
+        function openUserModal(userId, userData) {
+            currentEditingUserId = userId;
+            
+            document.getElementById('modal-user-id').textContent = userId;
+            document.getElementById('modal-user-name').textContent = 
+                `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Не указано';
+            document.getElementById('modal-user-username').textContent = 
+                userData.username ? `@${userData.username}` : 'Не указан';
+            document.getElementById('modal-user-balance').textContent = 
+                `${userData.balance || 0} ⭐`;
+            document.getElementById('balance-input').value = userData.balance || 0;
+            
+            document.getElementById('user-modal').style.display = 'flex';
+        }
+
+        // Обновление баланса пользователя
+        async function updateUserBalance(userId, newBalance) {
+            try {
+                const userRef = database.ref(`users/${userId}`);
+                await userRef.update({
+                    balance: Number(newBalance)
+                });
+                
+                // Добавляем запись в историю
+                const historyRef = database.ref(`history/${userId}`).push();
+                await historyRef.set({
+                    type: 'admin_adjustment',
+                    amount: Math.abs(Number(newBalance) - (userRef.balance || 0),
+                    description: "Корректировка баланса администратором",
+                    date: new Date().toLocaleString('ru-RU'),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Ошибка обновления баланса:', error);
+                return false;
+            }
+        }
+
+        // Показать уведомление
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.querySelector('.notification-message').textContent = message;
+            notification.classList.add('show', 'success');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Кнопка назад
+            document.getElementById('back-btn').addEventListener('click', () => {
+                window.history.back();
+            });
+            
+            // Закрытие модального окна
+            document.getElementById('close-modal').addEventListener('click', () => {
+                document.getElementById('user-modal').style.display = 'none';
+            });
+            
+            // Сохранение баланса
+            document.getElementById('save-balance-btn').addEventListener('click', async () => {
+                const newBalance = document.getElementById('balance-input').value.trim();
+                
+                if (!newBalance || isNaN(newBalance)) {
+                    alert('Введите корректную сумму');
+                    return;
+                }
+                
+                const success = await updateUserBalance(currentEditingUserId, newBalance);
+                if (success) {
+                    showNotification('Баланс успешно обновлен!');
+                    document.getElementById('modal-user-balance').textContent = `${newBalance} ⭐`;
+                    // Обновляем список пользователей
+                    loadAllUsers();
+                } else {
+                    alert('Ошибка при обновлении баланса');
+                }
+            });
+        }
+
+        // Основная функция инициализации
+        async function initApp() {
+            setupEventListeners();
+            await loadAllUsers();
+        }
+        
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
