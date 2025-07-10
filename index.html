@@ -68,7 +68,12 @@
             object-fit: cover;
             border: 2px solid #7b2cbf;
         }
-        
+        .btn-help {
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+        }
+        .btn-help:hover {
+            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
+        }
         .user-info h2 {
             font-size: 18px;
             margin-bottom: 5px;
@@ -363,6 +368,9 @@
                 <div class="buttons">
                     <button class="btn btn-secondary" id="history-btn">История операций</button>
                     <button class="btn btn-promo" id="promo-btn">Промокоды</button>
+                </div>
+                <div class="buttons">
+                    <button class="btn btn-help" id="help-btn">Помощь</button>
                 </div>
                 
                 <div class="game-cards" id="games-container">
@@ -743,6 +751,10 @@
             // Кнопка промокодов
             document.getElementById('promo-btn').addEventListener('click', () => {
                 window.location.href = `promo.html?user_id=${userId}`;
+            });
+            // НОВЫЙ ОБРАБОТЧИК КНОПКИ ПОМОЩИ (добавьте эту часть)
+            document.getElementById('help-btn').addEventListener('click', () => {
+                window.location.href = `help.html?user_id=${userId}`;
             });
             
             // Закрытие модального окна истории
