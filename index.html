@@ -18,9 +18,9 @@
         body {
             background-color: #0f0c29;
             color: white;
-            overflow: hidden;
+            overflow-x: hidden; /* Было overflow: hidden */
             position: relative;
-            height: 100vh;
+            min-height: 100vh;
         }
         
         #particles {
@@ -36,9 +36,11 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            height: 100vh;
+            height: auto; /* Было 100vh - это фиксировало высоту */
+            min-height: 100vh; /* Добавлено для минимальной высоты */
             display: flex;
             flex-direction: column;
+            overflow-y: auto; /* Добавлено для скролла */
         }
         
         .profile {
@@ -49,8 +51,9 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-grow: 1; /* Добавлено для растягивания */
         }
-        
+                
         .profile-header {
             display: flex;
             align-items: center;
@@ -161,6 +164,7 @@
             grid-template-columns: 1fr;
             gap: 15px;
             margin-top: 20px;
+            padding-bottom: 20px; /* Добавлено для отступа снизу */
         }
         
         .game-card {
