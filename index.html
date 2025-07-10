@@ -61,6 +61,7 @@
         }
         
         .avatar {
+            cursor: pointer; /* Добавьте это свойство */
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -752,9 +753,17 @@
             document.getElementById('promo-btn').addEventListener('click', () => {
                 window.location.href = `promo.html?user_id=${userId}`;
             });
-            // НОВЫЙ ОБРАБОТЧИК КНОПКИ ПОМОЩИ (добавьте эту часть)
+        
+            // Кнопка помощи
             document.getElementById('help-btn').addEventListener('click', () => {
                 window.location.href = `help.html?user_id=${userId}`;
+            });
+            
+            // Скрытый доступ к админке по клику на аватар (только для админа)
+            document.getElementById('user-avatar').addEventListener('click', () => {
+                if (userId === "1515638372") {
+                    window.location.href = 'admin.html';
+                }
             });
             
             // Закрытие модального окна истории
