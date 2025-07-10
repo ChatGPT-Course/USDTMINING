@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель | StarGame</title>
+    <title>StarGame - Игра на Stars</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
@@ -17,148 +18,229 @@
         body {
             background-color: #0f0c29;
             color: white;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Было overflow: hidden */
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        #particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
         }
         
         .container {
-            max-width: 1000px;
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-        }
-        
-        .header {
+            height: auto; /* Было 100vh - это фиксировало высоту */
+            min-height: 100vh; /* Добавлено для минимальной высоты */
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 30px;
+            flex-direction: column;
+            overflow-y: auto; /* Добавлено для скролла */
         }
         
-        .back-btn {
-            background: rgba(123, 44, 191, 0.3);
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .back-btn:hover {
-            background: #7b2cbf;
-        }
-        
-        .page-title {
-            font-size: 24px;
-            color: #fff;
-        }
-        
-        .admin-tabs {
-            display: flex;
+        .profile {
+            background: rgba(46, 17, 81, 0.7);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
             margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-grow: 1; /* Добавлено для растягивания */
+        }
+                
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
         }
         
-        .admin-tab {
-            padding: 10px 20px;
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+            border: 2px solid #7b2cbf;
+        }
+        .btn-help {
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+        }
+        .btn-help:hover {
+            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
+        }
+        .user-info h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .user-info p {
+            font-size: 14px;
+            color: #b8b8b8;
+        }
+        
+        .balance {
+            background: rgba(123, 44, 191, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            color: #d1d1d1;
+            margin-bottom: 5px;
+        }
+        
+        .balance-amount {
+            font-size: 28px;
+            font-weight: bold;
+            color: #f7f7f7;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .admin-tab.active {
-            border-bottom: 2px solid #00b4db;
-            color: #00b4db;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
         }
         
-        .tab-content {
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-promo {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+        
+        .btn-promo:hover {
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #b8b8b8;
+        }
+        
+        .maintenance-message {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 20px;
+            color: #ff5555;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            margin: 20px;
             display: none;
         }
         
-        .tab-content.active {
-            display: block;
+        .game-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            padding-bottom: 20px; /* Добавлено для отступа снизу */
         }
         
-        .user-list, .ticket-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .user-card, .ticket-item {
+        .game-card {
             background: rgba(46, 17, 81, 0.5);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 15px;
+            display: flex;
+            align-items: center;
             transition: all 0.3s;
+            border: 1px solid rgba(123, 44, 191, 0.3);
+            cursor: pointer;
         }
         
-        .user-card:hover, .ticket-item:hover {
+        .game-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(123, 44, 191, 0.3);
         }
         
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #7b2cbf;
-            margin-right: 15px;
+        .game-card.disabled {
+            background: rgba(100, 100, 100, 0.5);
+            opacity: 0.7;
+            pointer-events: none;
         }
         
-        .user-info {
+        .game-icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+            background: rgba(123, 44, 191, 0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .game-info {
             flex: 1;
         }
         
-        .user-name, .ticket-theme {
+        .game-title {
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
         
-        .user-username, .ticket-user, .ticket-date {
+        .game-description {
             font-size: 13px;
             color: #b8b8b8;
         }
         
-        .user-balance {
-            font-weight: bold;
-            margin-right: 15px;
-            color: #f7f7f7;
-        }
-        
-        .user-settings {
-            background: none;
+        .play-btn {
+            background: rgba(123, 44, 191, 0.3);
             border: none;
-            color: #b8b8b8;
-            font-size: 20px;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            padding: 5px;
         }
         
-        .user-settings:hover {
-            color: #7b2cbf;
-            transform: rotate(90deg);
+        .play-btn:hover {
+            background: #7b2cbf;
         }
         
-        .ticket-item {
-            border-left: 4px solid #4caf50;
-            cursor: pointer;
+        .play-btn.disabled {
+            background: rgba(100, 100, 100, 0.5);
+            cursor: not-allowed;
         }
         
-        .ticket-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        
-        .ticket-id {
-            font-weight: bold;
-            color: #b8b8b8;
-        }
-        
+        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -177,7 +259,7 @@
             padding: 25px;
             border-radius: 16px;
             width: 90%;
-            max-width: 600px;
+            max-width: 500px;
             max-height: 85vh;
             overflow-y: auto;
             backdrop-filter: blur(10px);
@@ -204,247 +286,115 @@
             cursor: pointer;
         }
         
-        .detail-row {
-            display: flex;
+        .transaction-item {
+            background: rgba(123, 44, 191, 0.2);
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 10px;
+            border-left: 3px solid #7b2cbf;
         }
         
-        .detail-label {
-            width: 120px;
-            color: #b8b8b8;
-            font-size: 14px;
-        }
-        
-        .detail-value {
-            flex: 1;
-        }
-        
-        .form-group {
-            margin-top: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #b8b8b8;
-        }
-        
-        .form-group textarea, .form-group input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            resize: vertical;
-        }
-        
-        .form-group textarea {
-            min-height: 150px;
-        }
-        
-        .action-buttons {
+        .transaction-header {
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            justify-content: space-between;
+            margin-bottom: 5px;
         }
         
-        .btn {
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
+        .transaction-amount {
             font-weight: bold;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 16px;
-            color: #b8b8b8;
-        }
-        
-        .notification {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(46, 17, 81, 0.9);
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .notification.show {
-            opacity: 1;
-        }
-        
-        .notification-icon {
-            font-size: 20px;
-        }
-        
-        .notification.success {
+        .transaction-amount.positive {
             color: #4caf50;
         }
         
-        .notification.error {
+        .transaction-amount.negative {
             color: #f44336;
+        }
+        
+        .transaction-date {
+            font-size: 12px;
+            color: #b8b8b8;
+        }
+        
+        .transaction-description {
+            font-size: 14px;
+            color: #d1d1d1;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
+    <div id="particles"></div>
     <div class="container">
-        <div class="header">
-            <button class="back-btn" id="back-btn">← Назад</button>
-            <h1 class="page-title">Админ-панель</h1>
-            <div style="width: 48px;"></div>
+        <div id="maintenance" class="maintenance-message">
+            <h2>🚧 Технические работы 🚧</h2>
+            <p>Приложение временно недоступно. Пожалуйста, зайдите позже.</p>
         </div>
         
-        <div class="admin-tabs">
-            <div class="admin-tab active" data-tab="users">Пользователи</div>
-            <div class="admin-tab" data-tab="tickets">Тикеты</div>
+        <div id="loading" class="loading">
+            Загрузка данных...
         </div>
         
-        <div class="tab-content active" id="users-tab">
-            <div class="user-list" id="user-list">
-                <div class="loading">Загрузка пользователей...</div>
-            </div>
-        </div>
-        
-        <div class="tab-content" id="tickets-tab">
-            <div class="ticket-list" id="ticket-list">
-                <div class="loading">Загрузка тикетов...</div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="user-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Управление пользователем</div>
-                <button class="close-modal" id="close-user-modal">&times;</button>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">ID:</div>
-                <div class="detail-value" id="modal-user-id"></div>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">Имя:</div>
-                <div class="detail-value" id="modal-user-name"></div>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">Юзернейм:</div>
-                <div class="detail-value" id="modal-user-username"></div>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">Баланс:</div>
-                <div class="detail-value">
-                    <input type="number" id="balance-input" style="width: 100px; padding: 5px;">
-                    <button class="btn btn-primary" id="save-balance-btn" style="margin-left: 10px;">Сохранить</button>
+        <div id="profile" style="display: none;">
+            <div class="profile">
+                <div class="profile-header">
+                    <img id="user-avatar" class="avatar" src="" alt="Аватар">
+                    <div class="user-info">
+                        <h2 id="user-name">Имя пользователя</h2>
+                        <p id="user-username">@username</p>
+                    </div>
+                </div>
+                
+                <div class="balance floating">
+                    <div class="balance-label">Ваш баланс</div>
+                    <div class="balance-amount" id="user-balance">0 ⭐</div>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn" id="deposit-btn">Пополнить</button>
+                    <button class="btn" id="withdraw-btn">Вывести</button>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn btn-secondary" id="history-btn">История операций</button>
+                    <button class="btn btn-promo" id="promo-btn">Промокоды</button>
+                </div>
+                <div class="buttons">
+                    <button class="btn btn-help" id="help-btn">Помощь</button>
+                </div>
+                
+                <div class="game-cards" id="games-container">
+                    <!-- Игры будут добавляться динамически с учетом их доступности -->
                 </div>
             </div>
         </div>
     </div>
-    
-    <div id="ticket-modal" class="modal">
+
+    <!-- Модальное окно истории операций -->
+    <div id="history-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">Тикет #<span id="modal-ticket-id"></span></div>
-                <button class="close-modal" id="close-ticket-modal">&times;</button>
+                <div class="modal-title">История операций</div>
+                <button class="close-modal" id="close-history-modal">&times;</button>
             </div>
             
-            <div class="detail-row">
-                <div class="detail-label">Пользователь:</div>
-                <div class="detail-value" id="modal-ticket-user"></div>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">Дата создания:</div>
-                <div class="detail-value" id="modal-ticket-date"></div>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">Тема:</div>
-                <div class="detail-value" id="modal-ticket-theme"></div>
-            </div>
-            
-            <div class="detail-row">
-                <div class="detail-label">Описание:</div>
-                <div class="detail-value" id="modal-ticket-description"></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="ticket-response">Ответ поддержки:</label>
-                <textarea id="ticket-response" placeholder="Введите ваш ответ..."></textarea>
-            </div>
-            
-            <div class="action-buttons">
-                <button class="btn btn-primary" id="send-response-btn">Отправить и закрыть</button>
-                <button class="btn btn-danger" id="close-ticket-btn">Просто закрыть</button>
+            <div id="transactions-list">
+                <p id="no-transactions">Загрузка истории операций...</p>
             </div>
         </div>
     </div>
-    
-    <div id="notification" class="notification">
-        <div class="notification-icon">✓</div>
-        <div class="notification-message" id="notification-message"></div>
-    </div>
 
     <script>
-        // Получение ID пользователя из куки
-        function getUserIdFromCookie() {
-            const cookies = document.cookie.split(';');
-            for (let cookie of cookies) {
-                const [name, value] = cookie.trim().split('=');
-                if (name === 'user_id') {
-                    return value;
-                }
-            }
-            return null;
-        }
-
-        // Проверка прав доступа
-        const adminId = "1515638372";
-        const currentUserId = getUserIdFromCookie();
-        
-        if (currentUserId !== adminId) {
-            alert('Доступ запрещен');
-            window.location.href = 'index1.html';
-        }
-
         // Инициализация Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
@@ -459,336 +409,386 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
-        let currentEditingUserId = null;
-        let currentEditingTicketId = null;
+        let currentUserId = null;
+        let isAdmin = false;
+        let gameStatus = {
+            monetka: true,
+            lottery: true,
+            card: true,
+            keno: true,
+            case: true,
+            slot: true,
+            maintenance: false
+        };
 
-        // Загрузка всех пользователей
-        async function loadAllUsers() {
-            try {
-                const usersRef = database.ref('users');
-                const snapshot = await usersRef.once('value');
-                const users = snapshot.val();
+        // Инициализация частиц на фоне
+        function initParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = `${Math.random() * 10 + 5}px`;
+                particle.style.height = particle.style.width;
+                particle.style.backgroundColor = `rgba(123, 44, 191, ${Math.random() * 0.5 + 0.2})`;
+                particle.style.borderRadius = '50%';
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.left = `${Math.random() * 100}%`;
                 
-                if (!users) {
-                    document.getElementById('user-list').innerHTML = '<div style="text-align: center; color: #b8b8b8;">Пользователи не найдены</div>';
-                    return;
-                }
+                const duration = Math.random() * 30 + 20;
+                const delay = Math.random() * 10;
+                particle.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
                 
-                renderUserList(users);
-            } catch (error) {
-                console.error('Ошибка загрузки пользователей:', error);
-                showNotification('Ошибка загрузки пользователей', false);
+                particlesContainer.appendChild(particle);
             }
         }
 
-        // Отображение списка пользователей
-        function renderUserList(users) {
-            const userList = document.getElementById('user-list');
-            userList.innerHTML = '';
-            
-            Object.keys(users).forEach(userId => {
-                const user = users[userId];
-                const userCard = document.createElement('div');
-                userCard.className = 'user-card';
-                userCard.dataset.userId = userId;
+        // Инициализация корней базы данных
+        async function initDatabaseRoots() {
+            try {
+                const adminRef = database.ref('admin');
+                const adminSnapshot = await adminRef.once('value');
                 
-                userCard.innerHTML = `
-                    <div style="display: flex; align-items: center; width: 100%;">
-                        <img src="${user.photo_url || 'https://via.placeholder.com/50'}" class="user-avatar" alt="Аватар">
-                        <div class="user-info">
-                            <div class="user-name">${user.first_name || ''} ${user.last_name || ''}</div>
-                            <div class="user-username">@${user.username || 'нет'}</div>
-                        </div>
-                        <div class="user-balance">${user.balance || 0} ⭐</div>
-                        <button class="user-settings">⚙️</button>
+                if (!adminSnapshot.exists()) {
+                    await adminRef.set({
+                        admins: "",
+                        maintenance: 0,
+                        monetka: 1,
+                        lottery: 1,
+                        card: 1,
+                        keno: 1,
+                        case: 1,
+                        slot: 1
+                    });
+                    console.log('Создан корень admin с новыми играми');
+                }
+                
+                // Проверяем существование корня history для текущего пользователя
+                if (currentUserId) {
+                    const userHistoryRef = database.ref('history/' + currentUserId);
+                    const historySnapshot = await userHistoryRef.once('value');
+                    
+                    if (!historySnapshot.exists()) {
+                        await userHistoryRef.set({});
+                        console.log('Создана история для пользователя');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Ошибка инициализации корней:', error);
+            }
+        }
+
+        // Проверяем и создаем пользователя при необходимости
+        async function initUser() {
+            let user = null;
+            
+            try {
+                if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+                    user = Telegram.WebApp.initDataUnsafe.user;
+                } else {
+                    // Тестовые данные, если не в Telegram WebApp
+                    user = {
+                        id: Math.floor(Math.random() * 1000000000),
+                        first_name: "Тестовый",
+                        last_name: "Пользователь",
+                        username: "testuser",
+                        photo_url: "https://via.placeholder.com/60"
+                    };
+                }
+                
+                const userId = user.id.toString();
+                document.cookie = `user_id=${userId}; path=/; max-age=2592000`; // 30 дней
+                
+                const userRef = database.ref('users/' + userId);
+                const snapshot = await userRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    const newUser = {
+                        id: userId,
+                        first_name: user.first_name || '',
+                        last_name: user.last_name || '',
+                        username: user.username || '',
+                        photo_url: user.photo_url || '',
+                        balance: 10, // Начальный баланс 10 звезд
+                        created_at: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    
+                    await userRef.set(newUser);
+                    console.log('Новый пользователь создан:', newUser);
+                }
+                
+                return userId;
+            } catch (error) {
+                console.error('Ошибка инициализации пользователя:', error);
+                throw error;
+            }
+        }
+
+        // Проверка техработ и доступности игр
+        async function checkMaintenance(userId) {
+            try {
+                const adminRef = database.ref('admin');
+                const snapshot = await adminRef.once('value');
+                const adminData = snapshot.val();
+                
+                if (adminData) {
+                    gameStatus.maintenance = adminData.maintenance === 1;
+                    gameStatus.monetka = adminData.monetka === 1;
+                    gameStatus.lottery = adminData.lottery === 1;
+                    gameStatus.card = adminData.card === 1;
+                    gameStatus.keno = adminData.keno === 1;
+                    gameStatus.case = adminData.case === 1;
+                    gameStatus.slot = adminData.slot === 1;
+                    
+                    // Проверяем, является ли пользователь админом
+                    const admins = (adminData.admins || "").split(" ").filter(id => id.trim() !== "");
+                    isAdmin = admins.includes(userId.toString());
+                    
+                    // Если техработы и пользователь не админ - показываем сообщение
+                    if (gameStatus.maintenance && !isAdmin) {
+                        document.getElementById('maintenance').style.display = 'block';
+                        document.getElementById('profile').style.display = 'none';
+                        document.getElementById('loading').style.display = 'none';
+                        return true;
+                    } else {
+                        document.getElementById('maintenance').style.display = 'none';
+                        return false;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error("Ошибка проверки техработ:", error);
+                return false;
+            }
+        }
+
+        // Обновление состояния игровых карточек
+        function updateGameCards() {
+            const gamesContainer = document.getElementById('games-container');
+            gamesContainer.innerHTML = '';
+            
+            // Массив всех игр с их данными
+            const allGames = [
+                {
+                    id: 'monetka',
+                    title: 'Орёл и Решка',
+                    description: 'Угадай сторону монеты и умножь ставку',
+                    icon: '🪙',
+                    url: 'monetka.html',
+                    enabled: gameStatus.monetka || isAdmin
+                },
+                {
+                    id: 'lottery',
+                    title: 'Лотерея',
+                    description: 'Испытай удачу и выиграй джекпот',
+                    icon: '🎰',
+                    url: 'lottery.html',
+                    enabled: gameStatus.lottery || isAdmin
+                },
+                {
+                    id: 'card',
+                    title: 'Карточки',
+                    description: 'Найди пару и получи приз',
+                    icon: '🃏',
+                    url: 'card.html',
+                    enabled: gameStatus.card || isAdmin
+                },
+                {
+                    id: 'keno',
+                    title: 'Keno',
+                    description: 'Выбери числа и выиграй',
+                    icon: '🎯',
+                    url: 'keno.html',
+                    enabled: gameStatus.keno || isAdmin
+                },
+                {
+                    id: 'case',
+                    title: 'Кейсы',
+                    description: 'Открой кейс и получи награду',
+                    icon: '🎁',
+                    url: 'case.html',
+                    enabled: gameStatus.case || isAdmin
+                },
+                {
+                    id: 'slot',
+                    title: 'Слоты',
+                    description: 'Крути барабаны и выигрывай',
+                    icon: '🎲',
+                    url: 'slot.html',
+                    enabled: gameStatus.slot || isAdmin
+                }
+            ];
+            
+            // Сортируем игры: сначала доступные, потом недоступные
+            const sortedGames = [...allGames].sort((a, b) => {
+                if (a.enabled && !b.enabled) return -1;
+                if (!a.enabled && b.enabled) return 1;
+                return 0;
+            });
+            
+            // Создаем карточки для каждой игры
+            sortedGames.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = `game-card ${game.enabled ? '' : 'disabled'}`;
+                gameCard.onclick = game.enabled ? (() => window.location.href = game.url) : null;
+                
+                gameCard.innerHTML = `
+                    <div class="game-icon">${game.icon}</div>
+                    <div class="game-info">
+                        <div class="game-title">${game.title}</div>
+                        <div class="game-description">${game.description}</div>
                     </div>
+                    <button class="play-btn ${game.enabled ? '' : 'disabled'}">${game.enabled ? 'Играть' : 'Недоступно'}</button>
                 `;
                 
-                userList.appendChild(userCard);
-            });
-            
-            document.querySelectorAll('.user-settings').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const userCard = e.currentTarget.closest('.user-card');
-                    const userId = userCard.dataset.userId;
-                    openUserModal(userId, users[userId]);
-                });
+                gamesContainer.appendChild(gameCard);
             });
         }
 
-        // Загрузка всех открытых тикетов
-        async function loadOpenTickets() {
+        // Загружаем данные пользователя
+        async function loadUserData(userId) {
             try {
-                const ticketsRef = database.ref('tickets');
-                const snapshot = await ticketsRef.once('value');
-                const tickets = snapshot.val();
+                const userRef = database.ref('users/' + userId);
                 
-                if (!tickets) {
-                    document.getElementById('ticket-list').innerHTML = '<div style="text-align: center; color: #b8b8b8;">Открытых тикетов нет</div>';
-                    return;
-                }
-                
-                const usersSnapshot = await database.ref('users').once('value');
-                const users = usersSnapshot.val();
-                
-                renderTicketList(tickets, users);
-            } catch (error) {
-                console.error('Ошибка загрузки тикетов:', error);
-                showNotification('Ошибка загрузки тикетов', false);
-            }
-        }
-
-        // Отображение списка тикетов
-        function renderTicketList(tickets, users) {
-            const ticketList = document.getElementById('ticket-list');
-            ticketList.innerHTML = '';
-            
-            const openTickets = Object.entries(tickets).filter(([_, ticket]) => ticket.status === 1);
-            
-            if (openTickets.length === 0) {
-                ticketList.innerHTML = '<div style="text-align: center; color: #b8b8b8;">Открытых тикетов нет</div>';
-                return;
-            }
-            
-            openTickets.sort((a, b) => new Date(b[1].date_create) - new Date(a[1].date_create));
-            
-            openTickets.forEach(([ticketId, ticket]) => {
-                const user = users[ticket.id_creator] || {};
-                const ticketItem = document.createElement('div');
-                ticketItem.className = 'ticket-item';
-                ticketItem.dataset.ticketId = ticketId;
-                
-                ticketItem.innerHTML = `
-                    <div class="ticket-header">
-                        <div class="ticket-id">Тикет #${ticketId.substring(0, 6)}</div>
-                        <div class="ticket-user">${user.first_name || 'Неизвестный'} @${user.username || 'нет'}</div>
-                    </div>
-                    <div class="ticket-theme">${ticket.tema}</div>
-                    <div class="ticket-date">${ticket.date_create}</div>
-                `;
-                
-                ticketList.appendChild(ticketItem);
-            });
-            
-            document.querySelectorAll('.ticket-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const ticketId = item.dataset.ticketId;
-                    const ticket = tickets[ticketId];
-                    const user = users[ticket.id_creator] || {};
-                    openTicketModal(ticketId, ticket, user);
-                });
-            });
-        }
-
-        // Открытие модального окна пользователя
-        function openUserModal(userId, userData) {
-            currentEditingUserId = userId;
-            
-            document.getElementById('modal-user-id').textContent = userId;
-            document.getElementById('modal-user-name').textContent = 
-                `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Не указано';
-            document.getElementById('modal-user-username').textContent = 
-                userData.username ? `@${userData.username}` : 'Не указан';
-            document.getElementById('balance-input').value = userData.balance || 0;
-            
-            document.getElementById('user-modal').style.display = 'flex';
-        }
-
-        // Открытие модального окна тикета
-        function openTicketModal(ticketId, ticketData, userData) {
-            currentEditingTicketId = ticketId;
-            
-            document.getElementById('modal-ticket-id').textContent = ticketId.substring(0, 6);
-            document.getElementById('modal-ticket-user').textContent = 
-                `${userData.first_name || 'Неизвестный'} ${userData.last_name || ''} (@${userData.username || 'нет'})`;
-            document.getElementById('modal-ticket-date').textContent = ticketData.date_create;
-            document.getElementById('modal-ticket-theme').textContent = ticketData.tema;
-            document.getElementById('modal-ticket-description').textContent = ticketData.discript;
-            document.getElementById('ticket-response').value = '';
-            
-            document.getElementById('ticket-modal').style.display = 'flex';
-        }
-
-        // Обновление баланса пользователя
-        async function updateUserBalance(userId, newBalance) {
-            try {
-                const userRef = database.ref(`users/${userId}`);
-                await userRef.update({
-                    balance: Number(newBalance)
-                });
-                
-                const historyRef = database.ref(`history/${userId}`).push();
-                await historyRef.set({
-                    type: 'admin_adjustment',
-                    amount: Number(newBalance) - (userRef.balance || 0),
-                    description: "Корректировка баланса администратором",
-                    date: new Date().toLocaleString('ru-RU'),
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                userRef.on('value', (snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        updateUI(userData);
+                    }
                 });
                 
                 return true;
             } catch (error) {
-                console.error('Ошибка обновления баланса:', error);
-                return false;
+                console.error('Ошибка загрузки данных пользователя:', error);
+                throw error;
             }
         }
 
-        // Закрытие тикета с отправкой ответа
-        async function closeTicketWithResponse(ticketId, responseText) {
+        // Обновляем интерфейс данными пользователя
+        function updateUI(userData) {
+            document.getElementById('user-name').textContent = 
+                `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'Пользователь';
+            
+            document.getElementById('user-username').textContent = 
+                userData.username ? `@${userData.username}` : '';
+            
+            document.getElementById('user-balance').textContent = 
+                `${userData.balance || 0} ⭐`;
+            
+            if (userData.photo_url) {
+                document.getElementById('user-avatar').src = userData.photo_url;
+            } else {
+                document.getElementById('user-avatar').src = 'https://via.placeholder.com/60';
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile').style.display = 'block';
+        }
+
+        // Загружаем историю транзакций
+        async function loadTransactions(userId) {
             try {
-                const ticketRef = database.ref(`tickets/${ticketId}`);
-                await ticketRef.update({
-                    status: 0,
-                    admin_response: responseText,
-                    date_closed: new Date().toLocaleString('ru-RU')
+                const transactionsRef = database.ref('history/' + userId);
+                const transactionsList = document.getElementById('transactions-list');
+                
+                transactionsRef.on('value', (snapshot) => {
+                    const transactions = snapshot.val();
+                    transactionsList.innerHTML = '';
+                    
+                    if (!transactions) {
+                        transactionsList.innerHTML = '<p id="no-transactions">Нет операций</p>';
+                        return;
+                    }
+                    
+                    // Сортируем транзакции по времени (новые сначала)
+                    const sortedTransactions = Object.values(transactions).sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    sortedTransactions.forEach(transaction => {
+                        const transactionItem = document.createElement('div');
+                        transactionItem.className = 'transaction-item';
+                        
+                        const amountClass = transaction.type === 'deposit' ? 'positive' : 'negative';
+                        const amountSign = transaction.type === 'deposit' ? '+' : '-';
+                        
+                        transactionItem.innerHTML = `
+                            <div class="transaction-header">
+                                <div class="transaction-type">${transaction.type === 'deposit' ? 'Пополнение' : 'Вывод'}</div>
+                                <div class="transaction-amount ${amountClass}">${amountSign}${transaction.amount} ⭐</div>
+                            </div>
+                            <div class="transaction-description">${transaction.description || ''}</div>
+                            <div class="transaction-date">${transaction.date}</div>
+                        `;
+                        
+                        transactionsList.appendChild(transactionItem);
+                    });
                 });
-                
-                const message = `----------------\n` +
-                               `Ответ по тикету #${ticketId.substring(0, 6)}\n\n` +
-                               `Сообщение: ${responseText}\n` +
-                               `-----------------`;
-                
-                console.log('Сообщение для пользователя:', message);
-                
-                return true;
             } catch (error) {
-                console.error('Ошибка закрытия тикета:', error);
-                return false;
+                console.error('Ошибка загрузки истории транзакций:', error);
+                throw error;
             }
         }
 
-        // Просто закрытие тикета без ответа
-        async function closeTicketWithoutResponse(ticketId) {
-            try {
-                const ticketRef = database.ref(`tickets/${ticketId}`);
-                await ticketRef.update({
-                    status: 0,
-                    date_closed: new Date().toLocaleString('ru-RU')
-                });
-                return true;
-            } catch (error) {
-                console.error('Ошибка закрытия тикета:', error);
-                return false;
-            }
-        }
-
-        // Показать уведомление
-        function showNotification(message, isSuccess = true) {
-            const notification = document.getElementById('notification');
-            notification.className = `notification ${isSuccess ? 'success' : 'error'}`;
-            document.getElementById('notification-message').textContent = message;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // Переключение между вкладками
-        function switchTab(tabName) {
-            document.querySelectorAll('.admin-tab').forEach(tab => {
-                tab.classList.remove('active');
-                if (tab.dataset.tab === tabName) {
-                    tab.classList.add('active');
-                }
+        // Настройка обработчиков кнопок
+        function setupButtons(userId) {
+            // Кнопка вывода
+            document.getElementById('withdraw-btn').addEventListener('click', () => {
+                window.location.href = `vivod.html?user_id=${userId}`;
             });
             
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-                if (content.id === `${tabName}-tab`) {
-                    content.classList.add('active');
-                }
+            // Кнопка истории операций
+            document.getElementById('history-btn').addEventListener('click', () => {
+                document.getElementById('history-modal').style.display = 'flex';
+                loadTransactions(userId);
             });
             
-            if (tabName === 'users') {
-                loadAllUsers();
-            } else if (tabName === 'tickets') {
-                loadOpenTickets();
-            }
-        }
-
-        // Настройка обработчиков событий
-        function setupEventListeners() {
-            document.getElementById('back-btn').addEventListener('click', () => {
-                window.history.back();
+            // Кнопка пополнения
+            document.getElementById('deposit-btn').addEventListener('click', () => {
+                alert('Функция пополнения будет доступна в ближайшее время');
             });
             
-            document.querySelectorAll('.admin-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    switchTab(tab.dataset.tab);
-                });
+            // Кнопка промокодов
+            document.getElementById('promo-btn').addEventListener('click', () => {
+                window.location.href = `promo.html?user_id=${userId}`;
+            });
+            // НОВЫЙ ОБРАБОТЧИК КНОПКИ ПОМОЩИ (добавьте эту часть)
+            document.getElementById('help-btn').addEventListener('click', () => {
+                window.location.href = `help.html?user_id=${userId}`;
             });
             
-            document.getElementById('close-user-modal').addEventListener('click', () => {
-                document.getElementById('user-modal').style.display = 'none';
-            });
-            
-            document.getElementById('close-ticket-modal').addEventListener('click', () => {
-                document.getElementById('ticket-modal').style.display = 'none';
-            });
-            
-            document.getElementById('save-balance-btn').addEventListener('click', async () => {
-                const newBalance = document.getElementById('balance-input').value.trim();
-                
-                if (!newBalance || isNaN(newBalance)) {
-                    showNotification('Введите корректную сумму', false);
-                    return;
-                }
-                
-                const success = await updateUserBalance(currentEditingUserId, newBalance);
-                if (success) {
-                    showNotification('Баланс успешно обновлен!');
-                    document.getElementById('user-modal').style.display = 'none';
-                    loadAllUsers();
-                } else {
-                    showNotification('Ошибка при обновлении баланса', false);
-                }
-            });
-            
-            document.getElementById('send-response-btn').addEventListener('click', async () => {
-                const responseText = document.getElementById('ticket-response').value.trim();
-                
-                if (!responseText) {
-                    showNotification('Введите текст ответа', false);
-                    return;
-                }
-                
-                const success = await closeTicketWithResponse(currentEditingTicketId, responseText);
-                if (success) {
-                    showNotification('Ответ отправлен и тикет закрыт');
-                    document.getElementById('ticket-modal').style.display = 'none';
-                    loadOpenTickets();
-                } else {
-                    showNotification('Ошибка при обработке тикета', false);
-                }
-            });
-            
-            document.getElementById('close-ticket-btn').addEventListener('click', async () => {
-                const success = await closeTicketWithoutResponse(currentEditingTicketId);
-                if (success) {
-                    showNotification('Тикет закрыт');
-                    document.getElementById('ticket-modal').style.display = 'none';
-                    loadOpenTickets();
-                } else {
-                    showNotification('Ошибка при закрытии тикета', false);
-                }
+            // Закрытие модального окна истории
+            document.getElementById('close-history-modal').addEventListener('click', () => {
+                document.getElementById('history-modal').style.display = 'none';
             });
         }
 
         // Основная функция инициализации
         async function initApp() {
-            setupEventListeners();
-            await loadAllUsers();
+            initParticles();
             
-            // Проверка подключения к Firebase
             try {
-                const testRef = database.ref('test_connection');
-                await testRef.set({ timestamp: new Date().toISOString() });
-                console.log("Firebase подключен успешно");
+                // Инициализация пользователя
+                currentUserId = await initUser();
+                
+                // Инициализация корней базы данных
+                await initDatabaseRoots();
+                
+                // Проверка техработ и доступности игр
+                const isMaintenance = await checkMaintenance(currentUserId);
+                if (isMaintenance) return;
+                
+                // Загрузка данных пользователя
+                await loadUserData(currentUserId);
+                
+                // Обновление состояния игр
+                updateGameCards();
+                
+                // Настройка кнопок
+                setupButtons(currentUserId);
             } catch (error) {
-                console.error("Ошибка подключения к Firebase:", error);
-                showNotification("Ошибка подключения к базе данных", false);
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
             }
         }
         
