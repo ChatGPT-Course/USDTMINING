@@ -47,8 +47,21 @@
             align-items: center;
         }
         
+        .balance-container {
+            display: flex;
+            gap: 10px;
+        }
+        
         .balance {
             background: rgba(123, 44, 191, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .bonus-balance {
+            background: rgba(0, 180, 219, 0.3);
             padding: 8px 15px;
             border-radius: 20px;
             font-size: 16px;
@@ -82,6 +95,11 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(123, 44, 191, 0.5);
             transition: all 0.3s;
+        }
+        
+        .ticket.disabled {
+            opacity: 0.7;
+            pointer-events: none;
         }
         
         .ticket-header {
@@ -145,6 +163,11 @@
         .buy-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
+        }
+        
+        .buy-btn.disabled {
+            background: rgba(100, 100, 100, 0.5);
+            cursor: not-allowed;
         }
         
         /* Модальные окна */
@@ -257,6 +280,12 @@
             color: #b8b8b8;
         }
         
+        .bonus-info {
+            color: #00b4db;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
         .ok-btn {
             background: #7b2cbf;
             color: white;
@@ -321,7 +350,10 @@
 <body>
     <div class="header">
         <button class="back-btn" id="back-btn">← Назад</button>
-        <div class="balance" id="user-balance">0 ⭐</div>
+        <div class="balance-container">
+            <div class="balance" id="user-balance">0 ⭐</div>
+            <div class="bonus-balance" id="user-bonus-balance">0 ⭐</div>
+        </div>
     </div>
     
     <div class="lottery-container">
@@ -377,6 +409,7 @@
         <div class="modal-content">
             <div class="modal-title">Выберите карточку</div>
             <div class="modal-text">Выберите одну из 25 карточек, чтобы узнать свой выигрыш</div>
+            <div class="bonus-info" id="bonus-info" style="display: none;">Вы играли за бонусный баланс. Выигрыш: <span id="bonus-win-amount">0</span> ⭐</div>
             
             <div class="grid-container" id="prize-grid"></div>
             
@@ -389,6 +422,7 @@
         <div class="modal-content">
             <div class="modal-title" id="confirm-title">Подтвердите покупку</div>
             <div class="modal-text" id="confirm-text">Вы уверены, что хотите купить этот билет?</div>
+            <div class="bonus-info" id="confirm-bonus-info" style="display: none;">Оплата будет произведена с бонусного баланса</div>
             
             <div class="confirm-buttons">
                 <button class="confirm-btn confirm-yes" id="confirm-yes">Да</button>
@@ -414,10 +448,12 @@
         
         let currentUserId = null;
         let currentBalance = 0;
+        let currentBonusBalance = 0;
         let currentTicketType = '';
         let prizeAmounts = [];
         let selectedCardIndex = -1;
         let canSelectCard = true;
+        let isBonusGame = false;
         
         const PRIZES = {
             start: [1,1,1,1,1,2,2,2,2,3,3,3,4,4,5,5,7,8,10,12,15,20,25,30,50],
@@ -458,10 +494,13 @@
                         const userData = snapshot.val();
                         if (userData) {
                             currentBalance = userData.balance || 0;
+                            currentBonusBalance = userData.bonus_balance || 0;
                             document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                            document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
                             document.getElementById('loading').style.display = 'none';
                             document.getElementById('content').style.display = 'block';
                             fillPrizeStats();
+                            updateTicketAvailability();
                             resolve(userData);
                         } else {
                             const error = new Error("Пользователь не найден");
@@ -478,6 +517,26 @@
                     console.error('Ошибка загрузки данных:', error);
                     document.getElementById('loading').textContent = 'Ошибка: ' + error.message;
                     reject(error);
+                }
+            });
+        }
+        
+        function updateTicketAvailability() {
+            document.querySelectorAll('.ticket').forEach(ticket => {
+                const type = ticket.dataset.type;
+                const price = TICKET_PRICES[type];
+                const btn = ticket.querySelector('.buy-btn');
+                
+                // Проверяем сначала бонусный баланс, затем основной
+                if (currentBonusBalance >= price) {
+                    btn.classList.remove('disabled');
+                    ticket.classList.remove('disabled');
+                } else if (currentBalance >= price) {
+                    btn.classList.remove('disabled');
+                    ticket.classList.remove('disabled');
+                } else {
+                    btn.classList.add('disabled');
+                    ticket.classList.add('disabled');
                 }
             });
         }
@@ -519,22 +578,37 @@
             });
         }
         
-        async function createTransaction(userId, type, amount, description = '') {
+        async function createTransaction(userId, type, amount, description = '', isBonus = false) {
             try {
                 const userRef = database.ref('users/' + userId);
                 const snapshot = await userRef.once('value');
                 const userData = snapshot.val();
                 
-                let newBalance = userData.balance || 0;
+                let updates = {};
+                
                 if (type === 'deposit' || type === 'win') {
-                    newBalance += amount;
-                } else {
-                    newBalance -= amount;
+                    // При выигрыше добавляем к основному балансу
+                    updates.balance = (userData.balance || 0) + amount;
+                } else if (type === 'game_bet') {
+                    // При ставке списываем с соответствующего баланса
+                    if (isBonus) {
+                        updates.bonus_balance = (userData.bonus_balance || 0) - amount;
+                    } else {
+                        updates.balance = (userData.balance || 0) - amount;
+                    }
                 }
                 
-                await userRef.update({ balance: newBalance });
-                currentBalance = newBalance;
-                document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                await userRef.update(updates);
+                
+                // Обновляем локальные значения
+                if (updates.balance !== undefined) {
+                    currentBalance = updates.balance;
+                    document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                }
+                if (updates.bonus_balance !== undefined) {
+                    currentBonusBalance = updates.bonus_balance;
+                    document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
+                }
                 
                 return { success: true };
             } catch (error) {
@@ -572,6 +646,14 @@
                 card.appendChild(amount);
                 card.appendChild(emoji);
                 gridContainer.appendChild(card);
+            }
+            
+            // Показываем информацию о бонусной игре, если она есть
+            const bonusInfo = document.getElementById('bonus-info');
+            if (isBonusGame) {
+                bonusInfo.style.display = 'block';
+            } else {
+                bonusInfo.style.display = 'none';
             }
             
             document.getElementById('ok-btn').style.display = 'none';
@@ -613,13 +695,21 @@
                 
                 revealAllCards();
                 
+                // Для бонусной игры выигрыш делится на 2
+                const winAmount = isBonusGame ? Math.floor(amount / 2) : amount;
+                
+                if (isBonusGame) {
+                    document.getElementById('bonus-win-amount').textContent = winAmount;
+                }
+                
                 createTransaction(
                     currentUserId, 
                     'win', 
-                    amount, 
-                    `Выигрыш в лотерее "${getTicketName(currentTicketType)}"`
+                    winAmount, 
+                    `Выигрыш в лотерее "${getTicketName(currentTicketType)}"${isBonusGame ? ' (бонусный баланс)' : ''}`
                 ).then(() => {
                     document.getElementById('ok-btn').style.display = 'block';
+                    updateTicketAvailability();
                 });
             }, 500);
         }
@@ -656,8 +746,19 @@
                     currentTicketType = ticket.dataset.type;
                     const price = TICKET_PRICES[currentTicketType];
                     
+                    // Определяем, с какого баланса будем оплачивать
+                    isBonusGame = currentBonusBalance >= price;
+                    
                     document.getElementById('confirm-title').textContent = `Купить билет "${getTicketName(currentTicketType)}"`;
                     document.getElementById('confirm-text').textContent = `Вы уверены, что хотите купить этот билет за ${price} ⭐?`;
+                    
+                    const confirmBonusInfo = document.getElementById('confirm-bonus-info');
+                    if (isBonusGame) {
+                        confirmBonusInfo.style.display = 'block';
+                    } else {
+                        confirmBonusInfo.style.display = 'none';
+                    }
+                    
                     document.getElementById('confirm-modal').style.display = 'flex';
                 });
             });
@@ -666,17 +767,13 @@
                 document.getElementById('confirm-modal').style.display = 'none';
                 const price = TICKET_PRICES[currentTicketType];
                 
-                if (currentBalance < price) {
-                    alert('Недостаточно средств на балансе');
-                    return;
-                }
-                
                 try {
                     await createTransaction(
                         currentUserId, 
                         'game_bet', 
                         price, 
-                        `Покупка лотерейного билета "${getTicketName(currentTicketType)}"`
+                        `Покупка лотерейного билета "${getTicketName(currentTicketType)}"`,
+                        isBonusGame
                     );
                     
                     showPrizeGrid(currentTicketType);
