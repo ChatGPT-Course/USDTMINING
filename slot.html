@@ -403,6 +403,7 @@
                         <div class="paytable-combination">
                             <span class="paytable-emoji">🚫</span>
                             <span class="paytable-emoji">🚫</span>
+                            <span class="paytable-emoji">🚫</span>
                         </div>
                         <div class="paytable-payout">x0 (аннулирует выигрыш)</div>
                     </div>
@@ -463,6 +464,9 @@
         let isSpinning = false;
         let useBonusBalance = false;
         const BET_AMOUNT = 5;
+        
+        // Настройка вероятности выигрыша (0-100)
+        const CHANCE_OF_WIN = 30; // 30% шанс на выигрыш по умолчанию
         
         // Символы для слотов
         const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '⭐', '7️⃣', '💰', '🚫'];
@@ -658,7 +662,6 @@
                         }
                         return user;
                     });
-                    
                 }
             }, 1000);
         }
@@ -746,7 +749,6 @@
             
             await database.ref('users/' + currentUserId).update(updates);
             
-            
             // Запускаем анимацию вращения
             await spinAnimation();
             
@@ -754,8 +756,8 @@
             const results = [];
             const cells = document.querySelectorAll('.slot-cell');
             
-            // 30% шанс на выигрыш (можно настроить)
-            const willWin = Math.random() < 0.3;
+            // Определяем будет ли выигрыш на основе CHANCE_OF_WIN
+            const willWin = Math.random() * 100 < CHANCE_OF_WIN;
             
             if (willWin) {
                 // Создаем минимум одну выигрышную линию
