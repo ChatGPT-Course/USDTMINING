@@ -808,10 +808,12 @@
             checkWin(results);
             
             isSpinning = false;
-            
-            // Включаем кнопку, если есть средства
-            const canSpin = (userBonusBalance + userBalance - BET_AMOUNT) >= BET_AMOUNT;
-            document.getElementById('spin-btn').disabled = !canSpin;
+
+            // Включаем кнопку через 1 секунду после результата, если есть средства
+            setTimeout(() => {
+                const canSpin = (userBonusBalance + userBalance - BET_AMOUNT) >= BET_AMOUNT;
+                document.getElementById('spin-btn').disabled = !canSpin;
+            }, 1000);
         }
         
         // Настройка обработчиков событий
