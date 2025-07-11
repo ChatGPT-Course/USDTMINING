@@ -87,37 +87,35 @@
             margin: 20px 0;
         }
         
-        .slots-container {
-            display: flex;
-            justify-content: center;
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
             margin-bottom: 20px;
-            position: relative;
         }
         
-        .slot {
-            width: 80px;
-            height: 240px;
-            overflow: hidden;
-            position: relative;
-            margin: 0 5px;
-            background: rgba(123, 44, 191, 0.2);
-            border-radius: 10px;
-            border: 2px solid #7b2cbf;
-        }
-        
-        .slot-reel {
-            position: absolute;
-            width: 100%;
-            transition: top 3s cubic-bezier(0.25, 0.1, 0.25, 1);
-        }
-        
-        .slot-item {
+        .slot-cell {
             width: 80px;
             height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 40px;
+            background: rgba(123, 44, 191, 0.2);
+            border-radius: 10px;
+            border: 2px solid #7b2cbf;
+            transition: transform 0.3s;
+        }
+        
+        .slot-cell.win {
+            animation: pulse 0.5s 3;
+            border-color: #4caf50;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
         
         .spin-btn {
@@ -129,7 +127,7 @@
             font-size: 18px;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 20px;
+            margin-top: 10px;
         }
         
         .spin-btn:hover {
@@ -142,12 +140,6 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
-        }
-        
-        .bet-info {
-            margin-top: 10px;
-            font-size: 16px;
-            color: #d1d1d1;
         }
         
         .win-message {
@@ -221,6 +213,71 @@
             color: #b8b8b8;
         }
         
+        /* Модальное окно подтверждения */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: rgba(46, 17, 81, 0.9);
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .modal-text {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+        }
+        
+        .modal-btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+        
         @keyframes float {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
@@ -255,22 +312,13 @@
                 </div>
                 
                 <div class="slot-machine">
-                    <div class="slots-container" id="slots-container">
-                        <div class="slot" id="slot1">
-                            <div class="slot-reel" id="reel1"></div>
-                        </div>
-                        <div class="slot" id="slot2">
-                            <div class="slot-reel" id="reel2"></div>
-                        </div>
-                        <div class="slot" id="slot3">
-                            <div class="slot-reel" id="reel3"></div>
-                        </div>
+                    <div class="slots-grid" id="slots-grid">
+                        <!-- 3x3 grid будет заполнена JavaScript -->
                     </div>
                     
-                    <div class="win-message" id="win-message"></div>
-                    
                     <button class="spin-btn" id="spin-btn">Крутить (5 ⭐)</button>
-                    <div class="bet-info">Ставка будет списана с бонусного баланса, при его недостатке - с основного</div>
+                    
+                    <div class="win-message" id="win-message"></div>
                 </div>
                 
                 <div class="paytable">
@@ -344,6 +392,24 @@
         </div>
     </div>
 
+    <!-- Модальное окно подтверждения ставки -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Подтверждение ставки</div>
+            <div class="modal-text" id="confirm-text">
+                Вы уверены, что хотите сделать ставку 5 ⭐?
+            </div>
+            <div class="modal-text" id="bonus-warning" style="color: #ff9800; display: none;">
+                Внимание: ставка делается с бонусного баланса!<br>
+                Выигрыш будет в 2 раза меньше.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" id="cancel-spin">Отмена</button>
+                <button class="modal-btn modal-btn-confirm" id="confirm-spin">Крутить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -363,6 +429,7 @@
         let userBalance = 0;
         let userBonusBalance = 0;
         let isSpinning = false;
+        let useBonusBalance = false;
         const BET_AMOUNT = 5;
         
         // Символы для слотов
@@ -379,6 +446,18 @@
             '7️⃣': 100,
             '💰': 200
         };
+        
+        // Все возможные выигрышные линии (индексы ячеек)
+        const WIN_LINES = [
+            [0, 1, 2],  // верхняя горизонталь
+            [3, 4, 5],  // средняя горизонталь
+            [6, 7, 8],  // нижняя горизонталь
+            [0, 3, 6],  // левая вертикаль
+            [1, 4, 7],  // средняя вертикаль
+            [2, 5, 8],  // правая вертикаль
+            [0, 4, 8],  // диагональ слева направо
+            [2, 4, 6]   // диагональ справа налево
+        ];
         
         // Инициализация частиц на фоне
         function initParticles() {
@@ -451,29 +530,97 @@
             }
         }
         
-        // Инициализация слотов
-        function initSlots() {
-            const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+        // Инициализация игрового поля 3x3
+        function initSlotsGrid() {
+            const grid = document.getElementById('slots-grid');
+            grid.innerHTML = '';
             
-            // Создаем символы для каждого барабана
-            reels.forEach(reel => {
-                reel.innerHTML = '';
-                
-                // Добавляем дополнительные символы для эффекта бесконечности
-                for (let i = 0; i < 20; i++) {
-                    const symbol = document.createElement('div');
-                    symbol.className = 'slot-item';
-                    symbol.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-                    reel.appendChild(symbol);
-                }
-                
-                // Устанавливаем начальную позицию
-                reel.style.top = '0px';
-            });
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'slot-cell';
+                cell.id = `cell-${i}`;
+                cell.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                grid.appendChild(cell);
+            }
         }
         
-        // Вращение слотов
-        function spinSlots() {
+        // Анимация вращения слотов
+        async function spinAnimation() {
+            const cells = document.querySelectorAll('.slot-cell');
+            const spinDuration = 1000; // 1 секунда анимации
+            const steps = 10; // Количество шагов анимации
+            const delay = spinDuration / steps;
+            
+            for (let step = 0; step < steps; step++) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                // Меняем символы в каждой ячейке
+                cells.forEach(cell => {
+                    const randomIndex = Math.floor(Math.random() * SYMBOLS.length);
+                    cell.textContent = SYMBOLS[randomIndex];
+                });
+            }
+        }
+        
+        // Проверка выигрышных комбинаций
+        function checkWin(results) {
+            const winLines = [];
+            let totalWin = 0;
+            
+            // Проверяем все возможные выигрышные линии
+            WIN_LINES.forEach(line => {
+                const [a, b, c] = line;
+                if (results[a] === results[b] && results[b] === results[c]) {
+                    winLines.push(line);
+                    const winAmount = BET_AMOUNT * PAYOUTS[results[a]];
+                    totalWin += useBonusBalance ? Math.floor(winAmount / 2) : winAmount;
+                }
+            });
+            
+            // Подсвечиваем выигрышные линии
+            if (winLines.length > 0) {
+                winLines.forEach(line => {
+                    line.forEach(cellIndex => {
+                        document.getElementById(`cell-${cellIndex}`).classList.add('win');
+                    });
+                });
+                
+                setTimeout(() => {
+                    document.querySelectorAll('.slot-cell').forEach(cell => {
+                        cell.classList.remove('win');
+                    });
+                }, 1500);
+                
+                // Показываем сообщение о выигрыше
+                const winMessage = winLines.length > 1 ? 
+                    `Поздравляем! Вы выиграли ${totalWin} ⭐ (${winLines.length} линии)` :
+                    `Поздравляем! Вы выиграли ${totalWin} ⭐`;
+                
+                document.getElementById('win-message').textContent = winMessage;
+                
+                // Обновляем баланс
+                database.ref('users/' + currentUserId).transaction((user) => {
+                    if (user) {
+                        user.balance = (user.balance || 0) + totalWin;
+                    }
+                    return user;
+                });
+                
+                // Добавляем запись в историю
+                const transactionRef = database.ref('history/' + currentUserId).push();
+                transactionRef.set({
+                    amount: `+${totalWin}`,
+                    description: `Выигрыш в слотах (${winLines.length} линии)`,
+                    date: new Date().toLocaleString(),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            } else {
+                document.getElementById('win-message').textContent = 'Попробуйте ещё раз!';
+            }
+        }
+        
+        // Обработчик кнопки "Крутить"
+        async function handleSpin() {
             if (isSpinning) return;
             
             // Проверяем баланс
@@ -483,24 +630,44 @@
                 return;
             }
             
+            // Определяем, с какого баланса списывать
+            useBonusBalance = userBonusBalance >= BET_AMOUNT;
+            
+            // Показываем модальное окно подтверждения
+            document.getElementById('confirm-text').textContent = 
+                `Вы уверены, что хотите сделать ставку ${BET_AMOUNT} ⭐?`;
+            
+            const bonusWarning = document.getElementById('bonus-warning');
+            if (useBonusBalance) {
+                bonusWarning.style.display = 'block';
+            } else {
+                bonusWarning.style.display = 'none';
+            }
+            
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+        
+        // Функция выполнения прокрута после подтверждения
+        async function executeSpin() {
             isSpinning = true;
             document.getElementById('spin-btn').disabled = true;
             document.getElementById('win-message').textContent = '';
+            document.getElementById('confirm-modal').style.display = 'none';
             
-            // Определяем, с какого баланса списывать
-            let useBonusBalance = Math.min(userBonusBalance, BET_AMOUNT);
-            let useMainBalance = BET_AMOUNT - useBonusBalance;
+            // Определяем сумму списания
+            let useBonus = Math.min(userBonusBalance, BET_AMOUNT);
+            let useMain = BET_AMOUNT - useBonus;
             
             // Обновляем баланс в базе данных
             const updates = {};
-            if (useBonusBalance > 0) {
-                updates['bonus_balance'] = userBonusBalance - useBonusBalance;
+            if (useBonus > 0) {
+                updates['bonus_balance'] = userBonusBalance - useBonus;
             }
-            if (useMainBalance > 0) {
-                updates['balance'] = userBalance - useMainBalance;
+            if (useMain > 0) {
+                updates['balance'] = userBalance - useMain;
             }
             
-            database.ref('users/' + currentUserId).update(updates);
+            await database.ref('users/' + currentUserId).update(updates);
             
             // Добавляем запись в историю
             const transactionRef = database.ref('history/' + currentUserId).push();
@@ -511,98 +678,73 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
             
-            // Генерируем выигрышную комбинацию (или нет)
-            const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
-            const results = [];
-            let winMultiplier = 0;
+            // Запускаем анимацию вращения
+            await spinAnimation();
             
-            // 30% шанс на выигрыш
+            // Генерируем результаты
+            const results = [];
+            const cells = document.querySelectorAll('.slot-cell');
+            
+            // 30% шанс на выигрыш (можно настроить)
             const willWin = Math.random() < 0.3;
             
             if (willWin) {
-                // Выбираем случайный выигрышный символ
+                // Создаем минимум одну выигрышную линию
+                const winLine = WIN_LINES[Math.floor(Math.random() * WIN_LINES.length)];
                 const winSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-                winMultiplier = PAYOUTS[winSymbol];
-                results.push(winSymbol, winSymbol, winSymbol);
+                
+                // Заполняем выигрышную линию
+                winLine.forEach(index => {
+                    results[index] = winSymbol;
+                });
+                
+                // Заполняем остальные ячейки случайными символами
+                for (let i = 0; i < 9; i++) {
+                    if (results[i] === undefined) {
+                        results[i] = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                    }
+                }
             } else {
-                // Генерируем случайные символы
-                for (let i = 0; i < 3; i++) {
-                    results.push(SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]);
+                // Все ячейки случайные
+                for (let i = 0; i < 9; i++) {
+                    results[i] = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
                 }
             }
             
-            // Анимация вращения
-            reels.forEach((reel, index) => {
-                const symbolHeight = 80;
-                const spinDuration = 3000;
-                const extraSpins = 5 + index; // Каждый следующий барабан делает на 1 оборот больше
-                const targetPosition = -(extraSpins * SYMBOLS.length * symbolHeight) + (SYMBOLS.indexOf(results[index]) * symbolHeight);
-                
-                reel.style.transition = `top ${spinDuration}ms cubic-bezier(0.25, 0.1, 0.25, 1)`;
-                reel.style.top = `${targetPosition}px`;
-                
-                // После завершения анимации
-                setTimeout(() => {
-                    reel.style.transition = 'none';
-                    const currentTop = parseInt(reel.style.top);
-                    reel.style.top = `${currentTop % (SYMBOLS.length * symbolHeight)}px`;
-                    
-                    // Удаляем лишние символы внизу и добавляем вверху
-                    if (index === 2) { // Последний барабан
-                        setTimeout(() => {
-                            checkWin(results);
-                            isSpinning = false;
-                            
-                            // Включаем кнопку, если есть средства
-                            const canSpin = (userBonusBalance + userBalance - BET_AMOUNT) >= BET_AMOUNT;
-                            document.getElementById('spin-btn').disabled = !canSpin;
-                        }, 500);
-                    }
-                }, spinDuration);
+            // Устанавливаем финальные символы
+            results.forEach((symbol, index) => {
+                cells[index].textContent = symbol;
             });
-        }
-        
-        // Проверка выигрыша
-        function checkWin(results) {
-            // Проверяем все возможные выигрышные комбинации
-            if (results[0] === results[1] && results[1] === results[2]) {
-                const winAmount = BET_AMOUNT * PAYOUTS[results[0]];
-                
-                // Показываем сообщение о выигрыше
-                document.getElementById('win-message').textContent = `Поздравляем! Вы выиграли ${winAmount} ⭐`;
-                
-                // Обновляем баланс
-                database.ref('users/' + currentUserId).transaction((user) => {
-                    if (user) {
-                        user.balance = (user.balance || 0) + winAmount;
-                    }
-                    return user;
-                });
-                
-                // Добавляем запись в историю
-                const transactionRef = database.ref('history/' + currentUserId).push();
-                transactionRef.set({
-                    amount: `+${winAmount}`,
-                    description: `Выигрыш в слотах (${results[0]} x${PAYOUTS[results[0]]})`,
-                    date: new Date().toLocaleString(),
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
+            
+            // Проверяем выигрыш
+            checkWin(results);
+            
+            isSpinning = false;
+            
+            // Включаем кнопку, если есть средства
+            const canSpin = (userBonusBalance + userBalance - BET_AMOUNT) >= BET_AMOUNT;
+            document.getElementById('spin-btn').disabled = !canSpin;
         }
         
         // Настройка обработчиков событий
         function setupEventListeners() {
-            document.getElementById('spin-btn').addEventListener('click', spinSlots);
+            document.getElementById('spin-btn').addEventListener('click', handleSpin);
             
             document.getElementById('back-btn').addEventListener('click', () => {
                 window.location.href = `index1.html?user_id=${currentUserId}`;
+            });
+            
+            document.getElementById('confirm-spin').addEventListener('click', executeSpin);
+            
+            document.getElementById('cancel-spin').addEventListener('click', () => {
+                document.getElementById('confirm-modal').style.display = 'none';
             });
         }
         
         // Основная функция инициализации
         async function initApp() {
             initParticles();
-            initSlots();
+            initSlotsGrid();
             
             try {
                 const userId = await initUser();
