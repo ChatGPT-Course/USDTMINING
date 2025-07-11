@@ -354,6 +354,7 @@
             appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
         };
         
+        // Инициализируем Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
@@ -389,36 +390,57 @@
         
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('user_id') || document.cookie.replace(/(?:(?:^|.*;\s*)user_id\s*=\s*([^;]*).*$)|^.*$/, "$1");
+            const userId = urlParams.get('user_id');
+            if (!userId) {
+                console.error('User ID not found in URL');
+                return null;
+            }
+            return userId;
         }
         
         async function loadUserData(userId) {
-            const userRef = database.ref('users/' + userId);
-            const snapshot = await userRef.once('value');
-            return snapshot.val();
+            try {
+                const userRef = database.ref('users/' + userId);
+                const snapshot = await userRef.once('value');
+                if (!snapshot.exists()) {
+                    console.error('User data not found in database');
+                    return null;
+                }
+                return snapshot.val();
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                return null;
+            }
         }
         
         async function updateBalance(userId, amount, isBonus = false) {
-            const userRef = database.ref('users/' + userId);
-            const updates = {};
-            
-            if (isBonus) {
-                updates['bonus_balance'] = currentBonusBalance + amount;
-            } else {
-                updates['balance'] = currentBalance + amount;
+            try {
+                const userRef = database.ref('users/' + userId);
+                const updates = {};
+                
+                if (isBonus) {
+                    updates['bonus_balance'] = currentBonusBalance + amount;
+                } else {
+                    updates['balance'] = currentBalance + amount;
+                }
+                
+                await userRef.update(updates);
+                
+                // Запись в историю
+                const historyRef = database.ref('history/' + userId);
+                await historyRef.push().set({
+                    type: isBonus ? 'slots_bonus' : 'slots',
+                    amount: amount >= 0 ? `+${amount}` : `${amount}`,
+                    description: `Игра в слоты: ${amount >= 0 ? 'выигрыш' : 'ставка'}`,
+                    date: new Date().toLocaleString('ru-RU'),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Error updating balance:', error);
+                return false;
             }
-            
-            await userRef.update(updates);
-            
-            // Запись в историю
-            const historyRef = database.ref('history/' + userId);
-            await historyRef.push().set({
-                type: isBonus ? 'slots_bonus' : 'slots',
-                amount: amount >= 0 ? `+${amount}` : `${amount}`,
-                description: `Игра в слоты: ${amount >= 0 ? 'выигрыш' : 'ставка'}`,
-                date: new Date().toLocaleString('ru-RU'),
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
         }
         
         function showResult(title, message) {
@@ -478,12 +500,17 @@
             currentUserId = getUserId();
             
             if (!currentUserId) {
-                window.location.href = 'index1.html';
+                showResult('Ошибка', 'Не удалось определить пользователя. Пожалуйста, войдите снова.');
                 return;
             }
             
             try {
                 const userData = await loadUserData(currentUserId);
+                if (!userData) {
+                    showResult('Ошибка', 'Не удалось загрузить данные пользователя. Пожалуйста, попробуйте позже.');
+                    return;
+                }
+                
                 currentBalance = userData.balance || 0;
                 currentBonusBalance = userData.bonus_balance || 0;
                 
@@ -510,12 +537,12 @@
                 
                 document.getElementById('cancel-btn').addEventListener('click', () => {
                     document.getElementById('confirm-modal').style.display = 'none';
-                    updateBalanceDisplay(); // Разблокируем кнопку при отмене
+                    updateBalanceDisplay();
                 });
                 
                 document.getElementById('close-result-btn').addEventListener('click', () => {
                     document.getElementById('result-modal').style.display = 'none';
-                    updateBalanceDisplay(); // Разблокируем кнопку после закрытия результата
+                    updateBalanceDisplay();
                 });
                 
                 document.getElementById('info-btn').addEventListener('click', () => {
@@ -526,6 +553,7 @@
                     document.getElementById('info-modal').style.display = 'none';
                 });
                 
+                console.log('App initialized successfully');
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 showResult('Ошибка', 'Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
@@ -538,16 +566,29 @@
             
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = true;
+            updateBalanceDisplay();
             
             // Списываем ставку
             const amountToDeduct = STAKE_AMOUNT;
+            let deductionSuccess = false;
             
             if (useBonus) {
-                currentBonusBalance -= amountToDeduct;
-                await updateBalance(currentUserId, -amountToDeduct, true);
+                if (currentBonusBalance >= amountToDeduct) {
+                    currentBonusBalance -= amountToDeduct;
+                    deductionSuccess = await updateBalance(currentUserId, -amountToDeduct, true);
+                }
             } else {
-                currentBalance -= amountToDeduct;
-                await updateBalance(currentUserId, -amountToDeduct, false);
+                if (currentBalance >= amountToDeduct) {
+                    currentBalance -= amountToDeduct;
+                    deductionSuccess = await updateBalance(currentUserId, -amountToDeduct, false);
+                }
+            }
+            
+            if (!deductionSuccess) {
+                showResult('Ошибка', 'Не удалось списать средства. Пожалуйста, попробуйте позже.');
+                isSpinning = false;
+                updateBalanceDisplay();
+                return;
             }
             
             updateBalanceDisplay();
@@ -557,36 +598,46 @@
             const slot2 = document.getElementById('slot2');
             const slot3 = document.getElementById('slot3');
             
-            // Запускаем вращение всех слотов с небольшой задержкой между ними
-            await Promise.all([
-                spinSlot(slot1),
-                new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150),
-                new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300)
-            ]);
-            
-            // Определяем результат после анимации
-            const symbols = [
-                slot1.querySelector('.slot-inner').textContent,
-                slot2.querySelector('.slot-inner').textContent,
-                slot3.querySelector('.slot-inner').textContent
-            ];
-            
-            const winAmount = checkWin(symbols);
-            
-            if (winAmount > 0) {
-                // Зачисляем выигрыш
-                currentBalance += winAmount;
-                await updateBalance(currentUserId, winAmount, false);
-                showResult('Поздравляем!', `Вы выиграли ${winAmount} ⭐!`);
-            } else {
-                showResult('Результат', 'Попробуйте еще раз!');
+            try {
+                // Запускаем вращение всех слотов с небольшой задержкой между ними
+                await Promise.all([
+                    spinSlot(slot1),
+                    new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150)),
+                    new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300))
+                ]);
+                
+                // Определяем результат после анимации
+                const symbols = [
+                    slot1.querySelector('.slot-inner').textContent,
+                    slot2.querySelector('.slot-inner').textContent,
+                    slot3.querySelector('.slot-inner').textContent
+                ];
+                
+                const winAmount = checkWin(symbols);
+                
+                if (winAmount > 0) {
+                    // Зачисляем выигрыш
+                    currentBalance += winAmount;
+                    const updateSuccess = await updateBalance(currentUserId, winAmount, false);
+                    
+                    if (updateSuccess) {
+                        showResult('Поздравляем!', `Вы выиграли ${winAmount} ⭐!`);
+                    } else {
+                        showResult('Ошибка', 'Выигрыш зачислен локально, но возникла проблема с сервером.');
+                    }
+                } else {
+                    showResult('Результат', 'Попробуйте еще раз!');
+                }
+            } catch (error) {
+                console.error('Ошибка во время вращения:', error);
+                showResult('Ошибка', 'Произошла ошибка во время игры. Пожалуйста, попробуйте позже.');
+            } finally {
+                isSpinning = false;
+                updateBalanceDisplay();
             }
-            
-            // Обновляем отображение баланса
-            updateBalanceDisplay();
-            isSpinning = false;
         }
         
+        // Запускаем приложение после полной загрузки DOM
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
