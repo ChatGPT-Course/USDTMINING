@@ -407,7 +407,7 @@
         // Символы для слотов
         const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '🍎', '🍓', '7️⃣', '💰', '🔔', '⭐', '🎰'];
         
-        // Комбинации и выплаты (обновленные по вашим требованиям)
+        // Комбинации и выплаты
         const PAYOUTS = {
             '7️⃣7️⃣7️⃣': 1000,
             '💰💰💰': 500,
@@ -470,7 +470,7 @@
         function spinSlot(slotElement) {
             return new Promise(resolve => {
                 let spins = 0;
-                const maxSpins = 10 + Math.floor(Math.random() * 10);
+                const maxSpins = 5 + Math.floor(Math.random() * 5); // Уменьшено количество вращений
                 const spinInterval = setInterval(() => {
                     const randomSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
                     slotElement.querySelector('.slot-inner').textContent = randomSymbol;
@@ -480,7 +480,7 @@
                         clearInterval(spinInterval);
                         resolve();
                     }
-                }, 100);
+                }, 80); // Уменьшено время между сменами символов
             });
         }
         
@@ -630,14 +630,15 @@
             
             // Если это не бесплатное вращение, списываем ставку
             if (freeSpins === 0) {
-                if (useBonus) {
-                    currentBonusBalance -= STAKE_AMOUNT;
-                } else {
-                    currentBalance -= STAKE_AMOUNT;
-                }
+                const amountToDeduct = STAKE_AMOUNT;
                 
-                // Обновляем баланс в базе данных
-                await updateBalance(currentUserId, -STAKE_AMOUNT, useBonus);
+                if (useBonus) {
+                    currentBonusBalance -= amountToDeduct;
+                    await updateBalance(currentUserId, -amountToDeduct, true);
+                } else {
+                    currentBalance -= amountToDeduct;
+                    await updateBalance(currentUserId, -amountToDeduct, false);
+                }
             } else {
                 freeSpins--;
             }
@@ -649,9 +650,12 @@
             const slot2 = document.getElementById('slot2');
             const slot3 = document.getElementById('slot3');
             
-            await spinSlot(slot1);
-            await spinSlot(slot2);
-            await spinSlot(slot3);
+            // Запускаем вращение всех слотов с небольшой задержкой между ними
+            await Promise.all([
+                spinSlot(slot1),
+                new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150)),
+                new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300))
+            ]);
             
             // Определяем результат после анимации
             const symbols = [
@@ -699,15 +703,17 @@
                 if (winAmount > 0) {
                     setTimeout(() => {
                         showResult('Поздравляем!', `Вы выиграли ${lastWinAmount} ⭐!`);
+                        isSpinning = false;
                     }, 500);
                 } else {
                     setTimeout(() => {
                         showResult('Результат', 'Попробуйте еще раз!');
+                        isSpinning = false;
                     }, 500);
                 }
+            } else {
+                isSpinning = false;
             }
-            
-            isSpinning = false;
         }
         
         document.addEventListener('DOMContentLoaded', initApp);
