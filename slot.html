@@ -465,7 +465,7 @@
         const BET_AMOUNT = 5;
         
         // Настройка вероятности выигрыша (0-100)
-        const CHANCE_OF_WIN = 20; // 30% шанс на выигрыш по умолчанию
+        const CHANCE_OF_WIN = 20; // 20% шанс на выигрыш по умолчанию
         
         // Символы для слотов
         const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '⭐', '7️⃣', '💰', '🚫'];
@@ -602,7 +602,7 @@
         // Проверка выигрышных комбинаций
         function checkWin(results) {
             const winLines = [];
-            let totalWin = 0;
+            let totalMultiplier = 1; // Начинаем с 1 для перемножения
             let blockSymbolsCount = 0;
             
             // Считаем количество блокирующих символов
@@ -617,24 +617,29 @@
             WIN_LINES.forEach(line => {
                 const [a, b, c] = line;
                 if (results[a] === results[b] && results[b] === results[c]) {
-                    const winAmount = BET_AMOUNT * PAYOUTS[results[a]];
-                    const finalWin = useBonusBalance ? Math.floor(winAmount / 2) : winAmount;
+                    const multiplier = PAYOUTS[results[a]];
                     
                     winLines.push({
                         line: line,
                         symbol: results[a],
-                        multiplier: PAYOUTS[results[a]],
-                        win: finalWin
+                        multiplier: multiplier
                     });
                     
                     if (!isBlocked) {
-                        totalWin += finalWin;
+                        totalMultiplier *= multiplier; // Перемножаем коэффициенты
                     }
                 }
             });
             
-            // Подсвечиваем выигрышные линии
+            // Рассчитываем итоговый выигрыш
+            let totalWin = 0;
             if (winLines.length > 0 && !isBlocked) {
+                totalWin = BET_AMOUNT * totalMultiplier;
+                if (useBonusBalance) {
+                    totalWin = Math.floor(totalWin / 2); // Для бонусного баланса выигрыш в 2 раза меньше
+                }
+                
+                // Подсвечиваем выигрышные линии
                 winLines.forEach(winLine => {
                     winLine.line.forEach(cellIndex => {
                         document.getElementById(`cell-${cellIndex}`).classList.add('win');
@@ -651,7 +656,7 @@
             
             // Показываем результат через 1 секунду
             setTimeout(() => {
-                showResult(totalWin, winLines, isBlocked);
+                showResult(totalWin, winLines, isBlocked, totalMultiplier);
                 
                 // Обновляем баланс, если есть выигрыш
                 if (totalWin > 0) {
@@ -666,7 +671,7 @@
         }
         
         // Показ результата в модальном окне
-        function showResult(totalWin, winLines, isBlocked = false) {
+        function showResult(totalWin, winLines, isBlocked = false, totalMultiplier = 1) {
             const resultTitle = document.getElementById('result-title');
             const resultText = document.getElementById('result-text');
             const resultAmount = document.getElementById('result-amount');
@@ -684,9 +689,17 @@
                 
                 let linesText = '';
                 winLines.forEach((line, index) => {
-                    linesText += `${line.symbol} x${line.multiplier} = ${line.win}⭐`;
-                    if (index < winLines.length - 1) linesText += '<br>';
+                    linesText += `${line.symbol} x${line.multiplier}`;
+                    if (index < winLines.length - 1) linesText += ' × ';
                 });
+                
+                if (winLines.length > 1) {
+                    linesText += ` = x${totalMultiplier}`;
+                }
+                
+                if (useBonusBalance) {
+                    linesText += '<br>(Выигрыш в 2 раза меньше для бонусного баланса)';
+                }
                 
                 winLinesElement.innerHTML = linesText;
             } else {
