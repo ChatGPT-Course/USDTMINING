@@ -45,21 +45,8 @@
             align-items: center;
         }
         
-        .balance-container {
-            display: flex;
-            gap: 10px;
-        }
-        
         .balance {
             background: rgba(123, 44, 191, 0.3);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .bonus-balance {
-            background: rgba(0, 180, 219, 0.3);
             padding: 8px 15px;
             border-radius: 20px;
             font-size: 16px;
@@ -164,10 +151,7 @@
     <div id="app-content" style="display: none;">
         <div class="header">
             <button class="back-btn" id="back-btn">← Назад</button>
-            <div class="balance-container">
-                <div class="balance" id="user-balance">0 ⭐</div>
-                <div class="bonus-balance" id="user-bonus-balance">0 ⭐</div>
-            </div>
+            <div class="balance" id="user-balance">0 ⭐</div>
         </div>
         
         <div class="promo-container">
@@ -184,7 +168,7 @@
                     
                     <div id="promo-info" class="promo-stats" style="display: none;">
                         <p><strong>Информация о промокоде:</strong></p>
-                        <p id="promo-reward">Награда: 0 ⭐ (бонусный баланс)</p>
+                        <p id="promo-reward">Награда: 0 ⭐</p>
                         <p id="promo-activations">Активаций: 0</p>
                         <p id="promo-limit">Лимит: 0</p>
                     </div>
@@ -210,7 +194,6 @@
         
         let currentUserId = null;
         let currentBalance = 0;
-        let currentBonusBalance = 0;
         let isAdmin = false;
         
         function getUserId() {
@@ -221,16 +204,7 @@
         async function loadUserData(userId) {
             const userRef = database.ref('users/' + userId);
             const snapshot = await userRef.once('value');
-            const userData = snapshot.val();
-            
-            if (userData) {
-                currentBalance = userData.balance || 0;
-                currentBonusBalance = userData.bonus_balance || 0;
-                document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
-                document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
-            }
-            
-            return userData;
+            return snapshot.val();
         }
         
         async function checkMaintenance() {
@@ -307,13 +281,12 @@
                 // Проверяем промокод
                 const promoInfo = await checkPromoCode(code);
                 
-                // Активируем промокод (добавляем в бонусный баланс)
+                // Активируем промокод
                 await createTransaction(
                     currentUserId, 
                     'deposit', 
-                    promoInfo.reward, 
-                    `Активация промокода: ${code}`,
-                    true // isBonus = true
+                    `+${promoInfo.reward}`, 
+                    `Активация промокода: ${code}`
                 );
                 
                 // Обновляем информацию о промокоде
@@ -329,40 +302,17 @@
             }
         }
         
-        async function createTransaction(userId, type, amount, description, isBonus = false) {
+        async function createTransaction(userId, type, amount, description) {
             const userRef = database.ref('users/' + userId);
             const snapshot = await userRef.once('value');
             const userData = snapshot.val();
             
-            let updates = {};
+            let newBalance = userData.balance || 0;
+            newBalance += Number(amount);
             
-            if (type === 'deposit' || type === 'win') {
-                // При пополнении или выигрыше добавляем к соответствующему балансу
-                if (isBonus) {
-                    updates.bonus_balance = (userData.bonus_balance || 0) + amount;
-                } else {
-                    updates.balance = (userData.balance || 0) + amount;
-                }
-            } else if (type === 'game_bet') {
-                // При ставке списываем с соответствующего баланса
-                if (isBonus) {
-                    updates.bonus_balance = (userData.bonus_balance || 0) - amount;
-                } else {
-                    updates.balance = (userData.balance || 0) - amount;
-                }
-            }
-            
-            await userRef.update(updates);
-            
-            // Обновляем локальные значения
-            if (updates.balance !== undefined) {
-                currentBalance = updates.balance;
-                document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
-            }
-            if (updates.bonus_balance !== undefined) {
-                currentBonusBalance = updates.bonus_balance;
-                document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
-            }
+            await userRef.update({ balance: newBalance });
+            currentBalance = newBalance;
+            document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
             
             // Запись в историю
             const historyRef = database.ref('history/' + userId);
@@ -371,8 +321,7 @@
                 amount: amount,
                 description: description,
                 date: new Date().toLocaleString('ru-RU'),
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                is_bonus: isBonus || false
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         }
         
@@ -382,18 +331,18 @@
             
             if (!snapshot.exists()) {
                 const testPromos = {
-                    'Update': {
+                    'HappyStart': {
                         reward: 25,
-                        limit: 3,
+                        limit: 10,
                         activations: {}
                     },
-                    'Stars': {
+                    '3563423': {
+                        reward: 10,
+                        limit: 10,
+                        activations: {}
+                    },
+                    '2025bot': {
                         reward: 15,
-                        limit: 3,
-                        activations: {}
-                    },
-                    'GameBot': {
-                        reward: 5,
                         limit: 10,
                         activations: {}
                     }
@@ -412,7 +361,7 @@
         async function showPromoInfo(code) {
             try {
                 const promoInfo = await checkPromoCode(code);
-                document.getElementById('promo-reward').textContent = `Награда: ${promoInfo.reward} ⭐ (бонусный баланс)`;
+                document.getElementById('promo-reward').textContent = `Награда: ${promoInfo.reward} ⭐`;
                 document.getElementById('promo-activations').textContent = `Активаций: ${promoInfo.activations}`;
                 document.getElementById('promo-limit').textContent = `Лимит: ${promoInfo.limit > 0 ? promoInfo.limit : 'нет'}`;
                 document.getElementById('promo-info').style.display = 'block';
@@ -436,9 +385,7 @@
                 
                 const userData = await loadUserData(currentUserId);
                 currentBalance = userData.balance || 0;
-                currentBonusBalance = userData.bonus_balance || 0;
                 document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
-                document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
                 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
@@ -466,7 +413,7 @@
                     
                     try {
                         const amount = await activatePromo(code);
-                        showResult(`Промокод активирован! Получено ${amount} ⭐ (бонусный баланс)`, 'success');
+                        showResult(`Промокод активирован! Получено +${amount} ⭐`, 'success');
                         document.getElementById('promo-code').value = '';
                         document.getElementById('promo-info').style.display = 'none';
                     } catch (error) {
