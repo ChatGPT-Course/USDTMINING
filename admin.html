@@ -575,6 +575,12 @@
         // Отображение списка пользователей
         function renderUserList(users) {
             const userList = document.getElementById('user-list');
+            
+            if (!users || Object.keys(users).length === 0) {
+                userList.innerHTML = '<div style="text-align: center; color: #b8b8b8;">Пользователи не найдены</div>';
+                return;
+            }
+            
             userList.innerHTML = '';
             
             Object.keys(users).forEach(userId => {
