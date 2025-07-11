@@ -545,19 +545,30 @@
         // Загрузка всех пользователей
         async function loadAllUsers() {
             try {
+                document.getElementById('user-list').innerHTML = '<div class="loading">Загрузка пользователей...</div>';
+                
                 const usersRef = database.ref('users');
                 const snapshot = await usersRef.once('value');
                 const users = snapshot.val();
                 
                 if (!users) {
+                    console.log('В базе данных нет пользователей');
                     document.getElementById('user-list').innerHTML = '<div style="text-align: center; color: #b8b8b8;">Пользователи не найдены</div>';
                     return;
                 }
                 
+                console.log('Загружены пользователи:', Object.keys(users).length);
                 renderUserList(users);
             } catch (error) {
                 console.error('Ошибка загрузки пользователей:', error);
-                showNotification('Ошибка загрузки пользователей', false);
+                document.getElementById('user-list').innerHTML = `
+                    <div style="text-align: center; color: #f44336;">
+                        Ошибка загрузки: ${error.message}
+                        <button onclick="loadAllUsers()" style="margin-top: 10px; padding: 5px 10px; background: #7b2cbf; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Повторить попытку
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -882,8 +893,42 @@
 
         // Основная функция инициализации
         async function initApp() {
-            setupEventListeners();
-            await loadAllUsers();
+            try {
+                // Проверка подключения к Firebase
+                const isConnected = await checkFirebaseConnection();
+                if (!isConnected) {
+                    document.getElementById('user-list').innerHTML = `
+                        <div style="text-align: center; color: #f44336;">
+                            Нет подключения к базе данных
+                            <button onclick="initApp()" style="margin-top: 10px; padding: 5px 10px; background: #7b2cbf; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                Повторить попытку
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+        
+                setupEventListeners();
+                await loadAllUsers();
+                
+                // Добавляем обработчик для обновления списка при изменении данных
+                database.ref('users').on('value', (snapshot) => {
+                    const users = snapshot.val();
+                    if (users) {
+                        renderUserList(users);
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                document.getElementById('user-list').innerHTML = `
+                    <div style="text-align: center; color: #f44336;">
+                        Критическая ошибка: ${error.message}
+                        <button onclick="initApp()" style="margin-top: 10px; padding: 5px 10px; background: #7b2cbf; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Попробовать снова
+                        </button>
+                    </div>
+                `;
+            }
         }
         
         document.addEventListener('DOMContentLoaded', initApp);
