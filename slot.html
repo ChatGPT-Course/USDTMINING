@@ -55,6 +55,25 @@
             border-radius: 20px;
             font-size: 16px;
             font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .info-btn {
+            background: none;
+            border: none;
+            color: #00b4db;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid #00b4db;
         }
         
         .game-container {
@@ -117,6 +136,7 @@
             width: 100%;
             transition: all 0.3s;
             font-weight: bold;
+            margin-bottom: 10px;
         }
         
         .spin-btn:hover {
@@ -131,30 +151,15 @@
             box-shadow: none;
         }
         
-        .result-message {
+        .free-spins {
             text-align: center;
-            margin-top: 20px;
-            font-size: 18px;
-            min-height: 24px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #4caf50;
             font-weight: bold;
         }
         
-        .success {
-            color: #4caf50;
-        }
-        
-        .error {
-            color: #f44336;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-            color: #b8b8b8;
-        }
-        
-        /* Модальное окно подтверждения */
+        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -183,10 +188,12 @@
             font-size: 20px;
             font-weight: bold;
             margin-bottom: 15px;
+            color: #00b4db;
         }
         
         .modal-text {
             margin-bottom: 20px;
+            font-size: 16px;
         }
         
         .modal-buttons {
@@ -214,6 +221,34 @@
             color: white;
         }
         
+        .modal-btn-close {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+            width: 100%;
+        }
+        
+        .info-modal-content {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .info-section {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #00b4db;
+        }
+        
+        .payout-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+        
         @keyframes win-flash {
             0% { background-color: rgba(76, 175, 80, 0.3); }
             50% { background-color: rgba(76, 175, 80, 0.7); }
@@ -229,7 +264,10 @@
     <div class="container">
         <div class="header">
             <button class="back-btn" id="back-btn">← Назад</button>
-            <div class="balance" id="user-balance">0 ⭐</div>
+            <div class="balance" id="user-balance">
+                <div>0 ⭐ (0 бонус)</div>
+                <button class="info-btn" id="info-btn">i</button>
+            </div>
         </div>
         
         <div class="game-container">
@@ -245,8 +283,8 @@
                         <div class="slot-inner">🎰</div>
                     </div>
                 </div>
+                <div class="free-spins" id="free-spins" style="display: none;"></div>
                 <button class="spin-btn" id="spin-btn">Крутить за 5 ⭐</button>
-                <div id="result-message" class="result-message"></div>
             </div>
         </div>
     </div>
@@ -255,10 +293,67 @@
     <div id="confirm-modal" class="modal">
         <div class="modal-content">
             <div class="modal-title">Подтверждение</div>
-            <div class="modal-text">Списать 5 ⭐ для игры в слоты?</div>
+            <div class="modal-text" id="confirm-text">Списать 5 ⭐ для игры в слоты?</div>
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-confirm" id="confirm-btn">Да</button>
                 <button class="modal-btn modal-btn-cancel" id="cancel-btn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно результата -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="result-title">Результат</div>
+            <div class="modal-text" id="result-text"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-close" id="close-result-btn">Понятно</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно информации -->
+    <div id="info-modal" class="modal">
+        <div class="modal-content info-modal-content">
+            <div class="modal-title">Правила и выплаты</div>
+            
+            <div class="info-section">
+                <div class="info-title">Комбинации из 3 символов:</div>
+                <div class="payout-item"><span>7️⃣7️⃣7️⃣</span><span>1000 ⭐</span></div>
+                <div class="payout-item"><span>💰💰💰</span><span>500 ⭐</span></div>
+                <div class="payout-item"><span>🔔🔔🔔</span><span>300 ⭐</span></div>
+                <div class="payout-item"><span>⭐⭐⭐</span><span>200 ⭐</span></div>
+                <div class="payout-item"><span>🎰🎰🎰</span><span>150 ⭐</span></div>
+                <div class="payout-item"><span>🍒🍒🍒</span><span>125 ⭐</span></div>
+                <div class="payout-item"><span>🍋🍋🍋</span><span>100 ⭐</span></div>
+                <div class="payout-item"><span>🍊🍊🍊</span><span>80 ⭐</span></div>
+                <div class="payout-item"><span>🍇🍇🍇</span><span>70 ⭐</span></div>
+                <div class="payout-item"><span>🍉🍉🍉</span><span>60 ⭐</span></div>
+                <div class="payout-item"><span>🍎🍎🍎</span><span>50 ⭐</span></div>
+                <div class="payout-item"><span>🍓🍓🍓</span><span>50 ⭐</span></div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-title">Комбинации из 2 символов:</div>
+                <div class="payout-item"><span>7️⃣7️⃣</span><span>200 ⭐</span></div>
+                <div class="payout-item"><span>💰💰</span><span>40 ⭐</span></div>
+                <div class="payout-item"><span>🔔🔔</span><span>30 ⭐</span></div>
+                <div class="payout-item"><span>⭐⭐</span><span>15 ⭐</span></div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-title">Дополнительные вращения:</div>
+                <div>2 одинаковых символа: +1 вращение (выплата ×2)</div>
+                <div>3 одинаковых символа: +3 вращения (выплата ×3)</div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-title">Примечание:</div>
+                <div>При игре за бонусный баланс выплаты составляют 50% от указанных</div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-close" id="close-info-btn">Закрыть</button>
             </div>
         </div>
     </div>
@@ -281,29 +376,32 @@
         let currentUserId = null;
         let currentBalance = 0;
         let currentBonusBalance = 0;
+        let freeSpins = 0;
+        let spinMultiplier = 1;
+        let useBonus = false;
         const STAKE_AMOUNT = 5;
         
         // Символы для слотов
         const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '🍎', '🍓', '7️⃣', '💰', '🔔', '⭐', '🎰'];
         
-        // Комбинации и выплаты
+        // Комбинации и выплаты (обновленные по вашим требованиям)
         const PAYOUTS = {
-            '7️⃣7️⃣7️⃣': 100,
-            '💰💰💰': 50,
-            '🔔🔔🔔': 30,
-            '⭐⭐⭐': 20,
-            '🎰🎰🎰': 15,
-            '🍒🍒🍒': 10,
-            '🍋🍋🍋': 8,
-            '🍊🍊🍊': 8,
-            '🍇🍇🍇': 8,
-            '🍉🍉🍉': 8,
-            '🍎🍎🍎': 8,
-            '🍓🍓🍓': 8,
-            '7️⃣7️⃣': 5,
-            '💰💰': 4,
-            '🔔🔔': 3,
-            '⭐⭐': 2
+            '7️⃣7️⃣7️⃣': 1000,
+            '💰💰💰': 500,
+            '🔔🔔🔔': 300,
+            '⭐⭐⭐': 200,
+            '🎰🎰🎰': 150,
+            '🍒🍒🍒': 125,
+            '🍋🍋🍋': 100,
+            '🍊🍊🍊': 80,
+            '🍇🍇🍇': 70,
+            '🍉🍉🍉': 60,
+            '🍎🍎🍎': 50,
+            '🍓🍓🍓': 50,
+            '7️⃣7️⃣': 200,
+            '💰💰': 40,
+            '🔔🔔': 30,
+            '⭐⭐': 15
         };
         
         function getUserId() {
@@ -340,17 +438,10 @@
             });
         }
         
-        function showResult(message, isSuccess = true) {
-            const resultEl = document.getElementById('result-message');
-            resultEl.textContent = message;
-            resultEl.className = `result-message ${isSuccess ? 'success' : 'error'}`;
-            
-            if (isSuccess) {
-                resultEl.classList.add('win-animation');
-                setTimeout(() => {
-                    resultEl.classList.remove('win-animation');
-                }, 1500);
-            }
+        function showResult(title, message) {
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-text').textContent = message;
+            document.getElementById('result-modal').style.display = 'flex';
         }
         
         function spinSlot(slotElement) {
@@ -369,20 +460,59 @@
         
         function checkWin(symbols) {
             const [s1, s2, s3] = symbols;
+            let winAmount = 0;
+            let extraSpins = 0;
+            let multiplier = 1;
             
             // Проверяем комбинации из 3 символов
             if (s1 === s2 && s2 === s3) {
                 const combo = `${s1}${s2}${s3}`;
-                return PAYOUTS[combo] || 0;
-            }
-            
+                winAmount = PAYOUTS[combo] || 0;
+                extraSpins = 3;
+                multiplier = 3;
+            } 
             // Проверяем комбинации из 2 символов
-            if (s1 === s2 || s2 === s3 || s1 === s3) {
+            else if (s1 === s2 || s2 === s3 || s1 === s3) {
                 const combo = s1 === s2 ? `${s1}${s2}` : `${s2}${s3}`;
-                return PAYOUTS[combo] || 0;
+                winAmount = PAYOUTS[combo] || 0;
+                extraSpins = 1;
+                multiplier = 2;
             }
             
-            return 0;
+            return {
+                winAmount: winAmount * (useBonus ? 0.5 : 1) * spinMultiplier,
+                extraSpins: extraSpins,
+                multiplier: multiplier
+            };
+        }
+        
+        function updateFreeSpinsDisplay() {
+            const freeSpinsEl = document.getElementById('free-spins');
+            if (freeSpins > 0) {
+                freeSpinsEl.style.display = 'block';
+                freeSpinsEl.textContent = `Бесплатные вращения: ${freeSpins} (×${spinMultiplier})`;
+            } else {
+                freeSpinsEl.style.display = 'none';
+            }
+        }
+        
+        function updateBalanceDisplay() {
+            document.getElementById('user-balance').innerHTML = `
+                <div>${currentBalance} ⭐ (${currentBonusBalance} бонус)</div>
+                <button class="info-btn" id="info-btn">i</button>
+            `;
+            
+            // Проверяем, достаточно ли средств для игры
+            const canPlay = (currentBonusBalance >= STAKE_AMOUNT) || 
+                          (currentBalance >= STAKE_AMOUNT) || 
+                          (freeSpins > 0);
+            document.getElementById('spin-btn').disabled = !canPlay;
+            
+            if (freeSpins > 0) {
+                document.getElementById('spin-btn').textContent = `Крутить (${freeSpins} бесплатно)`;
+            } else {
+                document.getElementById('spin-btn').textContent = `Крутить за 5 ⭐`;
+            }
         }
         
         async function initApp() {
@@ -398,13 +528,7 @@
                 currentBalance = userData.balance || 0;
                 currentBonusBalance = userData.bonus_balance || 0;
                 
-                // Обновляем отображение баланса
-                document.getElementById('user-balance').textContent = 
-                    `${currentBalance} ⭐ (${currentBonusBalance} бонус)`;
-                
-                // Проверяем, достаточно ли средств для игры
-                const canPlay = (currentBonusBalance >= STAKE_AMOUNT) || (currentBalance >= STAKE_AMOUNT);
-                document.getElementById('spin-btn').disabled = !canPlay;
+                updateBalanceDisplay();
                 
                 // Обработчики событий
                 document.getElementById('back-btn').addEventListener('click', () => {
@@ -412,7 +536,16 @@
                 });
                 
                 document.getElementById('spin-btn').addEventListener('click', () => {
-                    document.getElementById('confirm-modal').style.display = 'flex';
+                    if (freeSpins > 0) {
+                        startSpin();
+                    } else {
+                        useBonus = currentBonusBalance >= STAKE_AMOUNT;
+                        const text = useBonus 
+                            ? `Списать 5 бонусных ⭐ для игры в слоты? Выплаты будут 50% от обычных.`
+                            : `Списать 5 ⭐ для игры в слоты?`;
+                        document.getElementById('confirm-text').textContent = text;
+                        document.getElementById('confirm-modal').style.display = 'flex';
+                    }
                 });
                 
                 document.getElementById('confirm-btn').addEventListener('click', async () => {
@@ -424,33 +557,43 @@
                     document.getElementById('confirm-modal').style.display = 'none';
                 });
                 
+                document.getElementById('close-result-btn').addEventListener('click', () => {
+                    document.getElementById('result-modal').style.display = 'none';
+                });
+                
+                document.getElementById('info-btn').addEventListener('click', () => {
+                    document.getElementById('info-modal').style.display = 'flex';
+                });
+                
+                document.getElementById('close-info-btn').addEventListener('click', () => {
+                    document.getElementById('info-modal').style.display = 'none';
+                });
+                
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
-                showResult('Ошибка загрузки данных', false);
+                showResult('Ошибка', 'Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
             }
         }
         
         async function startSpin() {
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = true;
-            showResult('', false);
             
-            // Определяем, какой баланс использовать
-            const useBonus = currentBonusBalance >= STAKE_AMOUNT;
-            
-            // Списываем ставку
-            if (useBonus) {
-                currentBonusBalance -= STAKE_AMOUNT;
+            // Если это не бесплатное вращение, списываем ставку
+            if (freeSpins === 0) {
+                if (useBonus) {
+                    currentBonusBalance -= STAKE_AMOUNT;
+                } else {
+                    currentBalance -= STAKE_AMOUNT;
+                }
+                
+                // Обновляем баланс в базе данных
+                await updateBalance(currentUserId, -STAKE_AMOUNT, useBonus);
             } else {
-                currentBalance -= STAKE_AMOUNT;
+                freeSpins--;
             }
             
-            // Обновляем баланс в базе данных
-            await updateBalance(currentUserId, -STAKE_AMOUNT, useBonus);
-            
-            // Обновляем отображение баланса
-            document.getElementById('user-balance').textContent = 
-                `${currentBalance} ⭐ (${currentBonusBalance} бонус)`;
+            updateBalanceDisplay();
             
             // Анимация вращения
             const slot1 = document.getElementById('slot1');
@@ -469,24 +612,41 @@
                     slot3.querySelector('.slot-inner').textContent
                 ];
                 
-                const winAmount = checkWin(symbols);
+                const { winAmount, extraSpins, multiplier } = checkWin(symbols);
                 
                 if (winAmount > 0) {
                     // Зачисляем выигрыш
                     currentBalance += winAmount;
                     await updateBalance(currentUserId, winAmount, false);
-                    showResult(`Вы выиграли ${winAmount} ⭐!`, true);
+                    
+                    // Добавляем бесплатные вращения
+                    if (extraSpins > 0) {
+                        freeSpins += extraSpins;
+                        spinMultiplier *= multiplier;
+                        showResult(
+                            'Поздравляем!', 
+                            `Вы выиграли ${winAmount} ⭐! +${extraSpins} бесплатных вращений (×${spinMultiplier})`
+                        );
+                    } else {
+                        showResult('Поздравляем!', `Вы выиграли ${winAmount} ⭐!`);
+                    }
                 } else {
-                    showResult('Попробуйте еще раз!', false);
+                    showResult('Результат', 'Попробуйте еще раз!');
+                    spinMultiplier = 1; // Сбрасываем множитель при проигрыше
                 }
                 
-                // Обновляем отображение баланса
-                document.getElementById('user-balance').textContent = 
-                    `${currentBalance} ⭐ (${currentBonusBalance} бонус)`;
+                // Обновляем отображение
+                updateBalanceDisplay();
+                updateFreeSpinsDisplay();
                 
-                // Проверяем, достаточно ли средств для следующей игры
-                const canPlay = (currentBonusBalance >= STAKE_AMOUNT) || (currentBalance >= STAKE_AMOUNT);
-                spinBtn.disabled = !canPlay;
+                // Если есть бесплатные вращения, запускаем следующее автоматически
+                if (freeSpins > 0) {
+                    setTimeout(() => {
+                        startSpin();
+                    }, 2000);
+                } else {
+                    spinMultiplier = 1; // Сбрасываем множитель, когда бесплатные вращения закончились
+                }
             }, 2000);
         }
         
