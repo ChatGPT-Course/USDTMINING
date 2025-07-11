@@ -102,7 +102,6 @@
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
             padding: 15px;
-            position: relative;
         }
         
         .slot {
@@ -126,23 +125,6 @@
             transition: transform 0.1s;
         }
         
-        .win-amount {
-            position: absolute;
-            bottom: -25px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: #4caf50;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .win-amount.show {
-            opacity: 1;
-        }
-        
         .spin-btn {
             background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
             color: white;
@@ -154,7 +136,6 @@
             width: 100%;
             transition: all 0.3s;
             font-weight: bold;
-            margin-bottom: 10px;
         }
         
         .spin-btn:hover {
@@ -167,14 +148,6 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
-        }
-        
-        .free-spins {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 16px;
-            color: #4caf50;
-            font-weight: bold;
         }
         
         /* Модальные окна */
@@ -293,18 +266,14 @@
                 <div class="slots-display">
                     <div class="slot" id="slot1">
                         <div class="slot-inner">🎰</div>
-                        <div class="win-amount" id="win-amount1"></div>
                     </div>
                     <div class="slot" id="slot2">
                         <div class="slot-inner">🎰</div>
-                        <div class="win-amount" id="win-amount2"></div>
                     </div>
                     <div class="slot" id="slot3">
                         <div class="slot-inner">🎰</div>
-                        <div class="win-amount" id="win-amount3"></div>
                     </div>
                 </div>
-                <div class="free-spins" id="free-spins" style="display: none;"></div>
                 <button class="spin-btn" id="spin-btn">Крутить за 5 ⭐</button>
             </div>
         </div>
@@ -363,12 +332,6 @@
             </div>
             
             <div class="info-section">
-                <div class="info-title">Дополнительные вращения:</div>
-                <div>2 одинаковых символа: +1 вращение (выплата ×2)</div>
-                <div>3 одинаковых символа: +3 вращения (выплата ×3)</div>
-            </div>
-            
-            <div class="info-section">
                 <div class="info-title">Примечание:</div>
                 <div>При игре за бонусный баланс выплаты составляют 50% от указанных</div>
             </div>
@@ -397,11 +360,8 @@
         let currentUserId = null;
         let currentBalance = 0;
         let currentBonusBalance = 0;
-        let freeSpins = 0;
-        let spinMultiplier = 1;
         let useBonus = false;
         let isSpinning = false;
-        let lastWinAmount = 0;
         const STAKE_AMOUNT = 5;
         
         // Символы для слотов
@@ -470,7 +430,7 @@
         function spinSlot(slotElement) {
             return new Promise(resolve => {
                 let spins = 0;
-                const maxSpins = 5 + Math.floor(Math.random() * 5); // Уменьшено количество вращений
+                const maxSpins = 5 + Math.floor(Math.random() * 5);
                 const spinInterval = setInterval(() => {
                     const randomSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
                     slotElement.querySelector('.slot-inner').textContent = randomSymbol;
@@ -480,66 +440,26 @@
                         clearInterval(spinInterval);
                         resolve();
                     }
-                }, 80); // Уменьшено время между сменами символов
+                }, 80);
             });
         }
         
         function checkWin(symbols) {
             const [s1, s2, s3] = symbols;
             let winAmount = 0;
-            let extraSpins = 0;
-            let multiplier = 1;
             
             // Проверяем комбинации из 3 символов
             if (s1 === s2 && s2 === s3) {
                 const combo = `${s1}${s2}${s3}`;
                 winAmount = PAYOUTS[combo] || 0;
-                extraSpins = 3;
-                multiplier = 3;
             } 
             // Проверяем комбинации из 2 символов
             else if (s1 === s2 || s2 === s3 || s1 === s3) {
                 const combo = s1 === s2 ? `${s1}${s2}` : `${s2}${s3}`;
                 winAmount = PAYOUTS[combo] || 0;
-                extraSpins = 1;
-                multiplier = 2;
             }
             
-            return {
-                winAmount: winAmount * (useBonus ? 0.5 : 1) * spinMultiplier,
-                extraSpins: extraSpins,
-                multiplier: multiplier
-            };
-        }
-        
-        function updateFreeSpinsDisplay() {
-            const freeSpinsEl = document.getElementById('free-spins');
-            if (freeSpins > 0) {
-                freeSpinsEl.style.display = 'block';
-                freeSpinsEl.textContent = `Бесплатные вращения: ${freeSpins} (×${spinMultiplier})`;
-            } else {
-                freeSpinsEl.style.display = 'none';
-            }
-        }
-        
-        function showWinAmount(amount) {
-            lastWinAmount = amount;
-            const winAmountElements = [
-                document.getElementById('win-amount1'),
-                document.getElementById('win-amount2'),
-                document.getElementById('win-amount3')
-            ];
-            
-            winAmountElements.forEach(el => {
-                el.textContent = `+${amount} ⭐`;
-                el.classList.add('show');
-            });
-            
-            setTimeout(() => {
-                winAmountElements.forEach(el => {
-                    el.classList.remove('show');
-                });
-            }, 2000);
+            return winAmount * (useBonus ? 0.5 : 1);
         }
         
         function updateBalanceDisplay() {
@@ -550,15 +470,8 @@
             
             // Проверяем, достаточно ли средств для игры
             const canPlay = (currentBonusBalance >= STAKE_AMOUNT) || 
-                          (currentBalance >= STAKE_AMOUNT) || 
-                          (freeSpins > 0);
+                          (currentBalance >= STAKE_AMOUNT);
             document.getElementById('spin-btn').disabled = !canPlay || isSpinning;
-            
-            if (freeSpins > 0) {
-                document.getElementById('spin-btn').textContent = `Крутить (${freeSpins} бесплатно)`;
-            } else {
-                document.getElementById('spin-btn').textContent = `Крутить за 5 ⭐`;
-            }
         }
         
         async function initApp() {
@@ -582,16 +495,12 @@
                 });
                 
                 document.getElementById('spin-btn').addEventListener('click', () => {
-                    if (freeSpins > 0) {
-                        startSpin();
-                    } else {
-                        useBonus = currentBonusBalance >= STAKE_AMOUNT;
-                        const text = useBonus 
-                            ? `Списать 5 бонусных ⭐ для игры в слоты? Выплаты будут 50% от обычных.`
-                            : `Списать 5 ⭐ для игры в слоты?`;
-                        document.getElementById('confirm-text').textContent = text;
-                        document.getElementById('confirm-modal').style.display = 'flex';
-                    }
+                    useBonus = currentBonusBalance >= STAKE_AMOUNT;
+                    const text = useBonus 
+                        ? `Списать 5 бонусных ⭐ для игры в слоты? Выплаты будут 50% от обычных.`
+                        : `Списать 5 ⭐ для игры в слоты?`;
+                    document.getElementById('confirm-text').textContent = text;
+                    document.getElementById('confirm-modal').style.display = 'flex';
                 });
                 
                 document.getElementById('confirm-btn').addEventListener('click', async () => {
@@ -601,10 +510,12 @@
                 
                 document.getElementById('cancel-btn').addEventListener('click', () => {
                     document.getElementById('confirm-modal').style.display = 'none';
+                    updateBalanceDisplay(); // Разблокируем кнопку при отмене
                 });
                 
                 document.getElementById('close-result-btn').addEventListener('click', () => {
                     document.getElementById('result-modal').style.display = 'none';
+                    updateBalanceDisplay(); // Разблокируем кнопку после закрытия результата
                 });
                 
                 document.getElementById('info-btn').addEventListener('click', () => {
@@ -628,19 +539,15 @@
             const spinBtn = document.getElementById('spin-btn');
             spinBtn.disabled = true;
             
-            // Если это не бесплатное вращение, списываем ставку
-            if (freeSpins === 0) {
-                const amountToDeduct = STAKE_AMOUNT;
-                
-                if (useBonus) {
-                    currentBonusBalance -= amountToDeduct;
-                    await updateBalance(currentUserId, -amountToDeduct, true);
-                } else {
-                    currentBalance -= amountToDeduct;
-                    await updateBalance(currentUserId, -amountToDeduct, false);
-                }
+            // Списываем ставку
+            const amountToDeduct = STAKE_AMOUNT;
+            
+            if (useBonus) {
+                currentBonusBalance -= amountToDeduct;
+                await updateBalance(currentUserId, -amountToDeduct, true);
             } else {
-                freeSpins--;
+                currentBalance -= amountToDeduct;
+                await updateBalance(currentUserId, -amountToDeduct, false);
             }
             
             updateBalanceDisplay();
@@ -653,8 +560,8 @@
             // Запускаем вращение всех слотов с небольшой задержкой между ними
             await Promise.all([
                 spinSlot(slot1),
-                new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150)),
-                new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300))
+                new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150),
+                new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300)
             ]);
             
             // Определяем результат после анимации
@@ -664,56 +571,20 @@
                 slot3.querySelector('.slot-inner').textContent
             ];
             
-            const { winAmount, extraSpins, multiplier } = checkWin(symbols);
+            const winAmount = checkWin(symbols);
             
             if (winAmount > 0) {
                 // Зачисляем выигрыш
                 currentBalance += winAmount;
                 await updateBalance(currentUserId, winAmount, false);
-                
-                // Показываем сумму выигрыша под слотами
-                showWinAmount(winAmount);
-                
-                // Добавляем бесплатные вращения
-                if (extraSpins > 0) {
-                    freeSpins += extraSpins;
-                    spinMultiplier *= multiplier;
-                    
-                    // Обновляем отображение бесплатных вращений
-                    updateFreeSpinsDisplay();
-                    
-                    // Если есть бесплатные вращения, запускаем следующее автоматически
-                    if (freeSpins > 0) {
-                        setTimeout(() => {
-                            startSpin();
-                        }, 1000);
-                        return;
-                    }
-                }
+                showResult('Поздравляем!', `Вы выиграли ${winAmount} ⭐!`);
             } else {
-                spinMultiplier = 1; // Сбрасываем множитель при проигрыше
+                showResult('Результат', 'Попробуйте еще раз!');
             }
             
-            // Обновляем отображение
+            // Обновляем отображение баланса
             updateBalanceDisplay();
-            updateFreeSpinsDisplay();
-            
-            // Если это последнее вращение, показываем результат
-            if (freeSpins === 0) {
-                if (winAmount > 0) {
-                    setTimeout(() => {
-                        showResult('Поздравляем!', `Вы выиграли ${lastWinAmount} ⭐!`);
-                        isSpinning = false;
-                    }, 500);
-                } else {
-                    setTimeout(() => {
-                        showResult('Результат', 'Попробуйте еще раз!');
-                        isSpinning = false;
-                    }, 500);
-                }
-            } else {
-                isSpinning = false;
-            }
+            isSpinning = false;
         }
         
         document.addEventListener('DOMContentLoaded', initApp);
