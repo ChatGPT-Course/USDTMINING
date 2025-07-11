@@ -53,7 +53,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             flex-grow: 1;
         }
-        
+                
         .profile-header {
             display: flex;
             align-items: center;
@@ -527,8 +527,8 @@
                         last_name: user.last_name || '',
                         username: user.username || '',
                         photo_url: user.photo_url || '',
-                        balance: 10, // Начальный баланс 10 звезд
-                        bonus_balance: 0, // Начальный бонусный баланс 0 звезд
+                        balance: 10,
+                        bonus_balance: 0,
                         created_at: firebase.database.ServerValue.TIMESTAMP
                     };
                     
@@ -738,15 +738,14 @@
                         const transactionItem = document.createElement('div');
                         transactionItem.className = 'transaction-item';
                         
-                        const amountClass = transaction.type === 'deposit' ? 'positive' : 'negative';
-                        const amountSign = transaction.type === 'deposit' ? '+' : '-';
+                        // Определяем класс для цвета суммы
+                        const amountClass = transaction.amount.startsWith('+') ? 'positive' : 'negative';
                         
                         transactionItem.innerHTML = `
                             <div class="transaction-header">
-                                <div class="transaction-type">${transaction.type === 'deposit' ? 'Пополнение' : 'Вывод'}</div>
-                                <div class="transaction-amount ${amountClass}">${amountSign}${transaction.amount} ⭐</div>
+                                <div class="transaction-type">${transaction.description || 'Операция'}</div>
+                                <div class="transaction-amount ${amountClass}">${transaction.amount} ⭐</div>
                             </div>
-                            <div class="transaction-description">${transaction.description || ''}</div>
                             <div class="transaction-date">${transaction.date}</div>
                         `;
                         
