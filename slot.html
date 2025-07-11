@@ -601,21 +601,15 @@
         function checkWin(results) {
             const winLines = [];
             let totalWin = 0;
-            let hasBlockSymbol = false;
+            let blockSymbolsCount = 0;
             
-            // Проверяем на наличие блокирующего символа (🚫)
-            WIN_LINES.forEach(line => {
-                const [a, b, c] = line;
-                if (results[a] === '🚫' && results[b] === '🚫' && results[c] === '🚫') {
-                    hasBlockSymbol = true;
-                }
+            // Считаем количество блокирующих символов
+            results.forEach(symbol => {
+                if (symbol === '🚫') blockSymbolsCount++;
             });
             
-            // Если есть блокирующий символ - аннулируем все выигрыши
-            if (hasBlockSymbol) {
-                showResult(0, [], true);
-                return;
-            }
+            // Если 2 или более 🚫 - аннулируем выигрыш
+            const isBlocked = blockSymbolsCount >= 2;
             
             // Проверяем все возможные выигрышные линии
             WIN_LINES.forEach(line => {
@@ -631,15 +625,14 @@
                         win: finalWin
                     });
                     
-                    totalWin += finalWin;
+                    if (!isBlocked) {
+                        totalWin += finalWin;
+                    }
                 }
             });
             
-            // Показываем результат
-            showResult(totalWin, winLines);
-            
             // Подсвечиваем выигрышные линии
-            if (winLines.length > 0) {
+            if (winLines.length > 0 && !isBlocked) {
                 winLines.forEach(winLine => {
                     winLine.line.forEach(cellIndex => {
                         document.getElementById(`cell-${cellIndex}`).classList.add('win');
@@ -654,24 +647,29 @@
                 }, 5000);
             }
             
-            // Обновляем баланс, если есть выигрыш
-            if (totalWin > 0) {
-                database.ref('users/' + currentUserId).transaction((user) => {
-                    if (user) {
-                        user.balance = (user.balance || 0) + totalWin;
-                    }
-                    return user;
-                });
+            // Показываем результат через 1 секунду
+            setTimeout(() => {
+                showResult(totalWin, winLines, isBlocked);
                 
-                // Добавляем запись в историю
-                const transactionRef = database.ref('history/' + currentUserId).push();
-                transactionRef.set({
-                    amount: `+${totalWin}`,
-                    description: `Выигрыш в слотах (${winLines.length} линии)`,
-                    date: new Date().toLocaleString(),
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
+                // Обновляем баланс, если есть выигрыш
+                if (totalWin > 0) {
+                    database.ref('users/' + currentUserId).transaction((user) => {
+                        if (user) {
+                            user.balance = (user.balance || 0) + totalWin;
+                        }
+                        return user;
+                    });
+                    
+                    // Добавляем запись в историю
+                    const transactionRef = database.ref('history/' + currentUserId).push();
+                    transactionRef.set({
+                        amount: `+${totalWin}`,
+                        description: `Выигрыш в слотах (${winLines.length} линии)`,
+                        date: new Date().toLocaleString(),
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            }, 1000);
         }
         
         // Показ результата в модальном окне
@@ -683,7 +681,7 @@
             
             if (isBlocked) {
                 resultTitle.textContent = 'Выигрыш аннулирован';
-                resultText.textContent = 'Выпала комбинация с 🚫';
+                resultText.textContent = 'Найдено 2 или более символов 🚫';
                 resultAmount.textContent = '0 ⭐';
                 winLinesElement.textContent = '';
             } else if (winLines.length > 0) {
