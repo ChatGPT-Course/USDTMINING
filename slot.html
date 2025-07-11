@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Слоты - StarGame</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #0f0c29;
+            color: white;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 20px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .balance {
+            background: rgba(123, 44, 191, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .slots-machine {
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(123, 44, 191, 0.5);
+            margin-bottom: 20px;
+        }
+        
+        .slots-display {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .slot {
+            width: 80px;
+            height: 80px;
+            font-size: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin: 0 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .slot-inner {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.1s;
+        }
+        
+        .spin-btn {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .spin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+        
+        .spin-btn:disabled {
+            background: rgba(100, 100, 100, 0.5);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .result-message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            min-height: 24px;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #4caf50;
+        }
+        
+        .error {
+            color: #f44336;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #b8b8b8;
+        }
+        
+        /* Модальное окно подтверждения */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: rgba(46, 17, 81, 0.9);
+            padding: 25px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .modal-text {
+            margin-bottom: 20px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-weight: bold;
+        }
+        
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            color: white;
+        }
+        
+        .modal-btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        @keyframes win-flash {
+            0% { background-color: rgba(76, 175, 80, 0.3); }
+            50% { background-color: rgba(76, 175, 80, 0.7); }
+            100% { background-color: rgba(76, 175, 80, 0.3); }
+        }
+        
+        .win-animation {
+            animation: win-flash 0.5s 3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" id="back-btn">← Назад</button>
+            <div class="balance" id="user-balance">0 ⭐</div>
+        </div>
+        
+        <div class="game-container">
+            <div class="slots-machine">
+                <div class="slots-display">
+                    <div class="slot" id="slot1">
+                        <div class="slot-inner">🎰</div>
+                    </div>
+                    <div class="slot" id="slot2">
+                        <div class="slot-inner">🎰</div>
+                    </div>
+                    <div class="slot" id="slot3">
+                        <div class="slot-inner">🎰</div>
+                    </div>
+                </div>
+                <button class="spin-btn" id="spin-btn">Крутить за 5 ⭐</button>
+                <div id="result-message" class="result-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Подтверждение</div>
+            <div class="modal-text">Списать 5 ⭐ для игры в слоты?</div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-confirm" id="confirm-btn">Да</button>
+                <button class="modal-btn modal-btn-cancel" id="cancel-btn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMos6Y7C-krTLuKCI4VJG-TFLo6QI--k8",
+            authDomain: "vrot-x-7a48f.firebaseapp.com",
+            databaseURL: "https://vrot-x-7a48f-default-rtdb.firebaseio.com",
+            projectId: "vrot-x-7a48f",
+            storageBucket: "vrot-x-7a48f.appspot.com",
+            messagingSenderId: "622297225288",
+            appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
+        };
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        let currentUserId = null;
+        let currentBalance = 0;
+        let currentBonusBalance = 0;
+        const STAKE_AMOUNT = 5;
+        
+        // Символы для слотов
+        const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '🍎', '🍓', '7️⃣', '💰', '🔔', '⭐', '🎰'];
+        
+        // Комбинации и выплаты
+        const PAYOUTS = {
+            '7️⃣7️⃣7️⃣': 100,
+            '💰💰💰': 50,
+            '🔔🔔🔔': 30,
+            '⭐⭐⭐': 20,
+            '🎰🎰🎰': 15,
+            '🍒🍒🍒': 10,
+            '🍋🍋🍋': 8,
+            '🍊🍊🍊': 8,
+            '🍇🍇🍇': 8,
+            '🍉🍉🍉': 8,
+            '🍎🍎🍎': 8,
+            '🍓🍓🍓': 8,
+            '7️⃣7️⃣': 5,
+            '💰💰': 4,
+            '🔔🔔': 3,
+            '⭐⭐': 2
+        };
+        
+        function getUserId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('user_id') || document.cookie.replace(/(?:(?:^|.*;\s*)user_id\s*=\s*([^;]*).*$)|^.*$/, "$1");
+        }
+        
+        async function loadUserData(userId) {
+            const userRef = database.ref('users/' + userId);
+            const snapshot = await userRef.once('value');
+            return snapshot.val();
+        }
+        
+        async function updateBalance(userId, amount, isBonus = false) {
+            const userRef = database.ref('users/' + userId);
+            const updates = {};
+            
+            if (isBonus) {
+                updates['bonus_balance'] = currentBonusBalance + amount;
+            } else {
+                updates['balance'] = currentBalance + amount;
+            }
+            
+            await userRef.update(updates);
+            
+            // Запись в историю
+            const historyRef = database.ref('history/' + userId);
+            await historyRef.push().set({
+                type: isBonus ? 'slots_bonus' : 'slots',
+                amount: amount >= 0 ? `+${amount}` : `${amount}`,
+                description: `Игра в слоты: ${amount >= 0 ? 'выигрыш' : 'ставка'}`,
+                date: new Date().toLocaleString('ru-RU'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+        
+        function showResult(message, isSuccess = true) {
+            const resultEl = document.getElementById('result-message');
+            resultEl.textContent = message;
+            resultEl.className = `result-message ${isSuccess ? 'success' : 'error'}`;
+            
+            if (isSuccess) {
+                resultEl.classList.add('win-animation');
+                setTimeout(() => {
+                    resultEl.classList.remove('win-animation');
+                }, 1500);
+            }
+        }
+        
+        function spinSlot(slotElement) {
+            let spins = 0;
+            const maxSpins = 10 + Math.floor(Math.random() * 10);
+            const spinInterval = setInterval(() => {
+                const randomSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                slotElement.querySelector('.slot-inner').textContent = randomSymbol;
+                spins++;
+                
+                if (spins >= maxSpins) {
+                    clearInterval(spinInterval);
+                }
+            }, 100);
+        }
+        
+        function checkWin(symbols) {
+            const [s1, s2, s3] = symbols;
+            
+            // Проверяем комбинации из 3 символов
+            if (s1 === s2 && s2 === s3) {
+                const combo = `${s1}${s2}${s3}`;
+                return PAYOUTS[combo] || 0;
+            }
+            
+            // Проверяем комбинации из 2 символов
+            if (s1 === s2 || s2 === s3 || s1 === s3) {
+                const combo = s1 === s2 ? `${s1}${s2}` : `${s2}${s3}`;
+                return PAYOUTS[combo] || 0;
+            }
+            
+            return 0;
+        }
+        
+        async function initApp() {
+            currentUserId = getUserId();
+            
+            if (!currentUserId) {
+                window.location.href = 'index1.html';
+                return;
+            }
+            
+            try {
+                const userData = await loadUserData(currentUserId);
+                currentBalance = userData.balance || 0;
+                currentBonusBalance = userData.bonus_balance || 0;
+                
+                // Обновляем отображение баланса
+                document.getElementById('user-balance').textContent = 
+                    `${currentBalance} ⭐ (${currentBonusBalance} бонус)`;
+                
+                // Проверяем, достаточно ли средств для игры
+                const canPlay = (currentBonusBalance >= STAKE_AMOUNT) || (currentBalance >= STAKE_AMOUNT);
+                document.getElementById('spin-btn').disabled = !canPlay;
+                
+                // Обработчики событий
+                document.getElementById('back-btn').addEventListener('click', () => {
+                    window.location.href = `index1.html?user_id=${currentUserId}`;
+                });
+                
+                document.getElementById('spin-btn').addEventListener('click', () => {
+                    document.getElementById('confirm-modal').style.display = 'flex';
+                });
+                
+                document.getElementById('confirm-btn').addEventListener('click', async () => {
+                    document.getElementById('confirm-modal').style.display = 'none';
+                    await startSpin();
+                });
+                
+                document.getElementById('cancel-btn').addEventListener('click', () => {
+                    document.getElementById('confirm-modal').style.display = 'none';
+                });
+                
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                showResult('Ошибка загрузки данных', false);
+            }
+        }
+        
+        async function startSpin() {
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = true;
+            showResult('', false);
+            
+            // Определяем, какой баланс использовать
+            const useBonus = currentBonusBalance >= STAKE_AMOUNT;
+            
+            // Списываем ставку
+            if (useBonus) {
+                currentBonusBalance -= STAKE_AMOUNT;
+            } else {
+                currentBalance -= STAKE_AMOUNT;
+            }
+            
+            // Обновляем баланс в базе данных
+            await updateBalance(currentUserId, -STAKE_AMOUNT, useBonus);
+            
+            // Обновляем отображение баланса
+            document.getElementById('user-balance').textContent = 
+                `${currentBalance} ⭐ (${currentBonusBalance} бонус)`;
+            
+            // Анимация вращения
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+            const slot3 = document.getElementById('slot3');
+            
+            spinSlot(slot1);
+            setTimeout(() => spinSlot(slot2), 300);
+            setTimeout(() => spinSlot(slot3), 600);
+            
+            // Определяем результат после анимации
+            setTimeout(async () => {
+                const symbols = [
+                    slot1.querySelector('.slot-inner').textContent,
+                    slot2.querySelector('.slot-inner').textContent,
+                    slot3.querySelector('.slot-inner').textContent
+                ];
+                
+                const winAmount = checkWin(symbols);
+                
+                if (winAmount > 0) {
+                    // Зачисляем выигрыш
+                    currentBalance += winAmount;
+                    await updateBalance(currentUserId, winAmount, false);
+                    showResult(`Вы выиграли ${winAmount} ⭐!`, true);
+                } else {
+                    showResult('Попробуйте еще раз!', false);
+                }
+                
+                // Обновляем отображение баланса
+                document.getElementById('user-balance').textContent = 
+                    `${currentBalance} ⭐ (${currentBonusBalance} бонус)`;
+                
+                // Проверяем, достаточно ли средств для следующей игры
+                const canPlay = (currentBonusBalance >= STAKE_AMOUNT) || (currentBalance >= STAKE_AMOUNT);
+                spinBtn.disabled = !canPlay;
+            }, 2000);
+        }
+        
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
