@@ -319,12 +319,59 @@
         .notification.error {
             color: #f44336;
         }
+
+        /* Новые стили для управления балансами */
+        .balance-control {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .balance-input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .balance-input-group label {
+            width: 150px;
+            color: #b8b8b8;
+            font-size: 14px;
+        }
+        
+        .balance-input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+        
+        .save-balance-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .save-balance-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <button class="back-btn" id="back-btn">← Назад</button>
+            <button class="back-btn" id="back-btn">< Назад</button>
             <h1 class="page-title">Админ-панель</h1>
             <div style="width: 48px;"></div>
         </div>
@@ -369,12 +416,18 @@
                 <div class="detail-value" id="modal-user-username"></div>
             </div>
             
-            <div class="detail-row">
-                <div class="detail-label">Баланс:</div>
-                <div class="detail-value">
-                    <input type="number" id="balance-input" style="width: 100px; padding: 5px;">
-                    <button class="btn btn-primary" id="save-balance-btn" style="margin-left: 10px;">Сохранить</button>
+            <div class="balance-control">
+                <div class="balance-input-group">
+                    <label>Основной баланс:</label>
+                    <input type="number" id="balance-input" placeholder="Введите сумму">
                 </div>
+                
+                <div class="balance-input-group">
+                    <label>Бонусный баланс:</label>
+                    <input type="number" id="bonus-balance-input" placeholder="Введите сумму">
+                </div>
+                
+                <button class="save-balance-btn" id="save-balance-btn">Сохранить изменения</button>
             </div>
         </div>
     </div>
@@ -419,7 +472,7 @@
     </div>
     
     <div id="notification" class="notification">
-        <div class="notification-icon">✓</div>
+        <div class="notification-icon">?</div>
         <div class="notification-message" id="notification-message"></div>
     </div>
 
@@ -526,7 +579,7 @@
                             <div class="user-name">${user.first_name || ''} ${user.last_name || ''}</div>
                             <div class="user-username">@${user.username || 'нет'}</div>
                         </div>
-                        <div class="user-balance">${user.balance || 0} ⭐</div>
+                        <div class="user-balance">${user.balance || 0} ⭐ / ${user.bonus_balance || 0} ⭐</div>
                         <button class="user-settings">⚙️</button>
                     </div>
                 `;
@@ -618,6 +671,7 @@
             document.getElementById('modal-user-username').textContent = 
                 userData.username ? `@${userData.username}` : 'Не указан';
             document.getElementById('balance-input').value = userData.balance || 0;
+            document.getElementById('bonus-balance-input').value = userData.bonus_balance || 0;
             
             document.getElementById('user-modal').style.display = 'flex';
         }
@@ -638,26 +692,31 @@
             document.getElementById('ticket-modal').style.display = 'flex';
         }
 
-        // Обновление баланса пользователя
-        async function updateUserBalance(userId, newBalance) {
+        // Обновление балансов пользователя
+        async function updateUserBalances(userId, newBalance, newBonusBalance) {
             try {
                 const userRef = database.ref(`users/${userId}`);
-                await userRef.update({
-                    balance: Number(newBalance)
-                });
+                const updates = {
+                    balance: Number(newBalance),
+                    bonus_balance: Number(newBonusBalance)
+                };
                 
+                await userRef.update(updates);
+                
+                // Запись в историю изменений баланса
                 const historyRef = database.ref(`history/${userId}`).push();
                 await historyRef.set({
                     type: 'admin_adjustment',
                     amount: Number(newBalance) - (userRef.balance || 0),
-                    description: "Корректировка баланса администратором",
+                    bonus_amount: Number(newBonusBalance) - (userRef.bonus_balance || 0),
+                    description: "Корректировка балансов администратором",
                     date: new Date().toLocaleString('ru-RU'),
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
                 
                 return true;
             } catch (error) {
-                console.error('Ошибка обновления баланса:', error);
+                console.error('Ошибка обновления балансов:', error);
                 return false;
             }
         }
@@ -673,8 +732,8 @@
                 });
                 
                 // Формируем сообщение для пользователя
-                const message = `📨 <b>Ответ по тикету #${ticketId.substring(0, 6)}</b>\n\n` +
-                               `🔹 Тема: ${ticketData.tema}\n` +
+                const message = `🔔 <b>Ответ по тикету #${ticketId.substring(0, 6)}</b>\n\n` +
+                               `📌 Тема: ${ticketData.tema}\n` +
                                `📝 Ваш запрос: ${ticketData.discript}\n\n` +
                                `💬 <b>Ответ поддержки:</b>\n${responseText}\n\n` +
                                `Статус: <b>Закрыт</b>`;
@@ -765,19 +824,25 @@
             
             document.getElementById('save-balance-btn').addEventListener('click', async () => {
                 const newBalance = document.getElementById('balance-input').value.trim();
+                const newBonusBalance = document.getElementById('bonus-balance-input').value.trim();
                 
-                if (!newBalance || isNaN(newBalance)) {
-                    showNotification('Введите корректную сумму', false);
+                if (!newBalance || isNaN(newBalance) {
+                    showNotification('Введите корректную сумму основного баланса', false);
                     return;
                 }
                 
-                const success = await updateUserBalance(currentEditingUserId, newBalance);
+                if (!newBonusBalance || isNaN(newBonusBalance)) {
+                    showNotification('Введите корректную сумму бонусного баланса', false);
+                    return;
+                }
+                
+                const success = await updateUserBalances(currentEditingUserId, newBalance, newBonusBalance);
                 if (success) {
-                    showNotification('Баланс успешно обновлен!');
+                    showNotification('Балансы успешно обновлены!');
                     document.getElementById('user-modal').style.display = 'none';
                     loadAllUsers();
                 } else {
-                    showNotification('Ошибка при обновлении баланса', false);
+                    showNotification('Ошибка при обновлении балансов', false);
                 }
             });
             
