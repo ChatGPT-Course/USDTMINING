@@ -53,7 +53,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             flex-grow: 1;
         }
-                
+        
         .profile-header {
             display: flex;
             align-items: center;
@@ -69,12 +69,15 @@
             object-fit: cover;
             border: 2px solid #7b2cbf;
         }
+        
         .btn-help {
             background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
         }
+        
         .btn-help:hover {
             box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
         }
+        
         .user-info h2 {
             font-size: 18px;
             margin-bottom: 5px;
@@ -89,18 +92,24 @@
             background: rgba(123, 44, 191, 0.3);
             padding: 15px;
             border-radius: 12px;
-            text-align: center;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .balance-item {
+            flex: 1;
+            text-align: center;
         }
         
         .balance-label {
-            font-size: 14px;
+            font-size: 12px;
             color: #d1d1d1;
             margin-bottom: 5px;
         }
         
         .balance-amount {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: bold;
             color: #f7f7f7;
         }
@@ -357,8 +366,14 @@
                 </div>
                 
                 <div class="balance floating">
-                    <div class="balance-label">Ваш баланс</div>
-                    <div class="balance-amount" id="user-balance">0 ⭐</div>
+                    <div class="balance-item">
+                        <div class="balance-label">Основной баланс</div>
+                        <div class="balance-amount" id="user-balance">0 ⭐</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-label">Бонусный баланс</div>
+                        <div class="balance-amount" id="user-bonus-balance">0 ⭐</div>
+                    </div>
                 </div>
                 
                 <div class="buttons">
@@ -512,13 +527,22 @@
                         last_name: user.last_name || '',
                         username: user.username || '',
                         photo_url: user.photo_url || '',
-                        balance: 10,
-                        bonus_balance: 0,
+                        balance: 10, // Начальный баланс 10 звезд
+                        bonus_balance: 0, // Начальный бонусный баланс 0 звезд
                         created_at: firebase.database.ServerValue.TIMESTAMP
                     };
                     
                     await userRef.set(newUser);
                     console.log('Новый пользователь создан:', newUser);
+                } else {
+                    // Проверяем и добавляем bonus_balance, если его нет
+                    const userData = snapshot.val();
+                    if (userData.bonus_balance === undefined) {
+                        await userRef.update({
+                            bonus_balance: 0
+                        });
+                        console.log('Добавлен бонусный баланс для существующего пользователя');
+                    }
                 }
                 
                 return userId;
@@ -679,6 +703,9 @@
             document.getElementById('user-balance').textContent = 
                 `${userData.balance || 0} ⭐`;
             
+            document.getElementById('user-bonus-balance').textContent = 
+                `${userData.bonus_balance || 0} ⭐`;
+            
             if (userData.photo_url) {
                 document.getElementById('user-avatar').src = userData.photo_url;
             } else {
@@ -711,13 +738,15 @@
                         const transactionItem = document.createElement('div');
                         transactionItem.className = 'transaction-item';
                         
-                        const amountClass = transaction.amount.startsWith('+') ? 'positive' : 'negative';
+                        const amountClass = transaction.type === 'deposit' ? 'positive' : 'negative';
+                        const amountSign = transaction.type === 'deposit' ? '+' : '-';
                         
                         transactionItem.innerHTML = `
                             <div class="transaction-header">
-                                <div class="transaction-type">${transaction.description || 'Операция'}</div>
-                                <div class="transaction-amount ${amountClass}">${transaction.amount} ⭐</div>
+                                <div class="transaction-type">${transaction.type === 'deposit' ? 'Пополнение' : 'Вывод'}</div>
+                                <div class="transaction-amount ${amountClass}">${amountSign}${transaction.amount} ⭐</div>
                             </div>
+                            <div class="transaction-description">${transaction.description || ''}</div>
                             <div class="transaction-date">${transaction.date}</div>
                         `;
                         
