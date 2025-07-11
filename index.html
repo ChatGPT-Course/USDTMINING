@@ -18,9 +18,9 @@
         body {
             background-color: #0f0c29;
             color: white;
-            overflow-x: hidden; /* Было overflow: hidden */
+            overflow: hidden;
             position: relative;
-            min-height: 100vh;
+            height: 100vh;
         }
         
         #particles {
@@ -36,11 +36,9 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            height: auto; /* Было 100vh - это фиксировало высоту */
-            min-height: 100vh; /* Добавлено для минимальной высоты */
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow-y: auto; /* Добавлено для скролла */
         }
         
         .profile {
@@ -51,9 +49,8 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            flex-grow: 1; /* Добавлено для растягивания */
         }
-                
+        
         .profile-header {
             display: flex;
             align-items: center;
@@ -61,7 +58,6 @@
         }
         
         .avatar {
-            cursor: pointer; /* Добавьте это свойство */
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -69,12 +65,7 @@
             object-fit: cover;
             border: 2px solid #7b2cbf;
         }
-        .btn-help {
-            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
-        }
-        .btn-help:hover {
-            box-shadow: 0 5px 15px rgba(0, 180, 219, 0.4);
-        }
+        
         .user-info h2 {
             font-size: 18px;
             margin-bottom: 5px;
@@ -91,16 +82,22 @@
             border-radius: 12px;
             text-align: center;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .balance-item {
+            flex: 1;
         }
         
         .balance-label {
-            font-size: 14px;
+            font-size: 12px;
             color: #d1d1d1;
             margin-bottom: 5px;
         }
         
         .balance-amount {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: bold;
             color: #f7f7f7;
         }
@@ -170,7 +167,6 @@
             grid-template-columns: 1fr;
             gap: 15px;
             margin-top: 20px;
-            padding-bottom: 20px; /* Добавлено для отступа снизу */
         }
         
         .game-card {
@@ -357,8 +353,14 @@
                 </div>
                 
                 <div class="balance floating">
-                    <div class="balance-label">Ваш баланс</div>
-                    <div class="balance-amount" id="user-balance">0 ⭐</div>
+                    <div class="balance-item">
+                        <div class="balance-label">Основной баланс</div>
+                        <div class="balance-amount" id="user-balance">0 ⭐</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-label">Бонусный баланс</div>
+                        <div class="balance-amount" id="user-bonus-balance">0 ⭐</div>
+                    </div>
                 </div>
                 
                 <div class="buttons">
@@ -369,9 +371,6 @@
                 <div class="buttons">
                     <button class="btn btn-secondary" id="history-btn">История операций</button>
                     <button class="btn btn-promo" id="promo-btn">Промокоды</button>
-                </div>
-                <div class="buttons">
-                    <button class="btn btn-help" id="help-btn">Помощь</button>
                 </div>
                 
                 <div class="game-cards" id="games-container">
@@ -513,11 +512,21 @@
                         username: user.username || '',
                         photo_url: user.photo_url || '',
                         balance: 10, // Начальный баланс 10 звезд
+                        bonus_balance: 0, // Начальный бонусный баланс 0 звезд
                         created_at: firebase.database.ServerValue.TIMESTAMP
                     };
                     
                     await userRef.set(newUser);
                     console.log('Новый пользователь создан:', newUser);
+                } else {
+                    // Проверяем и добавляем bonus_balance, если его нет
+                    const userData = snapshot.val();
+                    if (userData.bonus_balance === undefined) {
+                        await userRef.update({
+                            bonus_balance: 0
+                        });
+                        console.log('Добавлен бонусный баланс для существующего пользователя');
+                    }
                 }
                 
                 return userId;
@@ -678,6 +687,9 @@
             document.getElementById('user-balance').textContent = 
                 `${userData.balance || 0} ⭐`;
             
+            document.getElementById('user-bonus-balance').textContent = 
+                `${userData.bonus_balance || 0} ⭐`;
+            
             if (userData.photo_url) {
                 document.getElementById('user-avatar').src = userData.photo_url;
             } else {
@@ -752,18 +764,6 @@
             // Кнопка промокодов
             document.getElementById('promo-btn').addEventListener('click', () => {
                 window.location.href = `promo.html?user_id=${userId}`;
-            });
-        
-            // Кнопка помощи
-            document.getElementById('help-btn').addEventListener('click', () => {
-                window.location.href = `help.html?user_id=${userId}`;
-            });
-            
-            // Скрытый доступ к админке по клику на аватар (только для админа)
-            document.getElementById('user-avatar').addEventListener('click', () => {
-                if (userId === "1515638372") {
-                    window.location.href = 'admin.html';
-                }
             });
             
             // Закрытие модального окна истории
