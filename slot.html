@@ -150,6 +150,23 @@
             box-shadow: none;
         }
         
+        .win-amount {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4caf50;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .win-amount.show {
+            opacity: 1;
+        }
+        
         /* Модальные окна */
         .modal {
             display: none;
@@ -266,12 +283,15 @@
                 <div class="slots-display">
                     <div class="slot" id="slot1">
                         <div class="slot-inner">🎰</div>
+                        <div class="win-amount" id="win-amount1"></div>
                     </div>
                     <div class="slot" id="slot2">
                         <div class="slot-inner">🎰</div>
+                        <div class="win-amount" id="win-amount2"></div>
                     </div>
                     <div class="slot" id="slot3">
                         <div class="slot-inner">🎰</div>
+                        <div class="win-amount" id="win-amount3"></div>
                     </div>
                 </div>
                 <button class="spin-btn" id="spin-btn">Крутить за 5 ⭐</button>
@@ -354,7 +374,6 @@
             appId: "1:622297225288:web:5df6a5b02ffddedd96e07d"
         };
         
-        // Инициализируем Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
@@ -393,6 +412,7 @@
             const userId = urlParams.get('user_id');
             if (!userId) {
                 console.error('User ID not found in URL');
+                showResult('Ошибка', 'Не удалось определить пользователя. Пожалуйста, вернитесь в главное меню.');
                 return null;
             }
             return userId;
@@ -402,14 +422,23 @@
             try {
                 const userRef = database.ref('users/' + userId);
                 const snapshot = await userRef.once('value');
+                
                 if (!snapshot.exists()) {
                     console.error('User data not found in database');
-                    return null;
+                    showResult('Ошибка', 'Данные пользователя не найдены. Пожалуйста, вернитесь в главное меню.');
+                    return false;
                 }
-                return snapshot.val();
+                
+                const userData = snapshot.val();
+                currentBalance = userData.balance || 0;
+                currentBonusBalance = userData.bonus_balance || 0;
+                
+                updateBalanceDisplay();
+                return true;
             } catch (error) {
                 console.error('Error loading user data:', error);
-                return null;
+                showResult('Ошибка', 'Не удалось загрузить данные пользователя. Пожалуйста, попробуйте позже.');
+                return false;
             }
         }
         
@@ -484,6 +513,25 @@
             return winAmount * (useBonus ? 0.5 : 1);
         }
         
+        function showWinAmount(amount) {
+            const winAmountElements = [
+                document.getElementById('win-amount1'),
+                document.getElementById('win-amount2'),
+                document.getElementById('win-amount3')
+            ];
+            
+            winAmountElements.forEach(el => {
+                el.textContent = `+${amount} ⭐`;
+                el.classList.add('show');
+            });
+            
+            setTimeout(() => {
+                winAmountElements.forEach(el => {
+                    el.classList.remove('show');
+                });
+            }, 2000);
+        }
+        
         function updateBalanceDisplay() {
             document.getElementById('user-balance').innerHTML = `
                 <div>${currentBalance} ⭐ (${currentBonusBalance} бонус)</div>
@@ -498,23 +546,11 @@
         
         async function initApp() {
             currentUserId = getUserId();
-            
-            if (!currentUserId) {
-                showResult('Ошибка', 'Не удалось определить пользователя. Пожалуйста, войдите снова.');
-                return;
-            }
+            if (!currentUserId) return;
             
             try {
-                const userData = await loadUserData(currentUserId);
-                if (!userData) {
-                    showResult('Ошибка', 'Не удалось загрузить данные пользователя. Пожалуйста, попробуйте позже.');
-                    return;
-                }
-                
-                currentBalance = userData.balance || 0;
-                currentBonusBalance = userData.bonus_balance || 0;
-                
-                updateBalanceDisplay();
+                const userLoaded = await loadUserData(currentUserId);
+                if (!userLoaded) return;
                 
                 // Обработчики событий
                 document.getElementById('back-btn').addEventListener('click', () => {
@@ -553,7 +589,6 @@
                     document.getElementById('info-modal').style.display = 'none';
                 });
                 
-                console.log('App initialized successfully');
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
                 showResult('Ошибка', 'Не удалось загрузить данные. Пожалуйста, попробуйте позже.');
@@ -602,8 +637,8 @@
                 // Запускаем вращение всех слотов с небольшой задержкой между ними
                 await Promise.all([
                     spinSlot(slot1),
-                    new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150)),
-                    new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300))
+                    new Promise(resolve => setTimeout(() => spinSlot(slot2).then(resolve), 150),
+                    new Promise(resolve => setTimeout(() => spinSlot(slot3).then(resolve), 300)
                 ]);
                 
                 // Определяем результат после анимации
@@ -621,12 +656,17 @@
                     const updateSuccess = await updateBalance(currentUserId, winAmount, false);
                     
                     if (updateSuccess) {
-                        showResult('Поздравляем!', `Вы выиграли ${winAmount} ⭐!`);
+                        showWinAmount(winAmount);
+                        setTimeout(() => {
+                            showResult('Поздравляем!', `Вы выиграли ${winAmount} ⭐!`);
+                        }, 500);
                     } else {
                         showResult('Ошибка', 'Выигрыш зачислен локально, но возникла проблема с сервером.');
                     }
                 } else {
-                    showResult('Результат', 'Попробуйте еще раз!');
+                    setTimeout(() => {
+                        showResult('Результат', 'Попробуйте еще раз!');
+                    }, 500);
                 }
             } catch (error) {
                 console.error('Ошибка во время вращения:', error);
