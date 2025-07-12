@@ -13,6 +13,8 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
         
         body {
@@ -153,6 +155,18 @@
             box-shadow: 0 0 15px #4caf50;
         }
         
+        .card.class1 .card-front {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+        }
+        
+        .card.class2 .card-front {
+            background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%);
+        }
+        
+        .card.class3 .card-front {
+            background: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -169,7 +183,7 @@
             text-align: center;
         }
         
-        .attempts {
+        .opens-left {
             font-size: 18px;
             margin-bottom: 10px;
         }
@@ -333,7 +347,7 @@
                 
                 <div class="game-container">
                     <div class="game-info">
-                        <div class="attempts" id="attempts-info">Попыток: 2</div>
+                        <div class="opens-left" id="opens-info">Открытий осталось: 2</div>
                     </div>
                     
                     <div class="cards-grid" id="cards-grid">
@@ -376,6 +390,23 @@
         </div>
     </div>
 
+    <!-- Модальное окно дополнительного открытия -->
+    <div id="extra-open-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Дополнительное открытие</div>
+            <div class="modal-text">
+                Вы не нашли пару. Хотите открыть еще одну карту за 10 ⭐?
+            </div>
+            <div class="modal-text" id="extra-bonus-warning" style="color: #ff9800; display: none;">
+                Внимание: оплата будет с бонусного баланса!
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" id="cancel-extra">Отмена</button>
+                <button class="modal-btn modal-btn-confirm" id="confirm-extra">Открыть</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -401,9 +432,10 @@
         // Игровые переменные
         let cards = [];
         let flippedCards = [];
-        let attemptsLeft = 0;
+        let opensLeft = 0;
         let matchedPairs = 0;
         let winAmount = 0;
+        let currentClass = null;
         
         // Инициализация частиц на фоне
         function initParticles() {
@@ -476,28 +508,37 @@
             }
         }
         
+        // Генерация случайного значения для класса карт
+        function generateCardValue(cardClass) {
+            switch(cardClass) {
+                case 1: return Math.floor(Math.random() * 10) + 1; // 1-10
+                case 2: return Math.floor(Math.random() * 30) + 11; // 11-40
+                case 3: return Math.floor(Math.random() * 60) + 41; // 41-100
+                default: return 0;
+            }
+        }
+        
         // Инициализация игрового поля 3x3
         function initCardsGrid() {
             const grid = document.getElementById('cards-grid');
             grid.innerHTML = '';
             
-            // Создаем массив карт: 3 карты по 5⭐, 3 карты по 25⭐, 3 карты по 50⭐
-            const cardValues = [];
-            for (let i = 0; i < 3; i++) {
-                cardValues.push(5);
-                cardValues.push(25);
-                cardValues.push(50);
-            }
+            // Определяем классы карт: 3 карты 1 класса, 3 карты 2 класса, 3 карты 3 класса
+            const cardClasses = [1, 1, 1, 2, 2, 2, 3, 3, 3];
             
-            // Перемешиваем карты
-            cardValues.sort(() => Math.random() - 0.5);
+            // Перемешиваем классы карт
+            cardClasses.sort(() => Math.random() - 0.5);
             
             // Создаем элементы карт
             for (let i = 0; i < 9; i++) {
+                const cardClass = cardClasses[i];
+                const cardValue = generateCardValue(cardClass);
+                
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = `card class${cardClass}`;
                 card.id = `card-${i}`;
-                card.dataset.value = cardValues[i];
+                card.dataset.value = cardValue;
+                card.dataset.class = cardClass;
                 card.dataset.index = i;
                 
                 const cardInner = document.createElement('div');
@@ -505,7 +546,7 @@
                 
                 const cardFront = document.createElement('div');
                 cardFront.className = 'card-front';
-                cardFront.textContent = cardValues[i] + '⭐';
+                cardFront.textContent = cardValue + '⭐';
                 
                 const cardBack = document.createElement('div');
                 cardBack.className = 'card-back';
@@ -525,48 +566,66 @@
         
         // Переворот карты
         function flipCard(card) {
-            if (!isGameActive || card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length >= 2) {
+            if (!isGameActive || card.classList.contains('flipped') || card.classList.contains('matched')) {
                 return;
             }
             
             card.classList.add('flipped');
             flippedCards.push(card);
+            opensLeft--;
+            document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
             
             // Если открыто 2 карты, проверяем совпадение
             if (flippedCards.length === 2) {
-                attemptsLeft--;
-                document.getElementById('attempts-info').textContent = `Попыток: ${attemptsLeft}`;
-                
                 const card1 = flippedCards[0];
                 const card2 = flippedCards[1];
                 
-                if (card1.dataset.value === card2.dataset.value) {
+                if (card1.dataset.class === card2.dataset.class) {
                     // Совпадение
                     card1.classList.add('matched', 'win');
                     card2.classList.add('matched', 'win');
-                    winAmount += parseInt(card1.dataset.value);
+                    winAmount += parseInt(card1.dataset.value) + parseInt(card2.dataset.value);
                     matchedPairs++;
+                    
+                    // Сбрасываем открытые карты
+                    flippedCards = [];
                     
                     // Проверяем условие победы
                     if (matchedPairs >= 1) {
                         endGame(true);
-                    } else if (attemptsLeft <= 0) {
-                        endGame(false);
+                    } else if (opensLeft <= 0) {
+                        checkForExtraOpen();
                     }
                 } else {
                     // Не совпали
                     setTimeout(() => {
                         card1.classList.remove('flipped');
                         card2.classList.remove('flipped');
+                        flippedCards = [];
                         
-                        if (attemptsLeft <= 0) {
-                            endGame(false);
+                        if (opensLeft <= 0) {
+                            checkForExtraOpen();
                         }
                     }, 1000);
                 }
-                
-                flippedCards = [];
             }
+        }
+        
+        // Проверка возможности дополнительного открытия
+        function checkForExtraOpen() {
+            // Проверяем баланс
+            const totalBalance = userBonusBalance + userBalance;
+            if (totalBalance < GAME_COST) {
+                endGame(false);
+                return;
+            }
+            
+            // Определяем, с какого баланса списывать
+            const useBonus = userBonusBalance >= GAME_COST;
+            
+            // Показываем модальное окно подтверждения
+            document.getElementById('extra-bonus-warning').style.display = useBonus ? 'block' : 'none';
+            document.getElementById('extra-open-modal').style.display = 'flex';
         }
         
         // Начало игры
@@ -621,11 +680,35 @@
             // Инициализируем игру
             initCardsGrid();
             flippedCards = [];
-            attemptsLeft = 2;
+            opensLeft = 2;
             matchedPairs = 0;
             winAmount = 0;
             
-            document.getElementById('attempts-info').textContent = `Попыток: ${attemptsLeft}`;
+            document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
+        }
+        
+        // Функция выполнения дополнительного открытия
+        async function executeExtraOpen() {
+            document.getElementById('extra-open-modal').style.display = 'none';
+            
+            // Определяем сумму списания
+            let useBonus = Math.min(userBonusBalance, GAME_COST);
+            let useMain = GAME_COST - useBonus;
+            
+            // Обновляем баланс в базе данных
+            const updates = {};
+            if (useBonus > 0) {
+                updates['bonus_balance'] = userBonusBalance - useBonus;
+            }
+            if (useMain > 0) {
+                updates['balance'] = userBalance - useMain;
+            }
+            
+            await database.ref('users/' + currentUserId).update(updates);
+            
+            // Даем дополнительное открытие
+            opensLeft = 1;
+            document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
         }
         
         // Завершение игры
@@ -678,6 +761,13 @@
             document.getElementById('close-result').addEventListener('click', () => {
                 document.getElementById('result-modal').style.display = 'none';
                 document.getElementById('start-btn').disabled = false;
+            });
+            
+            document.getElementById('confirm-extra').addEventListener('click', executeExtraOpen);
+            
+            document.getElementById('cancel-extra').addEventListener('click', () => {
+                document.getElementById('extra-open-modal').style.display = 'none';
+                endGame(false);
             });
         }
         
