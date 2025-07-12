@@ -6,6 +6,7 @@
     <title>Помощь | StarGame</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -440,6 +441,23 @@
         .hidden {
             display: none;
         }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: #00b4db;
+            width: 0%;
+            transition: width 0.3s;
+        }
     </style>
 </head>
 <body>
@@ -500,6 +518,9 @@
                     <div id="file-name" class="file-name"></div>
                 </label>
                 <input type="file" id="ticket-file" class="file-upload-input">
+                <div class="progress-bar" id="upload-progress">
+                    <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                </div>
             </div>
             
             <div class="ticket-info">
@@ -592,6 +613,7 @@
         
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const storage = firebase.storage();
         
         let currentUserId = null;
         let currentUserData = null;
@@ -670,15 +692,56 @@
             }
         }
 
+        // Загрузка файла в Firebase Storage
+        async function uploadFile(file, ticketId) {
+            try {
+                const storageRef = storage.ref();
+                const fileRef = storageRef.child(`tickets/${ticketId}/${file.name}`);
+                const uploadTask = fileRef.put(file);
+                
+                // Показываем прогресс загрузки
+                document.getElementById('upload-progress').style.display = 'block';
+                
+                return new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            // Прогресс загрузки
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            document.getElementById('progress-bar-fill').style.width = progress + '%';
+                        },
+                        (error) => {
+                            console.error('Ошибка загрузки файла:', error);
+                            document.getElementById('upload-progress').style.display = 'none';
+                            reject(error);
+                        },
+                        async () => {
+                            // Загрузка завершена
+                            document.getElementById('upload-progress').style.display = 'none';
+                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                            resolve(downloadURL);
+                        }
+                    );
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки файла:', error);
+                throw error;
+            }
+        }
+
         // Отправка уведомления админу о новом тикете
         async function sendAdminNotification(ticketData) {
             try {
-                const message = `📌 *Новый тикет* 📌\n\n` +
+                let message = `📌 *Новый тикет* 📌\n\n` +
                                `🔹 *Тип*: ${ticketData.type || 'Не указано'}\n` +
                                `🔹 *От*: ${ticketData.name_creator || 'Не указано'} (@${ticketData.username_creator || 'нет'})\n` +
                                `🔹 *Тема*: ${ticketData.tema || 'Не указано'}\n` +
                                `🔹 *Описание*: ${ticketData.discript || 'Не указано'}\n\n` +
                                `🆔 *ID тикета*: ${ticketData.id || 'Не указано'}`;
+                
+                // Если есть файл, добавляем ссылку в сообщение
+                if (ticketData.fileUrl) {
+                    message += `\n\n📎 *Прикрепленный файл*: [Ссылка](${ticketData.fileUrl})`;
+                }
                 
                 // Отправка через Telegram Bot API
                 const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -705,7 +768,7 @@
         }
 
         // Создание нового тикета
-        async function createNewTicket(ticketData) {
+        async function createNewTicket(ticketData, file) {
             try {
                 const ticketsRef = database.ref('tickets');
                 const newTicketRef = ticketsRef.push();
@@ -719,6 +782,13 @@
                     date_create: now.toLocaleString('ru-RU'),
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 };
+                
+                // Если есть файл, загружаем его
+                if (file) {
+                    const fileUrl = await uploadFile(file, ticketId);
+                    ticket.fileUrl = fileUrl;
+                    ticket.fileName = file.name;
+                }
                 
                 await newTicketRef.set(ticket);
                 
@@ -879,6 +949,8 @@
                 document.getElementById('ticket-description').value = '';
                 document.getElementById('file-name').textContent = '';
                 document.getElementById('file-label-text').textContent = 'Прикрепить файл (необязательно)';
+                document.getElementById('ticket-file').value = '';
+                document.getElementById('upload-progress').style.display = 'none';
                 
                 // Сброс выбранной темы
                 document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -925,6 +997,7 @@
                 const theme = document.getElementById('ticket-theme').value.trim();
                 const description = document.getElementById('ticket-description').value.trim();
                 const fileInput = document.getElementById('ticket-file');
+                const file = fileInput.files.length > 0 ? fileInput.files[0] : null;
                 
                 if (!theme) {
                     showNotification('Пожалуйста, выберите тип обращения', false);
@@ -946,24 +1019,27 @@
                     discript: description
                 };
                 
-                // Обработка файла, если он есть
-                if (fileInput.files.length > 0) {
-                    // В реальном приложении здесь должна быть загрузка файла на сервер
-                    // Для примера просто добавляем информацию о файле
-                    ticketData.fileName = fileInput.files[0].name;
-                    ticketData.fileUrl = '#'; // Здесь должен быть URL загруженного файла
-                }
+                // Блокируем кнопку отправки
+                const submitBtn = document.getElementById('submit-ticket-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Отправка...';
                 
-                const success = await createNewTicket(ticketData);
-                if (success) {
-                    document.getElementById('create-ticket-modal').style.display = 'none';
-                    document.getElementById('ticket-theme').value = '';
-                    document.getElementById('ticket-description').value = '';
-                    document.getElementById('ticket-file').value = '';
-                    showNotification('Тикет успешно создан! Ответ придет от бота.');
-                    updateTicketsList();
-                } else {
+                try {
+                    const success = await createNewTicket(ticketData, file);
+                    if (success) {
+                        document.getElementById('create-ticket-modal').style.display = 'none';
+                        showNotification('Тикет успешно создан! Ответ придет от бота.');
+                        updateTicketsList();
+                    } else {
+                        showNotification('Ошибка при создании тикета', false);
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
                     showNotification('Ошибка при создании тикета', false);
+                } finally {
+                    // Разблокируем кнопку отправки
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Отправить';
                 }
             });
             
