@@ -113,15 +113,54 @@
             box-shadow: 0 0 15px #4caf50;
         }
         
+        .slot-cell.blocked {
+            animation: pulseRed 0.5s infinite;
+            border-color: #f44336;
+            box-shadow: 0 0 15px #f44336;
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
         
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 5px #f44336; }
+            50% { box-shadow: 0 0 20px #f44336; }
+            100% { box-shadow: 0 0 5px #f44336; }
+        }
+        
         @keyframes glow {
             0% { box-shadow: 0 0 15px #4caf50; }
             100% { box-shadow: 0 0 15px #4caf50; }
+        }
+        
+        .bet-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .bet-btn {
+            background: rgba(123, 44, 191, 0.5);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .bet-btn.active {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            box-shadow: 0 0 10px rgba(123, 44, 191, 0.7);
+        }
+        
+        .bet-btn:disabled {
+            background: rgba(100, 100, 100, 0.3);
+            cursor: not-allowed;
         }
         
         .spin-btn {
@@ -134,6 +173,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 10px;
+            width: 100%;
         }
         
         .spin-btn:hover {
@@ -330,7 +370,14 @@
                         <!-- 3x3 grid будет заполнена JavaScript -->
                     </div>
                     
-                    <button class="spin-btn" id="spin-btn">Крутить (5 ⭐)</button>
+                    <div class="bet-buttons">
+                        <button class="bet-btn active" id="bet-5" data-bet="5">5 ⭐</button>
+                        <button class="bet-btn" id="bet-10" data-bet="10">10 ⭐</button>
+                        <button class="bet-btn" id="bet-25" data-bet="25">25 ⭐</button>
+                        <button class="bet-btn" id="bet-50" data-bet="50">50 ⭐</button>
+                    </div>
+                    
+                    <button class="spin-btn" id="spin-btn">Крутить</button>
                 </div>
                 
                 <div class="paytable">
@@ -341,7 +388,7 @@
                             <span class="paytable-emoji">🍒</span>
                             <span class="paytable-emoji">🍒</span>
                         </div>
-                        <div class="paytable-payout">x2 (10⭐ / 5⭐)</div>
+                        <div class="paytable-payout">x2</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -349,7 +396,7 @@
                             <span class="paytable-emoji">🍋</span>
                             <span class="paytable-emoji">🍋</span>
                         </div>
-                        <div class="paytable-payout">x3 (15⭐ / 7⭐)</div>
+                        <div class="paytable-payout">x3</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -357,7 +404,7 @@
                             <span class="paytable-emoji">🍊</span>
                             <span class="paytable-emoji">🍊</span>
                         </div>
-                        <div class="paytable-payout">x5 (25⭐ / 12⭐)</div>
+                        <div class="paytable-payout">x5</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -365,7 +412,7 @@
                             <span class="paytable-emoji">🍇</span>
                             <span class="paytable-emoji">🍇</span>
                         </div>
-                        <div class="paytable-payout">x10 (50⭐ / 25⭐)</div>
+                        <div class="paytable-payout">x10</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -373,7 +420,7 @@
                             <span class="paytable-emoji">🍉</span>
                             <span class="paytable-emoji">🍉</span>
                         </div>
-                        <div class="paytable-payout">x20 (100⭐ / 50⭐)</div>
+                        <div class="paytable-payout">x20</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -381,7 +428,7 @@
                             <span class="paytable-emoji">⭐</span>
                             <span class="paytable-emoji">⭐</span>
                         </div>
-                        <div class="paytable-payout">x50 (250⭐ / 125⭐)</div>
+                        <div class="paytable-payout">x50</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -389,7 +436,7 @@
                             <span class="paytable-emoji">💰</span>
                             <span class="paytable-emoji">💰</span>
                         </div>
-                        <div class="paytable-payout">x100 (500⭐ / 250⭐)</div>
+                        <div class="paytable-payout">x100</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
@@ -397,14 +444,14 @@
                             <span class="paytable-emoji">7️⃣</span>
                             <span class="paytable-emoji">7️⃣</span>
                         </div>
-                        <div class="paytable-payout">x200 (1000⭐ / 500⭐)</div>
+                        <div class="paytable-payout">x200</div>
                     </div>
                     <div class="paytable-item">
                         <div class="paytable-combination">
                             <span class="paytable-emoji">🚫</span>
                             <span class="paytable-emoji">🚫</span>
                         </div>
-                        <div class="paytable-payout">x0 (аннулирует выигрыш)</div>
+                        <div class="paytable-payout">Без выигрыша</div>
                     </div>
                 </div>
             </div>
@@ -442,6 +489,18 @@
         </div>
     </div>
 
+    <!-- Модальное окно блокировки выигрыша -->
+    <div id="blocked-modal" class="modal">
+        <div class="modal-content result-modal">
+            <div class="modal-title">Выигрыш аннулирован</div>
+            <div class="modal-text">Найдено 2 или более символов 🚫</div>
+            <div class="result-amount">0 ⭐</div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-confirm" id="close-blocked">Понятно</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -462,7 +521,8 @@
         let userBonusBalance = 0;
         let isSpinning = false;
         let useBonusBalance = false;
-        const BET_AMOUNT = 5;
+        let currentBet = 5;
+        const BET_OPTIONS = [5, 10, 25, 50];
         
         // Настройка вероятности выигрыша (0-100)
         const CHANCE_OF_WIN = 20; // 20% шанс на выигрыш по умолчанию
@@ -551,8 +611,7 @@
                         document.getElementById('user-bonus-balance').textContent = `${userBonusBalance} ⭐`;
                         
                         // Проверяем, достаточно ли средств для ставки
-                        const canSpin = (userBonusBalance + userBalance) >= BET_AMOUNT;
-                        document.getElementById('spin-btn').disabled = !canSpin || isSpinning;
+                        updateBetButtons();
                         
                         document.getElementById('loading').style.display = 'none';
                         document.getElementById('game-content').style.display = 'block';
@@ -564,6 +623,24 @@
                 console.error('Ошибка загрузки данных пользователя:', error);
                 throw error;
             }
+        }
+        
+        // Обновление состояния кнопок ставок
+        function updateBetButtons() {
+            const totalBalance = userBonusBalance + userBalance;
+            
+            BET_OPTIONS.forEach(bet => {
+                const btn = document.getElementById(`bet-${bet}`);
+                btn.disabled = totalBalance < bet;
+                
+                if (bet === currentBet) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            document.getElementById('spin-btn').disabled = totalBalance < currentBet || isSpinning;
         }
         
         // Инициализация игрового поля 3x3
@@ -594,7 +671,7 @@
                 cells.forEach(cell => {
                     const randomIndex = Math.floor(Math.random() * SYMBOLS.length);
                     cell.textContent = SYMBOLS[randomIndex];
-                    cell.classList.remove('win'); // Убираем подсветку при вращении
+                    cell.classList.remove('win', 'blocked'); // Убираем подсветку при вращении
                 });
             }
         }
@@ -604,10 +681,14 @@
             const winLines = [];
             let totalMultiplier = 1; // Начинаем с 1 для перемножения
             let blockSymbolsCount = 0;
+            const blockedCells = [];
             
             // Считаем количество блокирующих символов
-            results.forEach(symbol => {
-                if (symbol === '🚫') blockSymbolsCount++;
+            results.forEach((symbol, index) => {
+                if (symbol === '🚫') {
+                    blockSymbolsCount++;
+                    blockedCells.push(index);
+                }
             });
             
             // Если 2 или более 🚫 - аннулируем выигрыш
@@ -634,7 +715,7 @@
             // Рассчитываем итоговый выигрыш
             let totalWin = 0;
             if (winLines.length > 0 && !isBlocked) {
-                totalWin = BET_AMOUNT * totalMultiplier;
+                totalWin = currentBet * totalMultiplier;
                 if (useBonusBalance) {
                     totalWin = Math.floor(totalWin / 2); // Для бонусного баланса выигрыш в 2 раза меньше
                 }
@@ -645,69 +726,71 @@
                         document.getElementById(`cell-${cellIndex}`).classList.add('win');
                     });
                 });
-                
-                // Убираем подсветку через 5 секунд
-                setTimeout(() => {
-                    document.querySelectorAll('.slot-cell').forEach(cell => {
-                        cell.classList.remove('win');
-                    });
-                }, 5000);
             }
             
-            // Показываем результат через 1 секунду
-            setTimeout(() => {
-                showResult(totalWin, winLines, isBlocked, totalMultiplier);
-                
-                // Обновляем баланс, если есть выигрыш
-                if (totalWin > 0) {
-                    database.ref('users/' + currentUserId).transaction((user) => {
-                        if (user) {
-                            user.balance = (user.balance || 0) + totalWin;
-                        }
-                        return user;
-                    });
-                }
-            }, 1000);
+            // Подсвечиваем блокирующие символы, если есть
+            if (blockSymbolsCount > 0) {
+                blockedCells.forEach(cellIndex => {
+                    document.getElementById(`cell-${cellIndex}`).classList.add('blocked');
+                });
+            }
+            
+            // Показываем результат
+            if (isBlocked) {
+                // Показываем модальное окно блокировки
+                setTimeout(() => {
+                    document.getElementById('blocked-modal').style.display = 'flex';
+                }, 500);
+            } else if (winLines.length > 0) {
+                // Показываем модальное окно выигрыша
+                setTimeout(() => {
+                    showResult(totalWin, winLines, totalMultiplier);
+                    
+                    // Обновляем баланс, если есть выигрыш
+                    if (totalWin > 0) {
+                        database.ref('users/' + currentUserId).transaction((user) => {
+                            if (user) {
+                                user.balance = (user.balance || 0) + totalWin;
+                            }
+                            return user;
+                        });
+                    }
+                }, 500);
+            } else {
+                // Нет выигрыша - просто разблокируем кнопки
+                setTimeout(() => {
+                    isSpinning = false;
+                    updateBetButtons();
+                }, 500);
+            }
         }
         
         // Показ результата в модальном окне
-        function showResult(totalWin, winLines, isBlocked = false, totalMultiplier = 1) {
+        function showResult(totalWin, winLines, totalMultiplier = 1) {
             const resultTitle = document.getElementById('result-title');
             const resultText = document.getElementById('result-text');
             const resultAmount = document.getElementById('result-amount');
             const winLinesElement = document.getElementById('win-lines');
             
-            if (isBlocked) {
-                resultTitle.textContent = 'Выигрыш аннулирован';
-                resultText.textContent = 'Найдено 2 или более символов 🚫';
-                resultAmount.textContent = '0 ⭐';
-                winLinesElement.textContent = '';
-            } else if (winLines.length > 0) {
-                resultTitle.textContent = 'Поздравляем!';
-                resultText.textContent = 'Ваш выигрыш:';
-                resultAmount.textContent = `${totalWin} ⭐`;
-                
-                let linesText = '';
-                winLines.forEach((line, index) => {
-                    linesText += `${line.symbol} x${line.multiplier}`;
-                    if (index < winLines.length - 1) linesText += ' × ';
-                });
-                
-                if (winLines.length > 1) {
-                    linesText += ` = x${totalMultiplier}`;
-                }
-                
-                if (useBonusBalance) {
-                    linesText += '<br>(Выигрыш в 2 раза меньше для бонусного баланса)';
-                }
-                
-                winLinesElement.innerHTML = linesText;
-            } else {
-                resultTitle.textContent = 'Попробуйте ещё раз!';
-                resultText.textContent = 'К сожалению, выигрышных комбинаций нет';
-                resultAmount.textContent = '0 ⭐';
-                winLinesElement.textContent = '';
+            resultTitle.textContent = 'Поздравляем!';
+            resultText.textContent = 'Ваш выигрыш:';
+            resultAmount.textContent = `${totalWin} ⭐`;
+            
+            let linesText = '';
+            winLines.forEach((line, index) => {
+                linesText += `${line.symbol} x${line.multiplier}`;
+                if (index < winLines.length - 1) linesText += ' × ';
+            });
+            
+            if (winLines.length > 1) {
+                linesText += ` = x${totalMultiplier}`;
             }
+            
+            if (useBonusBalance) {
+                linesText += '<br>(Выигрыш в 2 раза меньше для бонусного баланса)';
+            }
+            
+            winLinesElement.innerHTML = linesText;
             
             document.getElementById('result-modal').style.display = 'flex';
         }
@@ -718,17 +801,17 @@
             
             // Проверяем баланс
             const totalBalance = userBonusBalance + userBalance;
-            if (totalBalance < BET_AMOUNT) {
+            if (totalBalance < currentBet) {
                 alert('Недостаточно средств для ставки');
                 return;
             }
             
             // Определяем, с какого баланса списывать
-            useBonusBalance = userBonusBalance >= BET_AMOUNT;
+            useBonusBalance = userBonusBalance >= currentBet;
             
             // Показываем модальное окно подтверждения
             document.getElementById('confirm-text').textContent = 
-                `Вы уверены, что хотите сделать ставку ${BET_AMOUNT} ⭐?`;
+                `Вы уверены, что хотите сделать ставку ${currentBet} ⭐?`;
             
             const bonusWarning = document.getElementById('bonus-warning');
             if (useBonusBalance) {
@@ -744,11 +827,14 @@
         async function executeSpin() {
             isSpinning = true;
             document.getElementById('spin-btn').disabled = true;
+            BET_OPTIONS.forEach(bet => {
+                document.getElementById(`bet-${bet}`).disabled = true;
+            });
             document.getElementById('confirm-modal').style.display = 'none';
             
             // Определяем сумму списания
-            let useBonus = Math.min(userBonusBalance, BET_AMOUNT);
-            let useMain = BET_AMOUNT - useBonus;
+            let useBonus = Math.min(userBonusBalance, currentBet);
+            let useMain = currentBet - useBonus;
             
             // Обновляем баланс в базе данных
             const updates = {};
@@ -803,19 +889,19 @@
             
             // Проверяем выигрыш
             checkWin(results);
-            
-            isSpinning = false;
-
-            // Включаем кнопку через 1 секунду после результата, если есть средства
-            setTimeout(() => {
-                const canSpin = (userBonusBalance + userBalance - BET_AMOUNT) >= BET_AMOUNT;
-                document.getElementById('spin-btn').disabled = !canSpin;
-            }, 1000);
         }
         
         // Настройка обработчиков событий
         function setupEventListeners() {
             document.getElementById('spin-btn').addEventListener('click', handleSpin);
+            
+            // Обработчики кнопок ставок
+            BET_OPTIONS.forEach(bet => {
+                document.getElementById(`bet-${bet}`).addEventListener('click', () => {
+                    currentBet = bet;
+                    updateBetButtons();
+                });
+            });
             
             document.getElementById('back-btn').addEventListener('click', () => {
                 window.location.href = `index.html?user_id=${currentUserId}`;
@@ -829,6 +915,14 @@
             
             document.getElementById('close-result').addEventListener('click', () => {
                 document.getElementById('result-modal').style.display = 'none';
+                isSpinning = false;
+                updateBetButtons();
+            });
+            
+            document.getElementById('close-blocked').addEventListener('click', () => {
+                document.getElementById('blocked-modal').style.display = 'none';
+                isSpinning = false;
+                updateBetButtons();
             });
         }
         
