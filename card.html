@@ -610,21 +610,19 @@
             opensLeft--;
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
             
-            // Если открыто 2 карты, проверяем совпадение через 1 секунду
-            if (flippedCards.length === 2) {
-                setTimeout(() => {
-                    winAmount = checkForMatches();
-                    
-                    if (winAmount > 0) {
-                        // Нашли совпадение - победа
-                        endGame(true);
-                    } else if (opensLeft <= 0) {
-                        // Нет совпадения и открытий - предлагаем доп. попытку
-                        waitingForExtra = true;
-                        checkForExtraOpen();
-                    }
-                }, 1000);
-            }
+            // Проверяем совпадения после каждого переворота
+            setTimeout(() => {
+                winAmount = checkForMatches();
+                
+                if (winAmount > 0) {
+                    // Нашли совпадение - победа
+                    endGame(true);
+                } else if (opensLeft <= 0 && flippedCards.length >= 2) {
+                    // Нет совпадения и открытий - предлагаем доп. попытку
+                    waitingForExtra = true;
+                    checkForExtraOpen();
+                }
+            }, 1000);
         }
         
         // Проверка возможности дополнительного открытия
