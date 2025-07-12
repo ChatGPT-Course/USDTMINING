@@ -336,28 +336,136 @@
             font-size: 16px;
             color: #b8b8b8;
         }
+        
+        .theme-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .theme-btn {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .theme-btn.selected {
+            background: #00b4db;
+            border-color: #00b4db;
+        }
+        
+        .file-upload {
+            margin-bottom: 15px;
+        }
+        
+        .file-upload-label {
+            display: block;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-label:hover {
+            border-color: #00b4db;
+        }
+        
+        .file-upload-input {
+            display: none;
+        }
+        
+        .file-name {
+            font-size: 12px;
+            color: #b8b8b8;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+        
+        .ticket-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-btn.close {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+        
+        .action-btn.close:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        
+        .confirm-modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .confirm-btn.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .confirm-btn.confirm {
+            background: #f44336;
+            color: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="particles"></div>
     <div class="container">
-        <div class="header">
-            <button class="back-btn" id="back-btn">← Назад</button>
-            <h1>Помощь</h1>
-            <div style="width: 70px;"></div>
-        </div>
+        <div id="loading" class="loading">Загрузка данных...</div>
         
-        <button class="btn" id="create-ticket-btn">Создать тикет</button>
-        
-        <div class="section-title">Ваши тикеты</div>
-        
-        <div class="tabs">
-            <div class="tab active" data-status="open">Открытые</div>
-            <div class="tab" data-status="closed">Закрытые</div>
-        </div>
-        
-        <div class="ticket-list" id="ticket-list">
-            <div class="loading">Загрузка тикетов...</div>
+        <div id="content" class="hidden">
+            <div class="header">
+                <button class="back-btn" id="back-btn">← Назад</button>
+                <h1>Помощь</h1>
+                <div style="width: 70px;"></div>
+            </div>
+            
+            <button class="btn" id="create-ticket-btn">Создать тикет</button>
+            
+            <div class="section-title">Ваши тикеты</div>
+            
+            <div class="tabs">
+                <div class="tab active" data-status="open">Открытые</div>
+                <div class="tab" data-status="closed">Закрытые</div>
+            </div>
+            
+            <div class="ticket-list" id="ticket-list">
+                <div class="loading">Загрузка тикетов...</div>
+            </div>
         </div>
     </div>
     
@@ -370,13 +478,28 @@
             </div>
             
             <div class="form-group">
-                <label for="ticket-theme">Тема</label>
-                <input type="text" id="ticket-theme" placeholder="Кратко опишите проблему">
+                <label>Тип обращения</label>
+                <div class="theme-buttons" id="theme-buttons">
+                    <div class="theme-btn" data-theme="Проблема">Проблема</div>
+                    <div class="theme-btn" data-theme="Вопрос">Вопрос</div>
+                    <div class="theme-btn" data-theme="Жалоба">Жалоба</div>
+                    <div class="theme-btn" data-theme="Идея">Идея</div>
+                    <div class="theme-btn" data-theme="Другое">Другое</div>
+                </div>
+                <input type="hidden" id="ticket-theme">
             </div>
             
             <div class="form-group">
                 <label for="ticket-description">Описание</label>
                 <textarea id="ticket-description" placeholder="Подробно опишите вашу проблему"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="file-upload-label" for="ticket-file">
+                    <span id="file-label-text">Прикрепить файл (необязательно)</span>
+                    <div id="file-name" class="file-name"></div>
+                </label>
+                <input type="file" id="ticket-file" class="file-upload-input">
             </div>
             
             <div class="ticket-info">
@@ -404,13 +527,13 @@
                 </div>
                 
                 <div class="ticket-info-item">
-                    <div class="ticket-info-label">Дата создания</div>
-                    <div class="ticket-info-value" id="view-ticket-date">01.01.2023, 12:00:00</div>
+                    <div class="ticket-info-label">Тип обращения</div>
+                    <div class="ticket-info-value" id="view-ticket-type">Проблема</div>
                 </div>
                 
                 <div class="ticket-info-item">
-                    <div class="ticket-info-label">Тема</div>
-                    <div class="ticket-info-value" id="view-ticket-theme">Проблема с выводом</div>
+                    <div class="ticket-info-label">Дата создания</div>
+                    <div class="ticket-info-value" id="view-ticket-date">01.01.2023, 12:00:00</div>
                 </div>
                 
                 <div class="ticket-info-item">
@@ -418,9 +541,33 @@
                     <div class="ticket-info-value" id="view-ticket-description">Не могу вывести средства...</div>
                 </div>
                 
-                <div class="ticket-info-item">
-                    <div class="ticket-info-value">Ответ технической поддержки поступит вам от бота</div>
+                <div class="ticket-info-item" id="ticket-file-info" style="display: none;">
+                    <div class="ticket-info-label">Прикрепленный файл</div>
+                    <div class="ticket-info-value">
+                        <a href="#" id="ticket-file-link" target="_blank">Просмотреть файл</a>
+                    </div>
                 </div>
+            </div>
+            
+            <div class="ticket-actions" id="ticket-actions">
+                <button class="action-btn close" id="close-ticket-btn">Закрыть тикет</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно подтверждения закрытия тикета -->
+    <div id="confirm-close-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Подтверждение</div>
+                <button class="close-modal" id="close-confirm-modal">&times;</button>
+            </div>
+            
+            <p>Вы действительно хотите закрыть тикет? Ответ поддержки не поступит на ваше обращение в таком случае. Закрывайте тикет в том случае если проблема уже решена или не актуальна.</p>
+            
+            <div class="confirm-modal-buttons">
+                <button class="confirm-btn cancel" id="cancel-close-btn">Отмена</button>
+                <button class="confirm-btn confirm" id="confirm-close-btn">Закрыть</button>
             </div>
         </div>
     </div>
@@ -450,6 +597,9 @@
         let currentUserData = null;
         let currentTicketStatus = 'open';
         let allTickets = [];
+        let selectedTicketId = null;
+        const ADMIN_ID = "1515638372";
+        const BOT_TOKEN = "YOUR_BOT_TOKEN"; // Замените на ваш токен бота
 
         // Инициализация частиц на фоне
         function initParticles() {
@@ -520,17 +670,60 @@
             }
         }
 
+        // Отправка уведомления админу о новом тикете
+        async function sendAdminNotification(ticketData) {
+            try {
+                const message = `📌 *Новый тикет* 📌\n\n` +
+                               `🔹 *Тип*: ${ticketData.type || 'Не указано'}\n` +
+                               `🔹 *От*: ${ticketData.name_creator || 'Не указано'} (@${ticketData.username_creator || 'нет'})\n` +
+                               `🔹 *Тема*: ${ticketData.tema || 'Не указано'}\n` +
+                               `🔹 *Описание*: ${ticketData.discript || 'Не указано'}\n\n` +
+                               `🆔 *ID тикета*: ${ticketData.id || 'Не указано'}`;
+                
+                // Отправка через Telegram Bot API
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: ADMIN_ID,
+                        text: message,
+                        parse_mode: 'Markdown'
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('Уведомление отправлено:', result);
+                
+                return result.ok;
+            } catch (error) {
+                console.error('Ошибка отправки уведомления:', error);
+                return false;
+            }
+        }
+
         // Создание нового тикета
         async function createNewTicket(ticketData) {
             try {
                 const ticketsRef = database.ref('tickets');
                 const newTicketRef = ticketsRef.push();
+                const ticketId = newTicketRef.key;
                 
-                await newTicketRef.set({
+                const now = new Date();
+                const ticket = {
                     ...ticketData,
-                    status: 1,
-                    date_create: new Date().toLocaleString('ru-RU')
-                });
+                    id: ticketId,
+                    status: 1, // 1 - открыт, 0 - закрыт
+                    date_create: now.toLocaleString('ru-RU'),
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await newTicketRef.set(ticket);
+                
+                // Отправляем уведомление админу
+                await sendAdminNotification(ticket);
                 
                 return true;
             } catch (error) {
@@ -575,6 +768,21 @@
             }
         }
 
+        // Закрытие тикета
+        async function closeTicket(ticketId) {
+            try {
+                const ticketRef = database.ref('tickets/' + ticketId);
+                await ticketRef.update({
+                    status: 0, // 0 - закрыт
+                    date_close: new Date().toLocaleString('ru-RU')
+                });
+                return true;
+            } catch (error) {
+                console.error('Ошибка закрытия тикета:', error);
+                return false;
+            }
+        }
+
         // Отображение тикетов
         function renderTickets(tickets) {
             const ticketList = document.getElementById('ticket-list');
@@ -598,7 +806,7 @@
                             ${ticket.status === 1 ? 'Открыт' : 'Закрыт'}
                         </div>
                     </div>
-                    <div class="ticket-theme">${ticket.tema}</div>
+                    <div class="ticket-theme">${ticket.type || 'Без темы'}: ${ticket.tema}</div>
                     <div class="ticket-date">${ticket.date_create}</div>
                 `;
                 
@@ -619,11 +827,28 @@
 
         // Показ деталей тикета
         function showTicketDetails(ticket) {
+            selectedTicketId = ticket.id;
+            
             document.getElementById('view-ticket-title').textContent = `Тикет #${ticket.id.substring(0, 6)}`;
             document.getElementById('view-ticket-status').textContent = ticket.status === 1 ? 'Открыт' : 'Закрыт';
+            document.getElementById('view-ticket-type').textContent = ticket.type || 'Не указано';
             document.getElementById('view-ticket-date').textContent = ticket.date_create;
-            document.getElementById('view-ticket-theme').textContent = ticket.tema;
             document.getElementById('view-ticket-description').textContent = ticket.discript;
+            
+            // Показываем файл, если он есть
+            const fileInfo = document.getElementById('ticket-file-info');
+            const fileLink = document.getElementById('ticket-file-link');
+            
+            if (ticket.fileUrl) {
+                fileLink.href = ticket.fileUrl;
+                fileInfo.style.display = 'block';
+            } else {
+                fileInfo.style.display = 'none';
+            }
+            
+            // Показываем кнопку закрытия только для открытых тикетов
+            const ticketActions = document.getElementById('ticket-actions');
+            ticketActions.style.display = ticket.status === 1 ? 'flex' : 'none';
             
             document.getElementById('view-ticket-modal').style.display = 'flex';
         }
@@ -650,6 +875,36 @@
             // Кнопка создания тикета
             document.getElementById('create-ticket-btn').addEventListener('click', () => {
                 document.getElementById('create-ticket-modal').style.display = 'flex';
+                document.getElementById('ticket-theme').value = '';
+                document.getElementById('ticket-description').value = '';
+                document.getElementById('file-name').textContent = '';
+                document.getElementById('file-label-text').textContent = 'Прикрепить файл (необязательно)';
+                
+                // Сброс выбранной темы
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+            });
+            
+            // Выбор темы тикета
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('ticket-theme').value = btn.dataset.theme;
+                });
+            });
+            
+            // Загрузка файла
+            document.getElementById('ticket-file').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('file-label-text').textContent = 'Файл выбран';
+                    document.getElementById('file-name').textContent = file.name;
+                } else {
+                    document.getElementById('file-label-text').textContent = 'Прикрепить файл (необязательно)';
+                    document.getElementById('file-name').textContent = '';
+                }
             });
             
             // Закрытие модальных окон
@@ -661,29 +916,50 @@
                 document.getElementById('view-ticket-modal').style.display = 'none';
             });
             
+            document.getElementById('close-confirm-modal').addEventListener('click', () => {
+                document.getElementById('confirm-close-modal').style.display = 'none';
+            });
+            
             // Отправка тикета
             document.getElementById('submit-ticket-btn').addEventListener('click', async () => {
                 const theme = document.getElementById('ticket-theme').value.trim();
                 const description = document.getElementById('ticket-description').value.trim();
+                const fileInput = document.getElementById('ticket-file');
                 
-                if (!theme || !description) {
-                    showNotification('Пожалуйста, заполните все поля', false);
+                if (!theme) {
+                    showNotification('Пожалуйста, выберите тип обращения', false);
                     return;
                 }
                 
+                if (!description) {
+                    showNotification('Пожалуйста, заполните описание', false);
+                    return;
+                }
+                
+                // Подготовка данных тикета
                 const ticketData = {
                     id_creator: currentUserId,
                     name_creator: `${currentUserData.first_name || ''} ${currentUserData.last_name || ''}`.trim(),
                     username_creator: currentUserData.username || '',
-                    tema: theme,
+                    type: theme,
+                    tema: theme, // Для совместимости со старым кодом
                     discript: description
                 };
+                
+                // Обработка файла, если он есть
+                if (fileInput.files.length > 0) {
+                    // В реальном приложении здесь должна быть загрузка файла на сервер
+                    // Для примера просто добавляем информацию о файле
+                    ticketData.fileName = fileInput.files[0].name;
+                    ticketData.fileUrl = '#'; // Здесь должен быть URL загруженного файла
+                }
                 
                 const success = await createNewTicket(ticketData);
                 if (success) {
                     document.getElementById('create-ticket-modal').style.display = 'none';
                     document.getElementById('ticket-theme').value = '';
                     document.getElementById('ticket-description').value = '';
+                    document.getElementById('ticket-file').value = '';
                     showNotification('Тикет успешно создан! Ответ придет от бота.');
                     updateTicketsList();
                 } else {
@@ -700,6 +976,31 @@
                     currentTicketStatus = tab.dataset.status;
                     updateTicketsList();
                 });
+            });
+            
+            // Кнопка закрытия тикета
+            document.getElementById('close-ticket-btn').addEventListener('click', () => {
+                document.getElementById('confirm-close-modal').style.display = 'flex';
+            });
+            
+            // Подтверждение закрытия тикета
+            document.getElementById('confirm-close-btn').addEventListener('click', async () => {
+                if (selectedTicketId) {
+                    const success = await closeTicket(selectedTicketId);
+                    if (success) {
+                        showNotification('Тикет успешно закрыт');
+                        document.getElementById('confirm-close-modal').style.display = 'none';
+                        document.getElementById('view-ticket-modal').style.display = 'none';
+                        updateTicketsList();
+                    } else {
+                        showNotification('Ошибка при закрытии тикета', false);
+                    }
+                }
+            });
+            
+            // Отмена закрытия тикета
+            document.getElementById('cancel-close-btn').addEventListener('click', () => {
+                document.getElementById('confirm-close-modal').style.display = 'none';
             });
         }
 
@@ -730,6 +1031,10 @@
             await initTicketsRoot();
             setupEventListeners();
             await updateTicketsList();
+            
+            // Показываем контент после загрузки данных
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').classList.remove('hidden');
         }
         
         // Запуск приложения
