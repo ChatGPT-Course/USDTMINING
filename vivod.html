@@ -418,7 +418,7 @@
                 
                 await historyRef.push().set({
                     type: 'withdraw',
-                    amount: selectedAmount,
+                    amount: `-${selectedAmount} ⭐`, // строка с форматированием
                     description: `Вывод для @${username}`,
                     date: now.toLocaleString('ru-RU'),
                     timestamp: firebase.database.ServerValue.TIMESTAMP
