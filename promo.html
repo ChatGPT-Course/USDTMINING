@@ -45,12 +45,21 @@
             align-items: center;
         }
         
+        .balances {
+            display: flex;
+            gap: 10px;
+        }
+        
         .balance {
             background: rgba(123, 44, 191, 0.3);
             padding: 8px 15px;
             border-radius: 20px;
             font-size: 16px;
             font-weight: bold;
+        }
+        
+        .bonus-balance {
+            background: rgba(0, 180, 219, 0.3);
         }
         
         .promo-container {
@@ -151,7 +160,10 @@
     <div id="app-content" style="display: none;">
         <div class="header">
             <button class="back-btn" id="back-btn">← Назад</button>
-            <div class="balance" id="user-balance">0 ⭐</div>
+            <div class="balances">
+                <div class="balance" id="user-balance">0 ⭐</div>
+                <div class="balance bonus-balance" id="user-bonus-balance">0 ⭐</div>
+            </div>
         </div>
         
         <div class="promo-container">
@@ -194,6 +206,7 @@
         
         let currentUserId = null;
         let currentBalance = 0;
+        let currentBonusBalance = 0;
         let isAdmin = false;
         
         function getUserId() {
@@ -281,10 +294,10 @@
                 // Проверяем промокод
                 const promoInfo = await checkPromoCode(code);
                 
-                // Активируем промокод
+                // Активируем промокод (добавляем к бонусному балансу)
                 await createTransaction(
                     currentUserId, 
-                    'deposit', 
+                    'promo', 
                     `+${promoInfo.reward}`, 
                     `Активация промокода: ${code}`
                 );
@@ -307,12 +320,12 @@
             const snapshot = await userRef.once('value');
             const userData = snapshot.val();
             
-            let newBalance = userData.balance || 0;
-            newBalance += Number(amount);
+            let newBonusBalance = userData.bonus_balance || 0;
+            newBonusBalance += Number(amount);
             
-            await userRef.update({ balance: newBalance });
-            currentBalance = newBalance;
-            document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+            await userRef.update({ bonus_balance: newBonusBalance });
+            currentBonusBalance = newBonusBalance;
+            document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
             
             // Запись в историю
             const historyRef = database.ref('history/' + userId);
@@ -385,7 +398,9 @@
                 
                 const userData = await loadUserData(currentUserId);
                 currentBalance = userData.balance || 0;
+                currentBonusBalance = userData.bonus_balance || 0;
                 document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
                 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
@@ -413,7 +428,7 @@
                     
                     try {
                         const amount = await activatePromo(code);
-                        showResult(`Промокод активирован! Получено +${amount} ⭐`, 'success');
+                        showResult(`Промокод активирован! Получено +${amount} ⭐ (бонусный баланс)`, 'success');
                         document.getElementById('promo-code').value = '';
                         document.getElementById('promo-info').style.display = 'none';
                     } catch (error) {
