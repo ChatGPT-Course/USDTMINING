@@ -441,6 +441,7 @@
             class3: 0
         };
         let waitingForExtra = false;
+        let extraOpenUsed = false; // Флаг использования доп. открытия
         
         // Инициализация частиц на фоне
         function initParticles() {
@@ -583,7 +584,7 @@
                 if (classesCount[cardClass] >= 3) {
                     // Нашли совпадение
                     const matchingCards = flippedCards.filter(card => card.dataset.class === cardClass);
-                    const winValue = parseInt(matchingCards[0].dataset.value) * 3; // Умножаем на 3 за полный набор
+                    const winValue = parseInt(matchingCards[0].dataset.value); // Награда равна номиналу карты
                     
                     // Помечаем совпавшие карты
                     matchingCards.forEach(card => {
@@ -617,11 +618,18 @@
                 if (winAmount > 0) {
                     // Нашли совпадение - победа
                     endGame(true);
-                } else if (opensLeft <= 0 && flippedCards.length >= 3) {
+                } else if (opensLeft <= 0 && !extraOpenUsed && flippedCards.length >= 3) {
                     // Нет совпадения и открытий - предлагаем доп. попытку через 1 секунду
+                    waitingForExtra = true;
                     setTimeout(() => {
-                        waitingForExtra = true;
-                        checkForExtraOpen();
+                        if (waitingForExtra) { // Проверяем, что модальное окно еще не было показано
+                            checkForExtraOpen();
+                        }
+                    }, 1000);
+                } else if (opensLeft <= 0 && extraOpenUsed) {
+                    // Если доп. попытка уже использована и открытий нет - поражение
+                    setTimeout(() => {
+                        endGame(false);
                     }, 1000);
                 }
             }, 1000);
@@ -700,6 +708,7 @@
             matchedPairs = 0;
             winAmount = 0;
             waitingForExtra = false;
+            extraOpenUsed = false; // Сбрасываем флаг доп. открытия
             
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
         }
@@ -707,6 +716,8 @@
         // Функция выполнения дополнительного открытия
         async function executeExtraOpen() {
             document.getElementById('extra-open-modal').style.display = 'none';
+            waitingForExtra = false;
+            extraOpenUsed = true; // Помечаем, что доп. открытие использовано
             
             // Определяем сумму списания
             let useBonus = Math.min(userBonusBalance, GAME_COST);
@@ -725,7 +736,6 @@
             
             // Даем дополнительное открытие
             opensLeft = 1;
-            waitingForExtra = false;
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
         }
         
@@ -733,6 +743,7 @@
         function cancelExtraOpen() {
             document.getElementById('extra-open-modal').style.display = 'none';
             waitingForExtra = false;
+            extraOpenUsed = true; // Помечаем, что доп. открытие использовано (отказ тоже считается)
             
             // Закрываем открытые карты
             setTimeout(() => {
@@ -775,8 +786,11 @@
                 
                 document.getElementById('result-modal').style.display = 'flex';
             } else {
-                // Проигрыш - просто разблокируем кнопку
-                document.getElementById('start-btn').disabled = false;
+                // Показываем результат проигрыша
+                document.getElementById('result-title').textContent = 'Игра завершена';
+                document.getElementById('result-text').textContent = 'К сожалению, вы не собрали 3 карты одного класса';
+                document.getElementById('result-amount').textContent = '0 ⭐';
+                document.getElementById('result-modal').style.display = 'flex';
             }
         }
         
