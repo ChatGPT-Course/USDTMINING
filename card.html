@@ -440,6 +440,7 @@
             class2: 0,
             class3: 0
         };
+        let waitingForExtra = false;
         
         // Инициализация частиц на фоне
         function initParticles() {
@@ -568,9 +569,39 @@
             cards = Array.from(document.querySelectorAll('.card'));
         }
         
+        // Проверка совпадений карт
+        function checkForMatches() {
+            // Проверяем все открытые карты на совпадение классов
+            const classesCount = {};
+            flippedCards.forEach(card => {
+                const cardClass = card.dataset.class;
+                classesCount[cardClass] = (classesCount[cardClass] || 0) + 1;
+            });
+            
+            // Ищем класс, у которого есть хотя бы 2 карты
+            for (const cardClass in classesCount) {
+                if (classesCount[cardClass] >= 2) {
+                    // Нашли совпадение
+                    const matchingCards = flippedCards.filter(card => card.dataset.class === cardClass);
+                    const winValue = parseInt(matchingCards[0].dataset.value);
+                    
+                    // Помечаем совпавшие карты
+                    matchingCards.forEach(card => {
+                        card.classList.add('matched', 'win');
+                    });
+                    
+                    // Возвращаем выигрыш
+                    return winValue;
+                }
+            }
+            
+            // Совпадений не найдено
+            return 0;
+        }
+        
         // Переворот карты
         function flipCard(card) {
-            if (!isGameActive || card.classList.contains('flipped') || card.classList.contains('matched')) {
+            if (!isGameActive || card.classList.contains('flipped') || card.classList.contains('matched') || waitingForExtra) {
                 return;
             }
             
@@ -579,29 +610,20 @@
             opensLeft--;
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
             
-            // Если открыто 2 карты, проверяем совпадение
+            // Если открыто 2 карты, проверяем совпадение через 1 секунду
             if (flippedCards.length === 2) {
-                const card1 = flippedCards[0];
-                const card2 = flippedCards[1];
-                
-                if (card1.dataset.class === card2.dataset.class) {
-                    // Совпадение
-                    card1.classList.add('matched', 'win');
-                    card2.classList.add('matched', 'win');
-                    winAmount = parseInt(card1.dataset.value); // Выигрыш равен значению карты
-                    matchedPairs++;
+                setTimeout(() => {
+                    winAmount = checkForMatches();
                     
-                    // Сбрасываем открытые карты
-                    flippedCards = [];
-                    
-                    // Завершаем игру с победой
-                    endGame(true);
-                } else {
-                    // Не совпали
-                    if (opensLeft <= 0) {
+                    if (winAmount > 0) {
+                        // Нашли совпадение - победа
+                        endGame(true);
+                    } else if (opensLeft <= 0) {
+                        // Нет совпадения и открытий - предлагаем доп. попытку
+                        waitingForExtra = true;
                         checkForExtraOpen();
                     }
-                }
+                }, 1000);
             }
         }
         
@@ -677,6 +699,7 @@
             opensLeft = 2;
             matchedPairs = 0;
             winAmount = 0;
+            waitingForExtra = false;
             
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
         }
@@ -702,12 +725,14 @@
             
             // Даем дополнительное открытие
             opensLeft = 1;
+            waitingForExtra = false;
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
         }
         
         // Отмена дополнительного открытия
         function cancelExtraOpen() {
             document.getElementById('extra-open-modal').style.display = 'none';
+            waitingForExtra = false;
             
             // Закрываем открытые карты
             setTimeout(() => {
@@ -724,6 +749,7 @@
         // Завершение игры
         function endGame(isWin) {
             isGameActive = false;
+            waitingForExtra = false;
             
             if (isWin) {
                 // Рассчитываем выигрыш
