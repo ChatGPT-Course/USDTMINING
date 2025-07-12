@@ -347,7 +347,7 @@
                 
                 <div class="game-container">
                     <div class="game-info">
-                        <div class="opens-left" id="opens-info">Открытий осталось: 2</div>
+                        <div class="opens-left" id="opens-info">Открытий осталось: 3</div>
                     </div>
                     
                     <div class="cards-grid" id="cards-grid">
@@ -569,7 +569,7 @@
             cards = Array.from(document.querySelectorAll('.card'));
         }
         
-        // Проверка совпадений карт
+        // Проверка совпадений карт (3 карты одного класса)
         function checkForMatches() {
             // Проверяем все открытые карты на совпадение классов
             const classesCount = {};
@@ -578,12 +578,12 @@
                 classesCount[cardClass] = (classesCount[cardClass] || 0) + 1;
             });
             
-            // Ищем класс, у которого есть хотя бы 2 карты
+            // Ищем класс, у которого есть 3 карты
             for (const cardClass in classesCount) {
-                if (classesCount[cardClass] >= 2) {
+                if (classesCount[cardClass] >= 3) {
                     // Нашли совпадение
                     const matchingCards = flippedCards.filter(card => card.dataset.class === cardClass);
-                    const winValue = parseInt(matchingCards[0].dataset.value);
+                    const winValue = parseInt(matchingCards[0].dataset.value) * 3; // Умножаем на 3 за полный набор
                     
                     // Помечаем совпавшие карты
                     matchingCards.forEach(card => {
@@ -601,7 +601,7 @@
         
         // Переворот карты
         function flipCard(card) {
-            if (!isGameActive || card.classList.contains('flipped') || card.classList.contains('matched') || waitingForExtra) {
+            if (!isGameActive || card.classList.contains('flipped') || card.classList.contains('matched') || waitingForExtra || opensLeft <= 0) {
                 return;
             }
             
@@ -617,10 +617,12 @@
                 if (winAmount > 0) {
                     // Нашли совпадение - победа
                     endGame(true);
-                } else if (opensLeft <= 0 && flippedCards.length >= 2) {
-                    // Нет совпадения и открытий - предлагаем доп. попытку
-                    waitingForExtra = true;
-                    checkForExtraOpen();
+                } else if (opensLeft <= 0 && flippedCards.length >= 3) {
+                    // Нет совпадения и открытий - предлагаем доп. попытку через 1 секунду
+                    setTimeout(() => {
+                        waitingForExtra = true;
+                        checkForExtraOpen();
+                    }, 1000);
                 }
             }, 1000);
         }
@@ -694,7 +696,7 @@
             // Инициализируем игру
             initCardsGrid();
             flippedCards = [];
-            opensLeft = 2;
+            opensLeft = 3; // Теперь даем 3 открытия
             matchedPairs = 0;
             winAmount = 0;
             waitingForExtra = false;
@@ -758,7 +760,7 @@
                 
                 // Показываем результат
                 document.getElementById('result-title').textContent = 'Поздравляем!';
-                document.getElementById('result-text').textContent = 'Ваш выигрыш:';
+                document.getElementById('result-text').textContent = 'Вы собрали все 3 карты одного класса! Ваш выигрыш:';
                 document.getElementById('result-amount').textContent = `${totalWin} ⭐`;
                 
                 // Обновляем баланс
