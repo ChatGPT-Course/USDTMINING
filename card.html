@@ -395,13 +395,13 @@
         <div class="modal-content">
             <div class="modal-title">Дополнительное открытие</div>
             <div class="modal-text">
-                Вы не нашли пару. Хотите открыть еще одну карту за 10 ⭐?
+                Хотите открыть еще одну карту за 10 ⭐?
             </div>
             <div class="modal-text" id="extra-bonus-warning" style="color: #ff9800; display: none;">
                 Внимание: оплата будет с бонусного баланса!
             </div>
             <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" id="cancel-extra">Отмена</button>
+                <button class="modal-btn modal-btn-cancel" id="cancel-extra">Отказаться</button>
                 <button class="modal-btn modal-btn-confirm" id="confirm-extra">Открыть</button>
             </div>
         </div>
@@ -435,7 +435,11 @@
         let opensLeft = 0;
         let matchedPairs = 0;
         let winAmount = 0;
-        let currentClass = null;
+        let cardValues = {
+            class1: 0,
+            class2: 0,
+            class3: 0
+        };
         
         // Инициализация частиц на фоне
         function initParticles() {
@@ -509,19 +513,19 @@
         }
         
         // Генерация случайного значения для класса карт
-        function generateCardValue(cardClass) {
-            switch(cardClass) {
-                case 1: return Math.floor(Math.random() * 10) + 1; // 1-10
-                case 2: return Math.floor(Math.random() * 30) + 11; // 11-40
-                case 3: return Math.floor(Math.random() * 60) + 41; // 41-100
-                default: return 0;
-            }
+        function generateCardValues() {
+            cardValues.class1 = Math.floor(Math.random() * 10) + 1; // 1-10
+            cardValues.class2 = Math.floor(Math.random() * 30) + 11; // 11-40
+            cardValues.class3 = Math.floor(Math.random() * 60) + 41; // 41-100
         }
         
         // Инициализация игрового поля 3x3
         function initCardsGrid() {
             const grid = document.getElementById('cards-grid');
             grid.innerHTML = '';
+            
+            // Генерируем значения для каждого класса
+            generateCardValues();
             
             // Определяем классы карт: 3 карты 1 класса, 3 карты 2 класса, 3 карты 3 класса
             const cardClasses = [1, 1, 1, 2, 2, 2, 3, 3, 3];
@@ -532,7 +536,7 @@
             // Создаем элементы карт
             for (let i = 0; i < 9; i++) {
                 const cardClass = cardClasses[i];
-                const cardValue = generateCardValue(cardClass);
+                const cardValue = cardValues[`class${cardClass}`];
                 
                 const card = document.createElement('div');
                 card.className = `card class${cardClass}`;
@@ -584,29 +588,19 @@
                     // Совпадение
                     card1.classList.add('matched', 'win');
                     card2.classList.add('matched', 'win');
-                    winAmount += parseInt(card1.dataset.value) + parseInt(card2.dataset.value);
+                    winAmount = parseInt(card1.dataset.value); // Выигрыш равен значению карты
                     matchedPairs++;
                     
                     // Сбрасываем открытые карты
                     flippedCards = [];
                     
-                    // Проверяем условие победы
-                    if (matchedPairs >= 1) {
-                        endGame(true);
-                    } else if (opensLeft <= 0) {
-                        checkForExtraOpen();
-                    }
+                    // Завершаем игру с победой
+                    endGame(true);
                 } else {
                     // Не совпали
-                    setTimeout(() => {
-                        card1.classList.remove('flipped');
-                        card2.classList.remove('flipped');
-                        flippedCards = [];
-                        
-                        if (opensLeft <= 0) {
-                            checkForExtraOpen();
-                        }
-                    }, 1000);
+                    if (opensLeft <= 0) {
+                        checkForExtraOpen();
+                    }
                 }
             }
         }
@@ -711,6 +705,22 @@
             document.getElementById('opens-info').textContent = `Открытий осталось: ${opensLeft}`;
         }
         
+        // Отмена дополнительного открытия
+        function cancelExtraOpen() {
+            document.getElementById('extra-open-modal').style.display = 'none';
+            
+            // Закрываем открытые карты
+            setTimeout(() => {
+                flippedCards.forEach(card => {
+                    card.classList.remove('flipped');
+                });
+                flippedCards = [];
+                
+                // Завершаем игру
+                endGame(false);
+            }, 500);
+        }
+        
         // Завершение игры
         function endGame(isWin) {
             isGameActive = false;
@@ -765,10 +775,7 @@
             
             document.getElementById('confirm-extra').addEventListener('click', executeExtraOpen);
             
-            document.getElementById('cancel-extra').addEventListener('click', () => {
-                document.getElementById('extra-open-modal').style.display = 'none';
-                endGame(false);
-            });
+            document.getElementById('cancel-extra').addEventListener('click', cancelExtraOpen);
         }
         
         // Основная функция инициализации
