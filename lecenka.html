@@ -74,13 +74,6 @@
             padding: 20px;
         }
         
-        .title {
-            text-align: center;
-            margin: 20px 0 30px;
-            font-size: 24px;
-            color: #f7f7f7;
-        }
-        
         .game-area {
             background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
             border-radius: 16px;
@@ -90,18 +83,25 @@
             margin-bottom: 20px;
         }
         
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .control-card {
+            flex: 1;
+            background: rgba(46, 17, 81, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(123, 44, 191, 0.3);
+        }
+        
         .section-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             margin-bottom: 10px;
             color: #b8b8b8;
-        }
-        
-        .bet-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
         }
         
         .bet-amount {
@@ -123,18 +123,22 @@
         
         .bet-buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
         
         .bet-btn {
             flex: 1;
+            min-width: calc(50% - 4px);
             background: rgba(123, 44, 191, 0.3);
             border: none;
             color: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
+            font-size: 14px;
         }
         
         .bet-btn:hover {
@@ -145,24 +149,24 @@
             background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
         }
         
-        .stones-controls {
-            margin-bottom: 20px;
-        }
-        
         .stone-buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
         
         .stone-btn {
             flex: 1;
+            min-width: calc(50% - 4px);
             background: rgba(123, 44, 191, 0.3);
             border: none;
             color: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -186,7 +190,7 @@
             font-size: 16px;
             cursor: pointer;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 20px;
             transition: all 0.3s;
             display: flex;
             align-items: center;
@@ -208,7 +212,6 @@
             display: flex;
             flex-direction: column-reverse;
             gap: 10px;
-            margin: 20px 0;
         }
         
         .floor {
@@ -259,9 +262,13 @@
             border: 1px solid #555;
         }
         
+        .slot.active-floor {
+            animation: pulse-blue 1s infinite, pulse-scale 1s infinite;
+        }
+        
         .multiplier-info {
             text-align: center;
-            margin: 20px 0;
+            margin: 15px 0;
             font-size: 18px;
         }
         
@@ -273,7 +280,7 @@
         .game-result {
             text-align: center;
             font-size: 20px;
-            margin: 20px 0;
+            margin: 15px 0;
             display: none;
         }
         
@@ -346,9 +353,15 @@
             color: #b8b8b8;
         }
         
-        @keyframes pulse {
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(0, 180, 219, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 180, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 180, 219, 0); }
+        }
+        
+        @keyframes pulse-scale {
             0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
     </style>
@@ -363,37 +376,12 @@
     </div>
     
     <div class="game-container">
-        <h1 class="title">Лестница</h1>
-        
         <div id="loading" class="loading">
             Загрузка данных...
         </div>
         
         <div id="content" style="display: none;">
             <div class="game-area">
-                <div class="section-title">Сумма ставки</div>
-                <div class="bet-controls">
-                    <div class="bet-amount">
-                        <input type="number" id="bet-amount" class="bet-input" placeholder="Сумма ставки" min="10" value="10">
-                    </div>
-                    <div class="bet-buttons">
-                        <button class="bet-btn" data-amount="10">10</button>
-                        <button class="bet-btn" data-amount="50">50</button>
-                        <button class="bet-btn" data-amount="100">100</button>
-                        <button class="bet-btn" data-amount="500">500</button>
-                    </div>
-                </div>
-                
-                <div class="section-title">Количество камней</div>
-                <div class="stones-controls">
-                    <div class="stone-buttons">
-                        <button class="stone-btn active" data-stones="1">1 🪨</button>
-                        <button class="stone-btn" data-stones="2">2 🪨</button>
-                        <button class="stone-btn" data-stones="3">3 🪨</button>
-                        <button class="stone-btn" data-stones="4">4 🪨</button>
-                    </div>
-                </div>
-                
                 <div class="ladder" id="ladder">
                     <!-- Лестница будет генерироваться динамически -->
                 </div>
@@ -402,11 +390,35 @@
                     Текущий множитель: <span class="current-multiplier" id="current-multiplier">1.0x</span>
                 </div>
                 
+                <div class="controls-row">
+                    <div class="control-card">
+                        <div class="section-title">Сумма ставки</div>
+                        <div class="bet-amount">
+                            <input type="number" id="bet-amount" class="bet-input" placeholder="Сумма" min="10" value="10">
+                        </div>
+                        <div class="bet-buttons">
+                            <button class="bet-btn" data-amount="10">10</button>
+                            <button class="bet-btn" data-amount="50">50</button>
+                            <button class="bet-btn" data-amount="100">100</button>
+                            <button class="bet-btn" data-amount="500">500</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-card">
+                        <div class="section-title">Количество камней</div>
+                        <div class="stone-buttons">
+                            <button class="stone-btn active" data-stones="1">1 🪨</button>
+                            <button class="stone-btn" data-stones="2">2 🪨</button>
+                            <button class="stone-btn" data-stones="3">3 🪨</button>
+                            <button class="stone-btn" data-stones="4">4 🪨</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="game-result" id="game-result"></div>
                 
                 <button class="action-btn" id="play-btn">Играть</button>
                 <button class="action-btn disabled" id="cashout-btn" style="display: none;">Забрать ⭐</button>
-                <button class="action-btn" id="next-floor-btn" style="display: none;">Следующий этаж</button>
             </div>
         </div>
     </div>
@@ -536,8 +548,7 @@
             const canPlay = (isBonusGame && currentBonusBalance >= betAmount) || (!isBonusGame && currentBalance >= betAmount);
             
             document.getElementById('play-btn').classList.toggle('disabled', !canPlay || gameState !== 'idle');
-            document.getElementById('cashout-btn').classList.toggle('disabled', gameState !== 'playing' || selectedSlots.length === 0);
-            document.getElementById('next-floor-btn').classList.toggle('disabled', gameState !== 'playing' || selectedSlots.length === 0);
+            document.getElementById('cashout-btn').classList.toggle('disabled', gameState !== 'playing' || currentFloor === 0);
         }
         
         async function createTransaction(userId, type, amount, description = '', isBonus = false) {
@@ -602,7 +613,6 @@
             // Скрываем/показываем кнопки
             document.getElementById('play-btn').style.display = 'none';
             document.getElementById('cashout-btn').style.display = 'flex';
-            document.getElementById('next-floor-btn').style.display = 'flex';
             
             // Обновляем множитель
             document.getElementById('current-multiplier').textContent = `${multiplier.toFixed(1)}x`;
@@ -612,15 +622,11 @@
             
             // Сбрасываем лестницу
             document.querySelectorAll('.slot').forEach(slot => {
-                slot.classList.remove('selected', 'collapsed', 'safe');
+                slot.classList.remove('selected', 'collapsed', 'safe', 'active-floor');
             });
             
-            // Разрешаем выбор слотов на первом этаже
-            const firstFloorSlots = document.querySelectorAll('.floor[data-floor="0"] .slot');
-            firstFloorSlots.forEach(slot => {
-                slot.style.cursor = 'pointer';
-                slot.onclick = () => selectSlot(0, parseInt(slot.dataset.slot));
-            });
+            // Активируем слоты на текущем этаже
+            activateCurrentFloor();
             
             // Снимаем деньги
             createTransaction(
@@ -632,6 +638,21 @@
             ).catch(error => {
                 console.error('Ошибка при списании средств:', error);
                 resetGame();
+            });
+        }
+        
+        function activateCurrentFloor() {
+            // Убираем подсветку со всех слотов
+            document.querySelectorAll('.slot').forEach(slot => {
+                slot.classList.remove('active-floor');
+            });
+            
+            // Подсвечиваем слоты текущего этажа
+            const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${currentFloor}"] .slot`);
+            currentFloorSlots.forEach(slot => {
+                slot.classList.add('active-floor');
+                slot.style.cursor = 'pointer';
+                slot.onclick = () => selectSlot(currentFloor, parseInt(slot.dataset.slot));
             });
         }
         
@@ -651,18 +672,11 @@
             // Добавляем в массив выбранных слотов
             selectedSlots.push({ floor, slot });
             
-            // Если выбрано достаточно камней - разрешаем действия
+            // Если выбрано достаточно камней - переходим к следующему этажу
             if (selectedSlots.length >= stonesCount) {
-                // Запрещаем выбор других слотов
-                const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${floor}"] .slot`);
-                currentFloorSlots.forEach(s => {
-                    s.style.cursor = 'default';
-                    s.onclick = null;
-                });
-                
-                // Показываем кнопки действий
-                document.getElementById('cashout-btn').classList.remove('disabled');
-                document.getElementById('next-floor-btn').classList.remove('disabled');
+                setTimeout(() => {
+                    nextFloor();
+                }, 500);
             }
         }
         
@@ -723,28 +737,23 @@
             document.getElementById('current-multiplier').textContent = `${multiplier.toFixed(1)}x`;
             
             // Если это последний этаж - автоматически завершаем игру с выигрышем
-            if (currentFloor >= floorsCount - 1) {
+            if (currentFloor >= floorsCount) {
                 endGame(true);
                 return;
             }
             
-            // Разрешаем выбор слотов на следующем этаже
-            const nextFloorSlots = document.querySelectorAll(`.floor[data-floor="${currentFloor}"] .slot`);
-            nextFloorSlots.forEach(slot => {
-                slot.style.cursor = 'pointer';
-                slot.onclick = () => selectSlot(currentFloor, parseInt(slot.dataset.slot));
-            });
-            
             // Сбрасываем выбранные слоты
             selectedSlots = [];
             
-            // Скрываем кнопки действий до выбора слотов
-            document.getElementById('cashout-btn').classList.add('disabled');
-            document.getElementById('next-floor-btn').classList.add('disabled');
+            // Активируем слоты на новом этаже
+            activateCurrentFloor();
+            
+            // Обновляем кнопку "Забрать" (недоступна на первом этаже)
+            updateButtons();
         }
         
         function cashout() {
-            if (gameState !== 'playing' || selectedSlots.length === 0) return;
+            if (gameState !== 'playing' || currentFloor === 0) return;
             
             endGame(true);
         }
@@ -757,6 +766,7 @@
                 if (!slot.classList.contains('selected') && !slot.classList.contains('collapsed')) {
                     slot.classList.add('safe');
                 }
+                slot.classList.remove('active-floor');
             });
             
             // Вычисляем выигрыш
@@ -766,7 +776,7 @@
                 // Показываем модальное окно с выигрышем
                 showResultModal(
                     'Поздравляем!', 
-                    `Вы успешно прошли ${currentFloor + 1} этажей и выиграли ${winAmount} ⭐ (x${multiplier.toFixed(1)})`,
+                    `Вы успешно прошли ${currentFloor} этажей и выиграли ${winAmount} ⭐ (x${multiplier.toFixed(1)})`,
                     true
                 );
                 
@@ -790,7 +800,6 @@
             document.getElementById('play-btn').style.display = 'flex';
             document.getElementById('play-btn').textContent = 'Играть';
             document.getElementById('cashout-btn').style.display = 'none';
-            document.getElementById('next-floor-btn').style.display = 'none';
             
             // Обновляем доступность кнопок
             updateButtons();
@@ -818,14 +827,13 @@
             document.getElementById('play-btn').style.display = 'flex';
             document.getElementById('play-btn').textContent = 'Играть';
             document.getElementById('cashout-btn').style.display = 'none';
-            document.getElementById('next-floor-btn').style.display = 'none';
             
             document.getElementById('current-multiplier').textContent = '1.0x';
             document.getElementById('game-result').style.display = 'none';
             
             // Сбрасываем лестницу
             document.querySelectorAll('.slot').forEach(slot => {
-                slot.classList.remove('selected', 'collapsed', 'safe');
+                slot.classList.remove('selected', 'collapsed', 'safe', 'active-floor');
                 slot.style.cursor = 'default';
                 slot.onclick = null;
             });
@@ -840,7 +848,6 @@
             
             document.getElementById('play-btn').addEventListener('click', startGame);
             document.getElementById('cashout-btn').addEventListener('click', cashout);
-            document.getElementById('next-floor-btn').addEventListener('click', nextFloor);
             
             document.getElementById('ok-btn').addEventListener('click', () => {
                 document.getElementById('result-modal').style.display = 'none';
