@@ -434,6 +434,9 @@
             keno: true,
             case: true,
             slot: true,
+            lecenka: true,
+            crash: true,
+            miner: true,
             maintenance: false
         };
 
@@ -475,7 +478,10 @@
                         card: 1,
                         keno: 1,
                         case: 1,
-                        slot: 1
+                        slot: 1,
+                        lecenka: 1,
+                        crash: 1,
+                        miner: 1
                     });
                     console.log('Создан корень admin с новыми играми');
                 }
@@ -567,6 +573,9 @@
                     gameStatus.keno = adminData.keno === 1;
                     gameStatus.case = adminData.case === 1;
                     gameStatus.slot = adminData.slot === 1;
+                    gameStatus.lecenka = adminData.lecenka === 1;
+                    gameStatus.crash = adminData.crash === 1;
+                    gameStatus.miner = adminData.miner === 1;
                     
                     // Проверяем, является ли пользователь админом
                     const admins = (adminData.admins || "").split(" ").filter(id => id.trim() !== "");
@@ -644,6 +653,30 @@
                     icon: '🎲',
                     url: 'slot.html',
                     enabled: gameStatus.slot || isAdmin
+                },
+                {
+                    id: 'lecenka',
+                    title: 'Лестница',
+                    description: 'Поднимись по лестнице к победе',
+                    icon: '🪜',
+                    url: 'lecenka.html',
+                    enabled: gameStatus.lecenka || isAdmin
+                },
+                {
+                    id: 'crash',
+                    title: 'Краш',
+                    description: 'Успей вывести до краха',
+                    icon: '📉',
+                    url: 'crash.html',
+                    enabled: gameStatus.crash || isAdmin
+                },
+                {
+                    id: 'miner',
+                    title: 'Майнер',
+                    description: 'Найди алмазы и получи награду',
+                    icon: '⛏️',
+                    url: 'miner.html',
+                    enabled: gameStatus.miner || isAdmin
                 }
             ];
             
