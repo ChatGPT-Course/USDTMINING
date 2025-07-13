@@ -104,37 +104,17 @@
             color: #b8b8b8;
         }
         
-        .bet-amount {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .bet-input {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(123, 44, 191, 0.5);
-            color: white;
-            padding: 12px 15px;
-            border-radius: 8px;
-            font-size: 16px;
-            outline: none;
-        }
-        
         .bet-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
         }
         
         .bet-btn {
-            flex: 1;
-            min-width: calc(50% - 4px);
             background: rgba(123, 44, 191, 0.3);
             border: none;
             color: white;
-            padding: 8px;
+            padding: 10px 5px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
@@ -150,19 +130,16 @@
         }
         
         .stone-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
         }
         
         .stone-btn {
-            flex: 1;
-            min-width: calc(50% - 4px);
             background: rgba(123, 44, 191, 0.3);
             border: none;
             color: white;
-            padding: 8px;
+            padding: 10px 5px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
@@ -253,28 +230,58 @@
         }
         
         .slot.collapsed {
-            background: rgba(211, 47, 47, 0.5);
+            background: rgba(211, 47, 47, 0.7);
             border: 2px solid #d32f2f;
         }
         
         .slot.safe {
             background: rgba(100, 100, 100, 0.3);
-            border: 1px solid #555;
         }
         
         .slot.active-floor {
             animation: pulse-blue 1s infinite, pulse-scale 1s infinite;
         }
         
-        .multiplier-info {
-            text-align: center;
+        .multiplier-track {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
             margin: 15px 0;
+            position: relative;
+        }
+        
+        .multiplier-item {
+            width: 60px;
+            height: 40px;
+            background: rgba(123, 44, 191, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .multiplier-item.active {
+            background: rgba(46, 125, 50, 0.7);
+        }
+        
+        .multiplier-arrow {
+            color: #00b4db;
             font-size: 18px;
         }
         
-        .current-multiplier {
-            font-weight: bold;
-            color: #00b4db;
+        .multiplier-arrow.active {
+            color: #4caf50;
+        }
+        
+        .current-multiplier-arrow {
+            position: absolute;
+            top: -15px;
+            color: #4caf50;
+            font-size: 20px;
+            display: none;
         }
         
         .game-result {
@@ -386,21 +393,21 @@
                     <!-- Лестница будет генерироваться динамически -->
                 </div>
                 
-                <div class="multiplier-info">
-                    Текущий множитель: <span class="current-multiplier" id="current-multiplier">1.0x</span>
+                <div class="multiplier-track" id="multiplier-track">
+                    <div class="current-multiplier-arrow" id="current-multiplier-arrow">↑</div>
+                    <!-- Множители будут добавлены динамически -->
                 </div>
                 
                 <div class="controls-row">
                     <div class="control-card">
                         <div class="section-title">Сумма ставки</div>
-                        <div class="bet-amount">
-                            <input type="number" id="bet-amount" class="bet-input" placeholder="Сумма" min="10" value="10">
-                        </div>
                         <div class="bet-buttons">
-                            <button class="bet-btn" data-amount="10">10</button>
+                            <button class="bet-btn active" data-amount="10">10</button>
+                            <button class="bet-btn" data-amount="15">15</button>
+                            <button class="bet-btn" data-amount="25">25</button>
                             <button class="bet-btn" data-amount="50">50</button>
                             <button class="bet-btn" data-amount="100">100</button>
-                            <button class="bet-btn" data-amount="500">500</button>
+                            <button class="bet-btn" data-amount="250">250</button>
                         </div>
                     </div>
                     
@@ -461,6 +468,7 @@
         const floorsCount = 6;
         const slotsPerFloor = 5;
         const multipliers = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 15.0];
+        const betAmounts = [10, 15, 25, 50, 100, 250];
         
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -543,9 +551,74 @@
             }
         }
         
+        function createMultiplierTrack() {
+            const track = document.getElementById('multiplier-track');
+            track.innerHTML = '';
+            
+            // Добавляем стрелку текущего множителя
+            const arrow = document.createElement('div');
+            arrow.className = 'current-multiplier-arrow';
+            arrow.id = 'current-multiplier-arrow';
+            arrow.textContent = '↑';
+            track.appendChild(arrow);
+            
+            // Добавляем множители
+            for (let i = 0; i < multipliers.length; i++) {
+                const item = document.createElement('div');
+                item.className = 'multiplier-item';
+                item.dataset.multiplier = multipliers[i];
+                item.textContent = `${multipliers[i].toFixed(2)}x`;
+                
+                if (i === 0) {
+                    item.classList.add('active');
+                }
+                
+                track.appendChild(item);
+                
+                // Добавляем стрелки между множителями (кроме последнего)
+                if (i < multipliers.length - 1) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'multiplier-arrow';
+                    arrow.textContent = '→';
+                    track.appendChild(arrow);
+                }
+            }
+        }
+        
+        function updateMultiplierTrack() {
+            const items = document.querySelectorAll('.multiplier-item');
+            const arrows = document.querySelectorAll('.multiplier-arrow');
+            const currentArrow = document.getElementById('current-multiplier-arrow');
+            
+            // Сбрасываем все активные элементы
+            items.forEach(item => item.classList.remove('active'));
+            arrows.forEach(arrow => arrow.classList.remove('active'));
+            
+            // Находим текущий множитель
+            let currentIndex = multipliers.findIndex(m => m === multiplier);
+            if (currentIndex === -1) currentIndex = 0;
+            
+            // Активируем текущий множитель и стрелки до него
+            for (let i = 0; i <= currentIndex; i++) {
+                if (i < items.length) items[i].classList.add('active');
+                if (i < arrows.length) arrows[i].classList.add('active');
+            }
+            
+            // Позиционируем стрелку текущего множителя
+            if (currentIndex >= 0 && currentIndex < items.length) {
+                const item = items[currentIndex];
+                const itemRect = item.getBoundingClientRect();
+                const trackRect = document.getElementById('multiplier-track').getBoundingClientRect();
+                
+                currentArrow.style.display = 'block';
+                currentArrow.style.left = `${itemRect.left - trackRect.left + itemRect.width / 2 - 10}px`;
+            } else {
+                currentArrow.style.display = 'none';
+            }
+        }
+        
         function updateButtons() {
-            const betAmount = parseInt(document.getElementById('bet-amount').value) || 10;
-            const canPlay = (isBonusGame && currentBonusBalance >= betAmount) || (!isBonusGame && currentBalance >= betAmount);
+            const canPlay = (isBonusGame && currentBonusBalance >= currentBet) || (!isBonusGame && currentBalance >= currentBet);
             
             document.getElementById('play-btn').classList.toggle('disabled', !canPlay || gameState !== 'idle');
             document.getElementById('cashout-btn').classList.toggle('disabled', gameState !== 'playing' || currentFloor === 0);
@@ -588,23 +661,20 @@
         }
         
         function startGame() {
-            const betAmount = parseInt(document.getElementById('bet-amount').value) || 10;
-            
-            if (betAmount < 10) {
+            if (currentBet < 10) {
                 showResultModal('Ошибка', 'Минимальная ставка - 10 ⭐');
                 return;
             }
             
             // Проверяем баланс
-            isBonusGame = currentBonusBalance >= betAmount;
-            const canPlay = (isBonusGame && currentBonusBalance >= betAmount) || (!isBonusGame && currentBalance >= betAmount);
+            isBonusGame = currentBonusBalance >= currentBet;
+            const canPlay = (isBonusGame && currentBonusBalance >= currentBet) || (!isBonusGame && currentBalance >= currentBet);
             
             if (!canPlay) {
                 showResultModal('Ошибка', 'Недостаточно средств на балансе');
                 return;
             }
             
-            currentBet = betAmount;
             gameState = 'playing';
             currentFloor = 0;
             selectedSlots = [];
@@ -615,7 +685,7 @@
             document.getElementById('cashout-btn').style.display = 'flex';
             
             // Обновляем множитель
-            document.getElementById('current-multiplier').textContent = `${multiplier.toFixed(1)}x`;
+            updateMultiplierTrack();
             
             // Сбрасываем результат
             document.getElementById('game-result').style.display = 'none';
@@ -695,8 +765,8 @@
                 }
             }
             
-            // Выбираем случайные слоты для разрушения (минимум 1)
-            const slotsToCollapse = Math.min(availableSlots.length, Math.max(1, Math.floor(Math.random() * 3) + 1));
+            // Выбираем случайные слоты для разрушения (ровно stonesCount)
+            const slotsToCollapse = Math.min(availableSlots.length, stonesCount);
             
             // Перемешиваем массив и выбираем нужное количество
             for (let i = availableSlots.length - 1; i > 0; i--) {
@@ -734,7 +804,7 @@
             // Переходим на следующий этаж
             currentFloor++;
             multiplier = multipliers[currentFloor];
-            document.getElementById('current-multiplier').textContent = `${multiplier.toFixed(1)}x`;
+            updateMultiplierTrack();
             
             // Если это последний этаж - автоматически завершаем игру с выигрышем
             if (currentFloor >= floorsCount) {
@@ -776,7 +846,7 @@
                 // Показываем модальное окно с выигрышем
                 showResultModal(
                     'Поздравляем!', 
-                    `Вы успешно прошли ${currentFloor} этажей и выиграли ${winAmount} ⭐ (x${multiplier.toFixed(1)})`,
+                    `Вы успешно прошли ${currentFloor} этажей и выиграли ${winAmount} ⭐ (x${multiplier.toFixed(2)})`,
                     true
                 );
                 
@@ -785,7 +855,7 @@
                     currentUserId, 
                     'win', 
                     winAmount, 
-                    `Выигрыш в игре "Лестница" (x${multiplier.toFixed(1)})${isBonusGame ? ' (бонусный баланс)' : ''}`
+                    `Выигрыш в игре "Лестница" (x${multiplier.toFixed(2)})${isBonusGame ? ' (бонусный баланс)' : ''}`
                 );
             } else {
                 // Показываем модальное окно с проигрышем
@@ -828,7 +898,6 @@
             document.getElementById('play-btn').textContent = 'Играть';
             document.getElementById('cashout-btn').style.display = 'none';
             
-            document.getElementById('current-multiplier').textContent = '1.0x';
             document.getElementById('game-result').style.display = 'none';
             
             // Сбрасываем лестницу
@@ -837,6 +906,9 @@
                 slot.style.cursor = 'default';
                 slot.onclick = null;
             });
+            
+            // Сбрасываем трек множителей
+            updateMultiplierTrack();
             
             updateButtons();
         }
@@ -857,15 +929,11 @@
             // Кнопки быстрой ставки
             document.querySelectorAll('.bet-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const amount = parseInt(btn.dataset.amount);
-                    document.getElementById('bet-amount').value = amount;
+                    document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentBet = parseInt(btn.dataset.amount);
                     updateButtons();
                 });
-            });
-            
-            // Поле ввода ставки
-            document.getElementById('bet-amount').addEventListener('input', () => {
-                updateButtons();
             });
             
             // Кнопки выбора количества камней
@@ -890,6 +958,7 @@
             try {
                 await loadUserData(currentUserId);
                 createLadder();
+                createMultiplierTrack();
                 setupEventListeners();
                 updateButtons();
             } catch (error) {
