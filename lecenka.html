@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -91,6 +90,13 @@
             margin-bottom: 20px;
         }
         
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #b8b8b8;
+        }
+        
         .bet-controls {
             display: flex;
             flex-direction: column;
@@ -139,6 +145,38 @@
             background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
         }
         
+        .stones-controls {
+            margin-bottom: 20px;
+        }
+        
+        .stone-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .stone-btn {
+            flex: 1;
+            background: rgba(123, 44, 191, 0.3);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .stone-btn:hover {
+            background: rgba(123, 44, 191, 0.5);
+        }
+        
+        .stone-btn.active {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+        }
+        
         .action-btn {
             background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
             color: white;
@@ -150,6 +188,10 @@
             width: 100%;
             margin-top: 10px;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
         
         .action-btn:hover {
@@ -329,6 +371,7 @@
         
         <div id="content" style="display: none;">
             <div class="game-area">
+                <div class="section-title">Сумма ставки</div>
                 <div class="bet-controls">
                     <div class="bet-amount">
                         <input type="number" id="bet-amount" class="bet-input" placeholder="Сумма ставки" min="10" value="10">
@@ -338,6 +381,16 @@
                         <button class="bet-btn" data-amount="50">50</button>
                         <button class="bet-btn" data-amount="100">100</button>
                         <button class="bet-btn" data-amount="500">500</button>
+                    </div>
+                </div>
+                
+                <div class="section-title">Количество камней</div>
+                <div class="stones-controls">
+                    <div class="stone-buttons">
+                        <button class="stone-btn active" data-stones="1">1 🪨</button>
+                        <button class="stone-btn" data-stones="2">2 🪨</button>
+                        <button class="stone-btn" data-stones="3">3 🪨</button>
+                        <button class="stone-btn" data-stones="4">4 🪨</button>
                     </div>
                 </div>
                 
@@ -351,9 +404,9 @@
                 
                 <div class="game-result" id="game-result"></div>
                 
-                <button class="action-btn" id="start-btn">Начать игру</button>
-                <button class="action-btn disabled" id="cashout-btn" style="display: none;">Забрать выигрыш</button>
-                <button class="action-btn" id="next-floor-btn" style="display: none;">Идти дальше</button>
+                <button class="action-btn" id="play-btn">Играть</button>
+                <button class="action-btn disabled" id="cashout-btn" style="display: none;">Забрать ⭐</button>
+                <button class="action-btn" id="next-floor-btn" style="display: none;">Следующий этаж</button>
             </div>
         </div>
     </div>
@@ -387,10 +440,11 @@
         let currentBalance = 0;
         let currentBonusBalance = 0;
         let currentBet = 10;
+        let stonesCount = 1;
         let isBonusGame = false;
         let gameState = 'idle'; // 'idle', 'playing', 'completed'
         let currentFloor = 0;
-        let selectedSlot = -1;
+        let selectedSlots = [];
         let multiplier = 1.0;
         const floorsCount = 6;
         const slotsPerFloor = 5;
@@ -481,9 +535,9 @@
             const betAmount = parseInt(document.getElementById('bet-amount').value) || 10;
             const canPlay = (isBonusGame && currentBonusBalance >= betAmount) || (!isBonusGame && currentBalance >= betAmount);
             
-            document.getElementById('start-btn').classList.toggle('disabled', !canPlay || gameState !== 'idle');
-            document.getElementById('cashout-btn').classList.toggle('disabled', gameState !== 'playing');
-            document.getElementById('next-floor-btn').classList.toggle('disabled', gameState !== 'playing');
+            document.getElementById('play-btn').classList.toggle('disabled', !canPlay || gameState !== 'idle');
+            document.getElementById('cashout-btn').classList.toggle('disabled', gameState !== 'playing' || selectedSlots.length === 0);
+            document.getElementById('next-floor-btn').classList.toggle('disabled', gameState !== 'playing' || selectedSlots.length === 0);
         }
         
         async function createTransaction(userId, type, amount, description = '', isBonus = false) {
@@ -526,7 +580,7 @@
             const betAmount = parseInt(document.getElementById('bet-amount').value) || 10;
             
             if (betAmount < 10) {
-                alert('Минимальная ставка - 10 ⭐');
+                showResultModal('Ошибка', 'Минимальная ставка - 10 ⭐');
                 return;
             }
             
@@ -535,20 +589,20 @@
             const canPlay = (isBonusGame && currentBonusBalance >= betAmount) || (!isBonusGame && currentBalance >= betAmount);
             
             if (!canPlay) {
-                alert('Недостаточно средств на балансе');
+                showResultModal('Ошибка', 'Недостаточно средств на балансе');
                 return;
             }
             
             currentBet = betAmount;
             gameState = 'playing';
             currentFloor = 0;
-            selectedSlot = -1;
+            selectedSlots = [];
             multiplier = 1.0;
             
             // Скрываем/показываем кнопки
-            document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('cashout-btn').style.display = 'block';
-            document.getElementById('next-floor-btn').style.display = 'block';
+            document.getElementById('play-btn').style.display = 'none';
+            document.getElementById('cashout-btn').style.display = 'flex';
+            document.getElementById('next-floor-btn').style.display = 'flex';
             
             // Обновляем множитель
             document.getElementById('current-multiplier').textContent = `${multiplier.toFixed(1)}x`;
@@ -561,7 +615,7 @@
                 slot.classList.remove('selected', 'collapsed', 'safe');
             });
             
-            // Разрешаем выбор слота на первом этаже
+            // Разрешаем выбор слотов на первом этаже
             const firstFloorSlots = document.querySelectorAll('.floor[data-floor="0"] .slot');
             firstFloorSlots.forEach(slot => {
                 slot.style.cursor = 'pointer';
@@ -584,38 +638,65 @@
         function selectSlot(floor, slot) {
             if (gameState !== 'playing' || floor !== currentFloor) return;
             
-            // Снимаем выделение со всех слотов на текущем этаже
-            const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${floor}"] .slot`);
-            currentFloorSlots.forEach(s => s.classList.remove('selected'));
+            // Проверяем, можно ли выбрать еще камни
+            const currentSelected = document.querySelectorAll(`.floor[data-floor="${floor}"] .slot.selected`).length;
+            if (currentSelected >= stonesCount) {
+                return;
+            }
             
             // Выделяем выбранный слот
             const selected = document.querySelector(`.floor[data-floor="${floor}"] .slot[data-slot="${slot}"]`);
             selected.classList.add('selected');
-            selectedSlot = slot;
             
-            // Запрещаем выбор других слотов
-            currentFloorSlots.forEach(s => {
-                s.style.cursor = 'default';
-                s.onclick = null;
-            });
+            // Добавляем в массив выбранных слотов
+            selectedSlots.push({ floor, slot });
             
-            // Показываем кнопки действий
-            document.getElementById('cashout-btn').style.display = 'block';
-            document.getElementById('next-floor-btn').style.display = 'block';
+            // Если выбрано достаточно камней - разрешаем действия
+            if (selectedSlots.length >= stonesCount) {
+                // Запрещаем выбор других слотов
+                const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${floor}"] .slot`);
+                currentFloorSlots.forEach(s => {
+                    s.style.cursor = 'default';
+                    s.onclick = null;
+                });
+                
+                // Показываем кнопки действий
+                document.getElementById('cashout-btn').classList.remove('disabled');
+                document.getElementById('next-floor-btn').classList.remove('disabled');
+            }
         }
         
         function nextFloor() {
-            if (gameState !== 'playing' || selectedSlot === -1) return;
+            if (gameState !== 'playing' || selectedSlots.length === 0) return;
             
-            // Определяем какой слот разрушится (не может быть выбранным слотом)
-            let collapsedSlot;
-            do {
-                collapsedSlot = Math.floor(Math.random() * slotsPerFloor);
-            } while (collapsedSlot === selectedSlot);
+            // Определяем какие слоты разрушатся (не могут быть выбранными слотами)
+            let collapsedSlots = [];
+            const availableSlots = [];
             
-            // Помечаем разрушенный слот
-            const collapsed = document.querySelector(`.floor[data-floor="${currentFloor}"] .slot[data-slot="${collapsedSlot}"]`);
-            collapsed.classList.add('collapsed');
+            // Собираем все доступные слоты на текущем этаже
+            for (let i = 0; i < slotsPerFloor; i++) {
+                const isSelected = selectedSlots.some(s => s.floor === currentFloor && s.slot === i);
+                if (!isSelected) {
+                    availableSlots.push(i);
+                }
+            }
+            
+            // Выбираем случайные слоты для разрушения (минимум 1)
+            const slotsToCollapse = Math.min(availableSlots.length, Math.max(1, Math.floor(Math.random() * 3) + 1));
+            
+            // Перемешиваем массив и выбираем нужное количество
+            for (let i = availableSlots.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [availableSlots[i], availableSlots[j]] = [availableSlots[j], availableSlots[i]];
+            }
+            
+            collapsedSlots = availableSlots.slice(0, slotsToCollapse);
+            
+            // Помечаем разрушенные слоты
+            collapsedSlots.forEach(slot => {
+                const collapsed = document.querySelector(`.floor[data-floor="${currentFloor}"] .slot[data-slot="${slot}"]`);
+                collapsed.classList.add('collapsed');
+            });
             
             // Помечаем остальные слоты как безопасные
             const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${currentFloor}"] .slot`);
@@ -625,8 +706,13 @@
                 }
             });
             
-            // Проверяем, не разрушен ли выбранный слот (проигрыш)
-            if (collapsedSlot === selectedSlot) {
+            // Проверяем, не разрушен ли хотя бы один выбранный слот (проигрыш)
+            const anyCollapsed = selectedSlots.some(s => 
+                s.floor === currentFloor && 
+                collapsedSlots.includes(s.slot)
+            );
+            
+            if (anyCollapsed) {
                 endGame(false);
                 return;
             }
@@ -642,23 +728,23 @@
                 return;
             }
             
-            // Разрешаем выбор слота на следующем этаже
+            // Разрешаем выбор слотов на следующем этаже
             const nextFloorSlots = document.querySelectorAll(`.floor[data-floor="${currentFloor}"] .slot`);
             nextFloorSlots.forEach(slot => {
                 slot.style.cursor = 'pointer';
                 slot.onclick = () => selectSlot(currentFloor, parseInt(slot.dataset.slot));
             });
             
-            // Сбрасываем выбранный слот
-            selectedSlot = -1;
+            // Сбрасываем выбранные слоты
+            selectedSlots = [];
             
-            // Скрываем кнопки действий до выбора слота
-            document.getElementById('cashout-btn').style.display = 'none';
-            document.getElementById('next-floor-btn').style.display = 'none';
+            // Скрываем кнопки действий до выбора слотов
+            document.getElementById('cashout-btn').classList.add('disabled');
+            document.getElementById('next-floor-btn').classList.add('disabled');
         }
         
         function cashout() {
-            if (gameState !== 'playing' || selectedSlot === -1) return;
+            if (gameState !== 'playing' || selectedSlots.length === 0) return;
             
             endGame(true);
         }
@@ -676,13 +762,13 @@
             // Вычисляем выигрыш
             const winAmount = isWin ? Math.floor(currentBet * multiplier) : 0;
             
-            // Показываем результат
-            const resultElement = document.getElementById('game-result');
-            resultElement.style.display = 'block';
-            
             if (isWin) {
-                resultElement.textContent = `Поздравляем! Вы выиграли ${winAmount} ⭐ (x${multiplier.toFixed(1)})`;
-                resultElement.className = 'game-result win';
+                // Показываем модальное окно с выигрышем
+                showResultModal(
+                    'Поздравляем!', 
+                    `Вы успешно прошли ${currentFloor + 1} этажей и выиграли ${winAmount} ⭐ (x${multiplier.toFixed(1)})`,
+                    true
+                );
                 
                 // Зачисляем выигрыш
                 createTransaction(
@@ -692,13 +778,17 @@
                     `Выигрыш в игре "Лестница" (x${multiplier.toFixed(1)})${isBonusGame ? ' (бонусный баланс)' : ''}`
                 );
             } else {
-                resultElement.textContent = 'Вы проиграли. Попробуйте еще раз!';
-                resultElement.className = 'game-result lose';
+                // Показываем модальное окно с проигрышем
+                showResultModal(
+                    'Игра завершена', 
+                    'К сожалению, вы проиграли. Попробуйте еще раз!',
+                    false
+                );
             }
             
-            // Показываем кнопку "Новая игра"
-            document.getElementById('start-btn').style.display = 'block';
-            document.getElementById('start-btn').textContent = 'Новая игра';
+            // Показываем кнопку "Играть"
+            document.getElementById('play-btn').style.display = 'flex';
+            document.getElementById('play-btn').textContent = 'Играть';
             document.getElementById('cashout-btn').style.display = 'none';
             document.getElementById('next-floor-btn').style.display = 'none';
             
@@ -706,14 +796,27 @@
             updateButtons();
         }
         
+        function showResultModal(title, text, isWin = false) {
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-text').textContent = text;
+            
+            if (isBonusGame) {
+                document.getElementById('bonus-info').style.display = 'block';
+            } else {
+                document.getElementById('bonus-info').style.display = 'none';
+            }
+            
+            document.getElementById('result-modal').style.display = 'flex';
+        }
+        
         function resetGame() {
             gameState = 'idle';
             currentFloor = 0;
-            selectedSlot = -1;
+            selectedSlots = [];
             multiplier = 1.0;
             
-            document.getElementById('start-btn').style.display = 'block';
-            document.getElementById('start-btn').textContent = 'Начать игру';
+            document.getElementById('play-btn').style.display = 'flex';
+            document.getElementById('play-btn').textContent = 'Играть';
             document.getElementById('cashout-btn').style.display = 'none';
             document.getElementById('next-floor-btn').style.display = 'none';
             
@@ -735,12 +838,13 @@
                 window.location.href = 'index.html' + (currentUserId ? `?user_id=${currentUserId}` : '');
             });
             
-            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('play-btn').addEventListener('click', startGame);
             document.getElementById('cashout-btn').addEventListener('click', cashout);
             document.getElementById('next-floor-btn').addEventListener('click', nextFloor);
             
             document.getElementById('ok-btn').addEventListener('click', () => {
                 document.getElementById('result-modal').style.display = 'none';
+                resetGame();
             });
             
             // Кнопки быстрой ставки
@@ -755,6 +859,15 @@
             // Поле ввода ставки
             document.getElementById('bet-amount').addEventListener('input', () => {
                 updateButtons();
+            });
+            
+            // Кнопки выбора количества камней
+            document.querySelectorAll('.stone-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.stone-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    stonesCount = parseInt(btn.dataset.stones);
+                });
             });
         }
         
