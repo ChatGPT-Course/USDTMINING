@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Лестница - StarGame</title>
+    <title>Лесенка - StarGame</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -22,7 +22,6 @@
             overflow-x: hidden;
             position: relative;
             min-height: 100vh;
-            padding-bottom: 20px;
         }
         
         .header {
@@ -72,231 +71,321 @@
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-        }
-        
-        .game-area {
-            background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(123, 44, 191, 0.5);
-            margin-bottom: 20px;
-        }
-        
-        .controls-row {
             display: flex;
+            flex-direction: column;
             gap: 15px;
-            margin-top: 20px;
         }
         
-        .control-card {
-            flex: 1;
-            background: rgba(46, 17, 81, 0.5);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid rgba(123, 44, 191, 0.3);
+        .title {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 24px;
+            color: #f7f7f7;
         }
         
-        .section-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #b8b8b8;
-        }
-        
-        .bet-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        
-        .bet-btn {
-            background: rgba(123, 44, 191, 0.3);
-            border: none;
-            color: white;
-            padding: 10px 5px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-        
-        .bet-btn:hover {
-            background: rgba(123, 44, 191, 0.5);
-        }
-        
-        .bet-btn.active {
-            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
-        }
-        
-        .stone-buttons {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-        
-        .stone-btn {
-            background: rgba(123, 44, 191, 0.3);
-            border: none;
-            color: white;
-            padding: 10px 5px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
+        .game-board {
+            border: 2px solid rgba(123, 44, 191, 0.5);
+            border-radius: 16px;
+            background: rgba(46, 17, 81, 0.3);
+            height: calc(100vh - 300px);
+            min-height: 350px;
+            position: relative;
+            overflow: hidden;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        .stone-btn:hover {
-            background: rgba(123, 44, 191, 0.5);
-        }
-        
-        .stone-btn.active {
-            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
-        }
-        
-        .action-btn {
-            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
-        }
-        
-        .action-btn.disabled {
-            background: rgba(100, 100, 100, 0.5);
-            cursor: not-allowed;
+            flex-direction: column-reverse;
+            padding: 10px 5px;
         }
         
         .ladder {
             display: flex;
             flex-direction: column-reverse;
-            gap: 10px;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
         }
         
         .floor {
             display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+            width: 100%;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+        
+        .floor::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: rgba(123, 44, 191, 0.5);
+            z-index: 1;
+        }
+        
+        .floor::after {
+            content: attr(data-multiplier);
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+            padding: 2px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 2;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .floor.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .floor.passed {
+            opacity: 0.3;
+        }
+        
+        .floor.active::after {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        
+        .btn {
+            width: 45px;
+            height: 45px;
+            margin: 0 3px;
+            background: rgba(123, 44, 191, 0.3);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            outline: none;
+        }
+        
+        .btn:active {
+            transform: none;
+        }
+        
+        .btn:hover:not(.selected):not(.mine):not(.safe):not(:disabled) {
+            background: rgba(123, 44, 191, 0.5);
+        }
+        
+        .selected {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        
+        .mine {
+            background: rgba(233, 69, 96, 0.3);
+            opacity: 0.7;
+        }
+        
+        .mine::after {
+            content: '🪨';
+            font-size: 20px;
+        }
+        
+        .safe {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        
+        .safe::after {
+            content: '✓';
+            font-size: 24px;
+        }
+        
+        @keyframes crack {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+        
+        .crack {
+            animation: crack 0.3s forwards;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .bet-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .bet-input-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .bet-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            background: rgba(46, 17, 81, 0.5);
+            color: white;
+        }
+        
+        .bet-input:disabled {
+            background: rgba(100, 100, 100, 0.3);
+            color: #b8b8b8;
+        }
+        
+        .bet-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .bet-btn {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .bet-btn:hover:not(:disabled) {
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
+        }
+        
+        .bet-btn:disabled {
+            background: rgba(100, 100, 100, 0.3);
+            color: #b8b8b8;
+            cursor: not-allowed;
+        }
+        
+        .difficulty-row {
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            background: rgba(123, 44, 191, 0.2);
-            border-radius: 8px;
+            gap: 10px;
         }
         
-        .floor-number {
-            font-weight: bold;
-            width: 30px;
-            text-align: center;
-        }
-        
-        .slots {
+        .difficulty-buttons {
             display: flex;
             gap: 5px;
             flex: 1;
         }
         
-        .slot {
-            flex: 1;
-            height: 40px;
+        .difficulty-btn {
+            padding: 10px 5px;
+            border-radius: 8px;
+            border: none;
             background: rgba(123, 44, 191, 0.3);
-            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            width: 23%;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .difficulty-btn:hover:not(.active):not(:disabled) {
+            background: rgba(123, 44, 191, 0.5);
+        }
+        
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #e94560 0%, #d32f2f 100%);
+            font-weight: bold;
+        }
+        
+        .difficulty-btn:disabled {
+            background: rgba(100, 100, 100, 0.3);
+            color: #b8b8b8;
+            cursor: not-allowed;
+        }
+        
+        .help-btn {
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .slot.selected {
-            background: rgba(46, 125, 50, 0.5);
-            border: 2px solid #2e7d32;
-        }
-        
-        .slot.collapsed {
-            background: rgba(211, 47, 47, 0.7);
-            border: 2px solid #d32f2f;
-        }
-        
-        .slot.safe {
-            background: rgba(100, 100, 100, 0.3);
-        }
-        
-        .slot.active-floor {
-            animation: pulse-blue 1s infinite, pulse-scale 1s infinite;
-        }
-        
-        .multiplier-track {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            margin: 15px 0;
-            position: relative;
-        }
-        
-        .multiplier-item {
-            width: 60px;
-            height: 40px;
-            background: rgba(123, 44, 191, 0.3);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-weight: bold;
-            position: relative;
+            flex-shrink: 0;
+            margin-left: auto;
         }
         
-        .multiplier-item.active {
-            background: rgba(46, 125, 50, 0.7);
+        .help-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
         
-        .multiplier-arrow {
-            color: #00b4db;
-            font-size: 18px;
+        .action-btn {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
-        .multiplier-arrow.active {
-            color: #4caf50;
+        .start-btn {
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
         }
         
-        .current-multiplier-arrow {
-            position: absolute;
-            top: -15px;
-            color: #4caf50;
-            font-size: 20px;
-            display: none;
+        .start-btn:hover {
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
         }
         
-        .game-result {
-            text-align: center;
-            font-size: 20px;
-            margin: 15px 0;
-            display: none;
+        .take-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
         }
         
-        .win {
-            color: #4caf50;
+        .take-btn:hover {
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
         }
         
-        .lose {
-            color: #f44336;
+        .disabled-btn {
+            background: rgba(100, 100, 100, 0.3);
+            color: #b8b8b8;
+            cursor: not-allowed;
         }
         
         /* Модальные окна */
@@ -307,50 +396,108 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.8);
             z-index: 100;
             justify-content: center;
             align-items: center;
         }
         
         .modal-content {
-            background: linear-gradient(135deg, #1a0a2e 0%, #3a0ca3 100%);
+            background: rgba(46, 17, 81, 0.9);
             padding: 25px;
             border-radius: 16px;
-            width: 95%;
+            width: 90%;
             max-width: 400px;
-            text-align: center;
-            position: relative;
-            border: 2px solid #7b2cbf;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
         
         .modal-title {
             font-size: 20px;
             font-weight: bold;
-            margin-bottom: 15px;
         }
         
-        .modal-text {
-            margin: 15px 0;
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .difficulty-info {
+            margin-bottom: 10px;
             font-size: 14px;
             color: #b8b8b8;
         }
         
+        .result-modal {
+            text-align: center;
+        }
+        
+        .result-title {
+            font-size: 24px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .result-title.gradient {
+            background: linear-gradient(45deg, #ff9800, #ff6b00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        
+        .result-subtitle {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .multiplier-info {
+            font-size: 18px;
+            color: #4CAF50;
+            margin: 5px 0;
+        }
+        
+        .win {
+            color: #4CAF50;
+        }
+        
+        .lose {
+            color: #e94560;
+        }
+        
+        .result-amount {
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
         .ok-btn {
-            background: #7b2cbf;
-            color: white;
-            border: none;
-            padding: 12px 25px;
+            padding: 10px 25px;
             border-radius: 8px;
-            font-size: 16px;
+            border: none;
+            background: linear-gradient(135deg, #7b2cbf 0%, #3a0ca3 100%);
+            color: white;
             cursor: pointer;
-            margin-top: 15px;
+            font-size: 16px;
             transition: all 0.3s;
-            width: 100%;
         }
         
         .ok-btn:hover {
-            background: #5a189a;
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
         }
         
         .loading {
@@ -358,18 +505,6 @@
             padding: 20px;
             font-size: 16px;
             color: #b8b8b8;
-        }
-        
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(0, 180, 219, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(0, 180, 219, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 180, 219, 0); }
-        }
-        
-        @keyframes pulse-scale {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
         }
     </style>
 </head>
@@ -383,63 +518,82 @@
     </div>
     
     <div class="game-container">
+        <h1 class="title">Лесенка</h1>
+        
         <div id="loading" class="loading">
             Загрузка данных...
         </div>
         
         <div id="content" style="display: none;">
-            <div class="game-area">
+            <div class="game-board">
                 <div class="ladder" id="ladder">
-                    <!-- Лестница будет генерироваться динамически -->
+                    <!-- Этажи будут созданы динамически -->
                 </div>
-                
-                <div class="multiplier-track" id="multiplier-track">
-                    <div class="current-multiplier-arrow" id="current-multiplier-arrow">↑</div>
-                    <!-- Множители будут добавлены динамически -->
-                </div>
-                
-                <div class="controls-row">
-                    <div class="control-card">
-                        <div class="section-title">Сумма ставки</div>
-                        <div class="bet-buttons">
-                            <button class="bet-btn active" data-amount="10">10</button>
-                            <button class="bet-btn" data-amount="15">15</button>
-                            <button class="bet-btn" data-amount="25">25</button>
-                            <button class="bet-btn" data-amount="50">50</button>
-                            <button class="bet-btn" data-amount="100">100</button>
-                            <button class="bet-btn" data-amount="250">250</button>
-                        </div>
+            </div>
+            
+            <div class="controls">
+                <div class="bet-row">
+                    <div class="bet-input-container">
+                        <input type="number" class="bet-input" id="betAmount" placeholder="Ставка" min="1" value="10">
                     </div>
-                    
-                    <div class="control-card">
-                        <div class="section-title">Количество камней</div>
-                        <div class="stone-buttons">
-                            <button class="stone-btn active" data-stones="1">1 🪨</button>
-                            <button class="stone-btn" data-stones="2">2 🪨</button>
-                            <button class="stone-btn" data-stones="3">3 🪨</button>
-                            <button class="stone-btn" data-stones="4">4 🪨</button>
-                        </div>
+                    <div class="bet-buttons">
+                        <button class="bet-btn" id="betPlus1">+1</button>
+                        <button class="bet-btn" id="betPlus5">+5</button>
+                        <button class="bet-btn" id="betMin">MIN</button>
+                        <button class="bet-btn" id="betMax">MAX</button>
                     </div>
                 </div>
                 
-                <div class="game-result" id="game-result"></div>
+                <div class="difficulty-row">
+                    <div class="difficulty-buttons">
+                        <button class="difficulty-btn active" data-level="easy">Легко</button>
+                        <button class="difficulty-btn" data-level="medium">Средне</button>
+                        <button class="difficulty-btn" data-level="hard">Сложно</button>
+                        <button class="difficulty-btn" data-level="expert">ХАРД</button>
+                    </div>
+                    <button class="help-btn" id="helpBtn">?</button>
+                </div>
                 
-                <button class="action-btn" id="play-btn">Играть</button>
-                <button class="action-btn disabled" id="cashout-btn" style="display: none;">Забрать ⭐</button>
+                <button class="action-btn start-btn" id="actionBtn">▶ Запустить игру</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно помощи -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Информация об уровнях сложности</div>
+                <button class="close-modal" id="closeHelpModal">×</button>
+            </div>
+            <div class="difficulty-info">
+                <strong>Легко:</strong> 1 мина на этаже
+            </div>
+            <div class="difficulty-info">
+                <strong>Средне:</strong> 2 мины на этаже
+            </div>
+            <div class="difficulty-info">
+                <strong>Сложно:</strong> 3 мины на этаже
+            </div>
+            <div class="difficulty-info">
+                <strong>ХАРД:</strong> 4 мины на этаже
             </div>
         </div>
     </div>
     
     <!-- Модальное окно результата -->
-    <div id="result-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title" id="result-title">Результат игры</div>
-            <div class="modal-text" id="result-text"></div>
-            <div class="modal-text" id="bonus-info" style="display: none;">Вы играли за бонусный баланс</div>
-            <button class="ok-btn" id="ok-btn">Хорошо</button>
+    <div class="modal" id="resultModal">
+        <div class="modal-content result-modal">
+            <div class="result-title gradient" id="resultTitle">Поздравляем!</div>
+            <div class="multiplier-info" id="multiplierInfo">Множитель: 0.00x</div>
+            <div class="result-subtitle win" id="resultSubtitle">Вы выиграли!</div>
+            <div class="result-amount win" id="resultAmount">+0 ⭐</div>
+            <div class="modal-actions">
+                <button class="ok-btn" id="okBtn">Ок</button>
+            </div>
         </div>
     </div>
-
+    
     <script>
         // Инициализация Firebase
         const firebaseConfig = {
@@ -455,21 +609,7 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
-        let currentUserId = null;
-        let currentBalance = 0;
-        let currentBonusBalance = 0;
-        let currentBet = 10;
-        let stonesCount = 1;
-        let isBonusGame = false;
-        let gameState = 'idle'; // 'idle', 'playing', 'completed'
-        let currentFloor = 0;
-        let selectedSlots = [];
-        let multiplier = 1.0;
-        const floorsCount = 6;
-        const slotsPerFloor = 5;
-        const multipliers = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 15.0];
-        const betAmounts = [10, 15, 25, 50, 100, 250];
-        
+        // Получение ID пользователя
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
             let userId = urlParams.get('user_id');
@@ -488,142 +628,96 @@
             return userId;
         }
         
+        let currentUserId = null;
+        let currentBalance = 0;
+        let currentBonusBalance = 0;
+        let currentFloor = 0;
+        let currentWin = 0;
+        let betAmount = 10;
+        let difficulty = 'easy';
+        let gameActive = false;
+        let safeButtons = [];
+        let mineButtons = [];
+        let canClick = false;
+        let isBonusGame = false;
+        
+        // Настройки сложности
+        const difficultySettings = {
+            easy: { 
+                mines: 1, 
+                multipliers: [1.04, 1.14, 1.28, 1.55, 1.96, 2.03],
+                name: "Легко"
+            },
+            medium: { 
+                mines: 2, 
+                multipliers: [1.15, 1.55, 2.25, 3, 4.85, 7.55],
+                name: "Средне"
+            },
+            hard: { 
+                mines: 3, 
+                multipliers: [2.2, 4.92, 8.8, 16.4, 28.22, 42.56],
+                name: "Сложно"
+            },
+            expert: { 
+                mines: 4, 
+                multipliers: [4.5, 22.9, 93.4, 385.44, 1953, 50000],
+                name: "ХАРД"
+            }
+        };
+        
+        // Элементы DOM
+        const ladderElement = document.getElementById('ladder');
+        const betAmountInput = document.getElementById('betAmount');
+        const actionBtn = document.getElementById('actionBtn');
+        const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpModal = document.getElementById('closeHelpModal');
+        const resultModal = document.getElementById('resultModal');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultSubtitle = document.getElementById('resultSubtitle');
+        const resultAmount = document.getElementById('resultAmount');
+        const multiplierInfo = document.getElementById('multiplierInfo');
+        const okBtn = document.getElementById('okBtn');
+        const betPlus1Btn = document.getElementById('betPlus1');
+        const betPlus5Btn = document.getElementById('betPlus5');
+        const betMinBtn = document.getElementById('betMin');
+        const betMaxBtn = document.getElementById('betMax');
+        const loadingElement = document.getElementById('loading');
+        const contentElement = document.getElementById('content');
+        const backBtn = document.getElementById('back-btn');
+        const userBalanceElement = document.getElementById('user-balance');
+        const userBonusBalanceElement = document.getElementById('user-bonus-balance');
+        
+        // Загрузка данных пользователя
         async function loadUserData(userId) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const userRef = database.ref('users/' + userId);
-                    
-                    userRef.on('value', (snapshot) => {
-                        const userData = snapshot.val();
-                        if (userData) {
-                            currentBalance = userData.balance || 0;
-                            currentBonusBalance = userData.bonus_balance || 0;
-                            document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
-                            document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
-                            document.getElementById('loading').style.display = 'none';
-                            document.getElementById('content').style.display = 'block';
-                            resolve(userData);
-                        } else {
-                            const error = new Error("Пользователь не найден");
-                            document.getElementById('loading').textContent = error.message;
-                            reject(error);
-                        }
-                    }, (error) => {
-                        console.error("Ошибка чтения данных:", error);
-                        document.getElementById('loading').textContent = 'Ошибка загрузки данных';
-                        reject(error);
-                    });
-                    
-                } catch (error) {
-                    console.error('Ошибка загрузки данных:', error);
-                    document.getElementById('loading').textContent = 'Ошибка: ' + error.message;
-                    reject(error);
-                }
-            });
-        }
-        
-        function createLadder() {
-            const ladder = document.getElementById('ladder');
-            ladder.innerHTML = '';
-            
-            for (let i = 0; i < floorsCount; i++) {
-                const floor = document.createElement('div');
-                floor.className = 'floor';
-                floor.dataset.floor = i;
+            try {
+                const userRef = database.ref('users/' + userId);
                 
-                const floorNumber = document.createElement('div');
-                floorNumber.className = 'floor-number';
-                floorNumber.textContent = i + 1;
+                userRef.on('value', (snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        currentBalance = userData.balance || 0;
+                        currentBonusBalance = userData.bonus_balance || 0;
+                        userBalanceElement.textContent = `${currentBalance} ⭐`;
+                        userBonusBalanceElement.textContent = `${currentBonusBalance} ⭐`;
+                        
+                        // Показываем контент после загрузки данных
+                        loadingElement.style.display = 'none';
+                        contentElement.style.display = 'block';
+                        
+                        // Обновляем доступность кнопок
+                        updateBetButtons();
+                    }
+                });
                 
-                const slots = document.createElement('div');
-                slots.className = 'slots';
-                
-                for (let j = 0; j < slotsPerFloor; j++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'slot';
-                    slot.dataset.slot = j;
-                    slots.appendChild(slot);
-                }
-                
-                floor.appendChild(floorNumber);
-                floor.appendChild(slots);
-                ladder.appendChild(floor);
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+                loadingElement.textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
             }
         }
         
-        function createMultiplierTrack() {
-            const track = document.getElementById('multiplier-track');
-            track.innerHTML = '';
-            
-            // Добавляем стрелку текущего множителя
-            const arrow = document.createElement('div');
-            arrow.className = 'current-multiplier-arrow';
-            arrow.id = 'current-multiplier-arrow';
-            arrow.textContent = '↑';
-            track.appendChild(arrow);
-            
-            // Добавляем множители
-            for (let i = 0; i < multipliers.length; i++) {
-                const item = document.createElement('div');
-                item.className = 'multiplier-item';
-                item.dataset.multiplier = multipliers[i];
-                item.textContent = `${multipliers[i].toFixed(2)}x`;
-                
-                if (i === 0) {
-                    item.classList.add('active');
-                }
-                
-                track.appendChild(item);
-                
-                // Добавляем стрелки между множителями (кроме последнего)
-                if (i < multipliers.length - 1) {
-                    const arrow = document.createElement('div');
-                    arrow.className = 'multiplier-arrow';
-                    arrow.textContent = '→';
-                    track.appendChild(arrow);
-                }
-            }
-        }
-        
-        function updateMultiplierTrack() {
-            const items = document.querySelectorAll('.multiplier-item');
-            const arrows = document.querySelectorAll('.multiplier-arrow');
-            const currentArrow = document.getElementById('current-multiplier-arrow');
-            
-            // Сбрасываем все активные элементы
-            items.forEach(item => item.classList.remove('active'));
-            arrows.forEach(arrow => arrow.classList.remove('active'));
-            
-            // Находим текущий множитель
-            let currentIndex = multipliers.findIndex(m => m === multiplier);
-            if (currentIndex === -1) currentIndex = 0;
-            
-            // Активируем текущий множитель и стрелки до него
-            for (let i = 0; i <= currentIndex; i++) {
-                if (i < items.length) items[i].classList.add('active');
-                if (i < arrows.length) arrows[i].classList.add('active');
-            }
-            
-            // Позиционируем стрелку текущего множителя
-            if (currentIndex >= 0 && currentIndex < items.length) {
-                const item = items[currentIndex];
-                const itemRect = item.getBoundingClientRect();
-                const trackRect = document.getElementById('multiplier-track').getBoundingClientRect();
-                
-                currentArrow.style.display = 'block';
-                currentArrow.style.left = `${itemRect.left - trackRect.left + itemRect.width / 2 - 10}px`;
-            } else {
-                currentArrow.style.display = 'none';
-            }
-        }
-        
-        function updateButtons() {
-            const canPlay = (isBonusGame && currentBonusBalance >= currentBet) || (!isBonusGame && currentBalance >= currentBet);
-            
-            document.getElementById('play-btn').classList.toggle('disabled', !canPlay || gameState !== 'idle');
-            document.getElementById('cashout-btn').classList.toggle('disabled', gameState !== 'playing' || currentFloor === 0);
-        }
-        
+        // Обновление баланса в Firebase
         async function createTransaction(userId, type, amount, description = '', isBonus = false) {
             try {
                 const userRef = database.ref('users/' + userId);
@@ -633,8 +727,10 @@
                 let updates = {};
                 
                 if (type === 'deposit' || type === 'win') {
+                    // При выигрыше добавляем к основному балансу
                     updates.balance = (userData.balance || 0) + amount;
                 } else if (type === 'game_bet') {
+                    // При ставке списываем с соответствующего баланса
                     if (isBonus) {
                         updates.bonus_balance = (userData.bonus_balance || 0) - amount;
                     } else {
@@ -644,13 +740,14 @@
                 
                 await userRef.update(updates);
                 
+                // Обновляем локальные значения
                 if (updates.balance !== undefined) {
                     currentBalance = updates.balance;
-                    document.getElementById('user-balance').textContent = `${currentBalance} ⭐`;
+                    userBalanceElement.textContent = `${currentBalance} ⭐`;
                 }
                 if (updates.bonus_balance !== undefined) {
                     currentBonusBalance = updates.bonus_balance;
-                    document.getElementById('user-bonus-balance').textContent = `${currentBonusBalance} ⭐`;
+                    userBonusBalanceElement.textContent = `${currentBonusBalance} ⭐`;
                 }
                 
                 return { success: true };
@@ -660,314 +757,417 @@
             }
         }
         
-        function startGame() {
-            if (currentBet < 10) {
-                showResultModal('Ошибка', 'Минимальная ставка - 10 ⭐');
-                return;
-            }
-            
-            // Проверяем баланс
-            isBonusGame = currentBonusBalance >= currentBet;
-            const canPlay = (isBonusGame && currentBonusBalance >= currentBet) || (!isBonusGame && currentBalance >= currentBet);
-            
-            if (!canPlay) {
-                showResultModal('Ошибка', 'Недостаточно средств на балансе');
-                return;
-            }
-            
-            gameState = 'playing';
+        // Создание игрового поля
+        function createLadder() {
+            ladderElement.innerHTML = '';
             currentFloor = 0;
-            selectedSlots = [];
-            multiplier = 1.0;
             
-            // Скрываем/показываем кнопки
-            document.getElementById('play-btn').style.display = 'none';
-            document.getElementById('cashout-btn').style.display = 'flex';
+            // Создаем все 6 этажей
+            for (let i = 0; i < 6; i++) {
+                const floor = document.createElement('div');
+                floor.className = 'floor';
+                floor.dataset.floor = i;
+                floor.dataset.multiplier = difficultySettings[difficulty].multipliers[i].toFixed(2) + 'x';
+                
+                // Всегда 5 кнопок на этаже
+                for (let j = 0; j < 5; j++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn';
+                    btn.dataset.floor = i;
+                    btn.dataset.position = j;
+                    btn.addEventListener('click', () => selectButton(btn));
+                    floor.appendChild(btn);
+                }
+                
+                ladderElement.appendChild(floor);
+            }
             
-            // Обновляем множитель
-            updateMultiplierTrack();
-            
-            // Сбрасываем результат
-            document.getElementById('game-result').style.display = 'none';
-            
-            // Сбрасываем лестницу
-            document.querySelectorAll('.slot').forEach(slot => {
-                slot.classList.remove('selected', 'collapsed', 'safe', 'active-floor');
+            // Показываем только первый этаж во время игры
+            if (gameActive) {
+                showFloor(0);
+            } else {
+                // Перед игрой показываем все этажи полупрозрачными
+                document.querySelectorAll('.floor').forEach(floor => {
+                    floor.classList.add('visible', 'passed');
+                });
+            }
+        }
+        
+        // Показать этаж
+        function showFloor(floorNumber) {
+            const floors = document.querySelectorAll('.floor');
+            floors.forEach(floor => {
+                floor.classList.remove('active');
+                if (parseInt(floor.dataset.floor) < floorNumber) {
+                    floor.classList.add('passed');
+                }
             });
             
-            // Активируем слоты на текущем этаже
-            activateCurrentFloor();
+            const floor = document.querySelector(`.floor[data-floor="${floorNumber}"]`);
+            if (floor) {
+                floor.classList.add('visible');
+                generateFloor(floorNumber);
+                
+                // Подсвечиваем овал с текущим множителем
+                floor.classList.add('active');
+            }
+        }
+        
+        // Показать следующий этаж
+        function showNextFloor() {
+            // Помечаем текущий этаж как пройденный
+            const currentFloorElement = document.querySelector(`.floor[data-floor="${currentFloor}"]`);
+            if (currentFloorElement) {
+                currentFloorElement.classList.add('passed');
+                currentFloorElement.classList.remove('active');
+            }
             
-            // Снимаем деньги
+            currentFloor++;
+            if (currentFloor < 6) {
+                showFloor(currentFloor);
+            } else {
+                // Игрок дошел до конца
+                showResult(true);
+            }
+        }
+        
+        // Генерация этажа
+        function generateFloor(floorNumber) {
+            const settings = difficultySettings[difficulty];
+            const minesCount = settings.mines;
+            
+            safeButtons = [];
+            mineButtons = [];
+            canClick = false;
+            
+            const allPositions = [0, 1, 2, 3, 4]; // Всегда 5 кнопок
+            
+            // Перемешиваем позиции
+            for (let i = allPositions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allPositions[i], allPositions[j]] = [allPositions[j], allPositions[i]];
+            }
+            
+            mineButtons = allPositions.slice(0, minesCount);
+            safeButtons = allPositions.slice(minesCount);
+            
+            // Активируем кнопки на текущем этаже
+            const currentFloorButtons = document.querySelectorAll(`.btn[data-floor="${floorNumber}"]`);
+            currentFloorButtons.forEach(btn => {
+                btn.disabled = true; // Сначала блокируем все кнопки
+                btn.classList.remove('selected', 'mine', 'safe', 'crack');
+            });
+            
+            // Разблокируем кнопки через разное время для разных этажей
+            const delay = floorNumber === 0 ? 500 : 300; // 0.5с для первого этажа, 0.3с для остальных
+            setTimeout(() => {
+                currentFloorButtons.forEach(btn => {
+                    btn.disabled = false;
+                });
+                canClick = true;
+            }, delay);
+        }
+        
+        // Начало игры
+        function startGame() {
+            const bet = parseInt(betAmountInput.value);
+            
+            if (isNaN(bet) {
+                alert('Введите корректную сумму ставки');
+                return;
+            }
+            
+            if (bet < 1) {
+                alert('Минимальная ставка - 1 ⭐');
+                return;
+            }
+            
+            // Определяем, с какого баланса будем оплачивать
+            isBonusGame = currentBonusBalance >= bet;
+            
+            if (!isBonusGame && bet > currentBalance) {
+                alert('Недостаточно средств на балансе');
+                return;
+            }
+            
+            betAmount = bet;
+            currentWin = 0;
+            gameActive = true;
+            canClick = false;
+            
+            // Делаем элементы управления неактивными
+            betAmountInput.disabled = true;
+            betPlus1Btn.disabled = true;
+            betPlus5Btn.disabled = true;
+            betMinBtn.disabled = true;
+            betMaxBtn.disabled = true;
+            difficultyButtons.forEach(btn => btn.disabled = true);
+            helpBtn.disabled = true;
+            
+            // Меняем кнопку "Начать" на "Забрать"
+            actionBtn.textContent = 'Сделайте ход';
+            actionBtn.className = 'action-btn disabled-btn';
+            actionBtn.disabled = true;
+            
             createTransaction(
                 currentUserId, 
                 'game_bet', 
-                currentBet, 
-                `Ставка в игре "Лестница"`,
+                betAmount, 
+                `Ставка в игре "Лесенка" (${difficultySettings[difficulty].name})`,
                 isBonusGame
-            ).catch(error => {
-                console.error('Ошибка при списании средств:', error);
+            ).then(() => {
+                // Быстро скрываем все этажи кроме первого
+                document.querySelectorAll('.floor').forEach(floor => {
+                    floor.classList.remove('visible', 'passed');
+                });
+                createLadder();
+            }).catch(error => {
+                console.error('Update balance error:', error);
                 resetGame();
             });
         }
         
-        function activateCurrentFloor() {
-            // Убираем подсветку со всех слотов
-            document.querySelectorAll('.slot').forEach(slot => {
-                slot.classList.remove('active-floor');
+        // Выбор кнопки
+        function selectButton(button) {
+            if (!gameActive || !canClick) return;
+            
+            const floor = parseInt(button.dataset.floor);
+            const position = parseInt(button.dataset.position);
+            
+            if (floor !== currentFloor) return;
+            
+            const isSafe = safeButtons.includes(position);
+            
+            // Отключаем все кнопки на этаже
+            const floorButtons = document.querySelectorAll(`.btn[data-floor="${currentFloor}"]`);
+            floorButtons.forEach(btn => {
+                btn.disabled = true;
             });
             
-            // Подсвечиваем слоты текущего этажа
-            const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${currentFloor}"] .slot`);
-            currentFloorSlots.forEach(slot => {
-                slot.classList.add('active-floor');
-                slot.style.cursor = 'pointer';
-                slot.onclick = () => selectSlot(currentFloor, parseInt(slot.dataset.slot));
-            });
-        }
-        
-        function selectSlot(floor, slot) {
-            if (gameState !== 'playing' || floor !== currentFloor) return;
+            canClick = false;
             
-            // Проверяем, можно ли выбрать еще камни
-            const currentSelected = document.querySelectorAll(`.floor[data-floor="${floor}"] .slot.selected`).length;
-            if (currentSelected >= stonesCount) {
-                return;
+            // Показываем результат сразу
+            if (isSafe) {
+                button.classList.add('safe');
+            } else {
+                button.classList.add('mine', 'crack');
             }
             
-            // Выделяем выбранный слот
-            const selected = document.querySelector(`.floor[data-floor="${floor}"] .slot[data-slot="${slot}"]`);
-            selected.classList.add('selected');
+            // Показываем все мины
+            mineButtons.forEach(pos => {
+                const mineBtn = document.querySelector(`.btn[data-floor="${currentFloor}"][data-position="${pos}"]`);
+                if (pos !== position) {
+                    mineBtn.classList.add('mine', 'crack');
+                }
+            });
             
-            // Добавляем в массив выбранных слотов
-            selectedSlots.push({ floor, slot });
+            // Активируем кнопку "Забрать" после первого хода
+            actionBtn.textContent = `Забрать ${currentWin} ⭐`;
+            actionBtn.className = 'action-btn take-btn';
+            actionBtn.disabled = false;
             
-            // Если выбрано достаточно камней - переходим к следующему этажу
-            if (selectedSlots.length >= stonesCount) {
+            if (isSafe) {
+                // Выигрыш на этом этаже
+                const settings = difficultySettings[difficulty];
+                const floorWin = Math.floor(betAmount * settings.multipliers[currentFloor]);
+                currentWin = floorWin; // Обновляем текущий выигрыш
+                
+                // Обновляем кнопку "Забрать"
+                actionBtn.textContent = `Забрать ${currentWin} ⭐`;
+                
+                // Переход на следующий этаж
                 setTimeout(() => {
-                    nextFloor();
+                    showNextFloor();
+                }, 500);
+            } else {
+                // Игра окончена
+                gameActive = false;
+                actionBtn.textContent = '▶ Запустить игру';
+                actionBtn.className = 'action-btn start-btn';
+                
+                setTimeout(() => {
+                    showResult(false);
                 }, 500);
             }
         }
         
-        function nextFloor() {
-            if (gameState !== 'playing' || selectedSlots.length === 0) return;
-            
-            // Определяем какие слоты разрушатся (не могут быть выбранными слотами)
-            let collapsedSlots = [];
-            const availableSlots = [];
-            
-            // Собираем все доступные слоты на текущем этаже
-            for (let i = 0; i < slotsPerFloor; i++) {
-                const isSelected = selectedSlots.some(s => s.floor === currentFloor && s.slot === i);
-                if (!isSelected) {
-                    availableSlots.push(i);
-                }
-            }
-            
-            // Выбираем случайные слоты для разрушения (ровно stonesCount)
-            const slotsToCollapse = Math.min(availableSlots.length, stonesCount);
-            
-            // Перемешиваем массив и выбираем нужное количество
-            for (let i = availableSlots.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [availableSlots[i], availableSlots[j]] = [availableSlots[j], availableSlots[i]];
-            }
-            
-            collapsedSlots = availableSlots.slice(0, slotsToCollapse);
-            
-            // Помечаем разрушенные слоты
-            collapsedSlots.forEach(slot => {
-                const collapsed = document.querySelector(`.floor[data-floor="${currentFloor}"] .slot[data-slot="${slot}"]`);
-                collapsed.classList.add('collapsed');
-            });
-            
-            // Помечаем остальные слоты как безопасные
-            const currentFloorSlots = document.querySelectorAll(`.floor[data-floor="${currentFloor}"] .slot`);
-            currentFloorSlots.forEach(slot => {
-                if (!slot.classList.contains('selected') && !slot.classList.contains('collapsed')) {
-                    slot.classList.add('safe');
-                }
-            });
-            
-            // Проверяем, не разрушен ли хотя бы один выбранный слот (проигрыш)
-            const anyCollapsed = selectedSlots.some(s => 
-                s.floor === currentFloor && 
-                collapsedSlots.includes(s.slot)
-            );
-            
-            if (anyCollapsed) {
-                endGame(false);
-                return;
-            }
-            
-            // Переходим на следующий этаж
-            currentFloor++;
-            multiplier = multipliers[currentFloor];
-            updateMultiplierTrack();
-            
-            // Если это последний этаж - автоматически завершаем игру с выигрышем
-            if (currentFloor >= floorsCount) {
-                endGame(true);
-                return;
-            }
-            
-            // Сбрасываем выбранные слоты
-            selectedSlots = [];
-            
-            // Активируем слоты на новом этаже
-            activateCurrentFloor();
-            
-            // Обновляем кнопку "Забрать" (недоступна на первом этаже)
-            updateButtons();
-        }
-        
-        function cashout() {
-            if (gameState !== 'playing' || currentFloor === 0) return;
-            
-            endGame(true);
-        }
-        
-        function endGame(isWin) {
-            gameState = 'completed';
-            
-            // Помечаем все оставшиеся слоты как безопасные
-            document.querySelectorAll('.slot').forEach(slot => {
-                if (!slot.classList.contains('selected') && !slot.classList.contains('collapsed')) {
-                    slot.classList.add('safe');
-                }
-                slot.classList.remove('active-floor');
-            });
-            
-            // Вычисляем выигрыш
-            const winAmount = isWin ? Math.floor(currentBet * multiplier) : 0;
-            
+        // Показать результат
+        function showResult(isWin) {
             if (isWin) {
-                // Показываем модальное окно с выигрышем
-                showResultModal(
-                    'Поздравляем!', 
-                    `Вы успешно прошли ${currentFloor} этажей и выиграли ${winAmount} ⭐ (x${multiplier.toFixed(2)})`,
-                    true
-                );
+                // Обновляем модальное окно для победы
+                resultTitle.textContent = 'Поздравляем!';
+                resultTitle.className = 'result-title gradient';
+                multiplierInfo.textContent = `Множитель: ${difficultySettings[difficulty].multipliers[currentFloor-1].toFixed(2)}x`;
+                multiplierInfo.style.display = 'block';
+                resultSubtitle.textContent = 'Вы выиграли!';
+                resultSubtitle.className = 'result-subtitle win';
+                resultAmount.textContent = `+${currentWin} ⭐`;
+                resultAmount.className = 'result-amount win';
                 
-                // Зачисляем выигрыш
+                // Автоматическое зачисление выигрыша
                 createTransaction(
                     currentUserId, 
                     'win', 
-                    winAmount, 
-                    `Выигрыш в игре "Лестница" (x${multiplier.toFixed(2)})${isBonusGame ? ' (бонусный баланс)' : ''}`
-                );
+                    currentWin, 
+                    `Выигрыш в игре "Лесенка" (${difficultySettings[difficulty].name})`
+                ).then(() => {
+                    resultModal.style.display = 'flex';
+                });
             } else {
-                // Показываем модальное окно с проигрышем
-                showResultModal(
-                    'Игра завершена', 
-                    'К сожалению, вы проиграли. Попробуйте еще раз!',
-                    false
-                );
+                // Обновляем модальное окно для проигрыша
+                resultTitle.textContent = 'Кто-то поймал мину в лицо';
+                resultTitle.className = 'result-title';
+                multiplierInfo.style.display = 'none';
+                resultSubtitle.textContent = 'Вы проиграли!';
+                resultSubtitle.className = 'result-subtitle lose';
+                resultAmount.textContent = `-${betAmount} ⭐`;
+                resultAmount.className = 'result-amount lose';
+                resultModal.style.display = 'flex';
             }
-            
-            // Показываем кнопку "Играть"
-            document.getElementById('play-btn').style.display = 'flex';
-            document.getElementById('play-btn').textContent = 'Играть';
-            document.getElementById('cashout-btn').style.display = 'none';
-            
-            // Обновляем доступность кнопок
-            updateButtons();
         }
         
-        function showResultModal(title, text, isWin = false) {
-            document.getElementById('result-title').textContent = title;
-            document.getElementById('result-text').textContent = text;
-            
-            if (isBonusGame) {
-                document.getElementById('bonus-info').style.display = 'block';
-            } else {
-                document.getElementById('bonus-info').style.display = 'none';
-            }
-            
-            document.getElementById('result-modal').style.display = 'flex';
-        }
-        
+        // Сброс игры
         function resetGame() {
-            gameState = 'idle';
-            currentFloor = 0;
-            selectedSlots = [];
-            multiplier = 1.0;
+            gameActive = false;
+            currentWin = 0;
+            canClick = false;
             
-            document.getElementById('play-btn').style.display = 'flex';
-            document.getElementById('play-btn').textContent = 'Играть';
-            document.getElementById('cashout-btn').style.display = 'none';
+            // Восстанавливаем активность элементов управления
+            betAmountInput.disabled = false;
+            betPlus1Btn.disabled = false;
+            betPlus5Btn.disabled = false;
+            betMinBtn.disabled = false;
+            betMaxBtn.disabled = false;
+            difficultyButtons.forEach(btn => btn.disabled = false);
+            helpBtn.disabled = false;
             
-            document.getElementById('game-result').style.display = 'none';
+            // Возвращаем кнопку "Начать"
+            actionBtn.textContent = '▶ Запустить игру';
+            actionBtn.className = 'action-btn start-btn';
+            actionBtn.disabled = false;
             
-            // Сбрасываем лестницу
-            document.querySelectorAll('.slot').forEach(slot => {
-                slot.classList.remove('selected', 'collapsed', 'safe', 'active-floor');
-                slot.style.cursor = 'default';
-                slot.onclick = null;
-            });
-            
-            // Сбрасываем трек множителей
-            updateMultiplierTrack();
-            
-            updateButtons();
+            createLadder();
         }
         
+        // Обновление доступности кнопок ставок
+        function updateBetButtons() {
+            const betValue = parseInt(betAmountInput.value || 10);
+            
+            // Проверяем, с какого баланса можно оплатить
+            const canUseBonus = currentBonusBalance >= betValue;
+            const canUseMain = currentBalance >= betValue;
+            
+            // Обновляем кнопки в зависимости от доступного баланса
+            if (!canUseMain && !canUseBonus) {
+                actionBtn.disabled = true;
+                actionBtn.className = 'action-btn disabled-btn';
+            } else {
+                actionBtn.disabled = false;
+                actionBtn.className = 'action-btn start-btn';
+            }
+        }
+        
+        // Настройка обработчиков событий
         function setupEventListeners() {
-            document.getElementById('back-btn').addEventListener('click', () => {
+            // Кнопка назад
+            backBtn.addEventListener('click', () => {
                 window.location.href = 'index.html' + (currentUserId ? `?user_id=${currentUserId}` : '');
             });
             
-            document.getElementById('play-btn').addEventListener('click', startGame);
-            document.getElementById('cashout-btn').addEventListener('click', cashout);
+            // Управление ставками
+            betPlus1Btn.addEventListener('click', () => {
+                const newValue = parseInt(betAmountInput.value || 10) + 1;
+                betAmountInput.value = newValue;
+                updateBetButtons();
+            });
             
-            document.getElementById('ok-btn').addEventListener('click', () => {
-                document.getElementById('result-modal').style.display = 'none';
+            betPlus5Btn.addEventListener('click', () => {
+                const newValue = parseInt(betAmountInput.value || 10) + 5;
+                betAmountInput.value = newValue;
+                updateBetButtons();
+            });
+            
+            betMinBtn.addEventListener('click', () => {
+                betAmountInput.value = 1;
+                updateBetButtons();
+            });
+            
+            betMaxBtn.addEventListener('click', () => {
+                // Используем бонусный баланс, если его хватает, иначе основной
+                const maxBet = Math.max(currentBonusBalance, currentBalance);
+                betAmountInput.value = Math.max(1, maxBet);
+                updateBetButtons();
+            });
+            
+            // Изменение ставки вручную
+            betAmountInput.addEventListener('input', () => {
+                updateBetButtons();
+            });
+            
+            // Выбор сложности
+            difficultyButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    difficultyButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    difficulty = btn.dataset.level;
+                    createLadder();
+                });
+            });
+            
+            // Кнопка действия
+            actionBtn.addEventListener('click', () => {
+                if (actionBtn.textContent === '▶ Запустить игру') {
+                    startGame();
+                } else if (actionBtn.textContent.startsWith('Забрать')) {
+                    showResult(true);
+                }
+            });
+            
+            // Модальные окна
+            helpBtn.addEventListener('click', () => {
+                helpModal.style.display = 'flex';
+            });
+            
+            closeHelpModal.addEventListener('click', () => {
+                helpModal.style.display = 'none';
+            });
+            
+            okBtn.addEventListener('click', () => {
+                resultModal.style.display = 'none';
                 resetGame();
             });
             
-            // Кнопки быстрой ставки
-            document.querySelectorAll('.bet-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentBet = parseInt(btn.dataset.amount);
-                    updateButtons();
-                });
-            });
-            
-            // Кнопки выбора количества камней
-            document.querySelectorAll('.stone-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.stone-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    stonesCount = parseInt(btn.dataset.stones);
-                });
+            // Закрытие модальных окон при клике вне контента
+            window.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.style.display = 'none';
+                }
+                if (e.target === resultModal) {
+                    resultModal.style.display = 'none';
+                }
             });
         }
         
+        // Инициализация приложения
         async function initApp() {
             currentUserId = getUserId();
             
             if (!currentUserId) {
-                document.getElementById('loading').textContent = 'Ошибка: ID пользователя не найден. Пожалуйста, войдите через главную страницу.';
-                document.getElementById('back-btn').style.display = 'block';
+                loadingElement.textContent = 'Ошибка: ID пользователя не найден. Пожалуйста, войдите через главную страницу.';
                 return;
             }
             
             try {
                 await loadUserData(currentUserId);
                 createLadder();
-                createMultiplierTrack();
                 setupEventListeners();
-                updateButtons();
             } catch (error) {
                 console.error('Ошибка инициализации:', error);
-                document.getElementById('loading').textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
-                document.getElementById('back-btn').style.display = 'block';
+                loadingElement.textContent = 'Ошибка загрузки данных. Пожалуйста, попробуйте позже.';
             }
         }
         
+        // Запуск приложения
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
