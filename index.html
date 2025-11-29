@@ -5,52 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Mini App</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
         }
         .container {
-            background: rgba(255,255,255,0.1);
+            background: white;
             padding: 30px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
             max-width: 400px;
+            width: 100%;
         }
-        .user-card {
-            background: rgba(255,255,255,0.2);
-            padding: 20px;
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: white;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+        .user-info {
+            background: #f8f9fa;
+            padding: 15px;
             border-radius: 10px;
             margin: 15px 0;
+            text-align: left;
         }
-        .loading { color: #ccc; }
-        .success { color: #4ade80; }
-        .error { color: #f87171; }
+        .info-item {
+            margin: 8px 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #333;
+            display: inline-block;
+            width: 120px;
+        }
+        .value {
+            color: #666;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .success {
+            background: #d1edff;
+            color: #004085;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
         .btn {
-            background: white;
-            color: #667eea;
+            background: #667eea;
+            color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 8px;
             cursor: pointer;
-            margin: 10px;
+            margin: 5px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>👋 Telegram Mini App</h1>
-        <div id="content">
-            <p id="status" class="loading">Проверяем платформу...</p>
-            <div id="userInfo"></div>
+        <div class="avatar">👤</div>
+        <h1>Telegram Profile</h1>
+        <div id="status" class="status loading">
+            Определяем платформу...
         </div>
+        <div id="userInfo"></div>
+        <div id="debugInfo" style="display: none; margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 12px; text-align: left;"></div>
     </div>
 
     <script>
@@ -61,22 +112,119 @@
             TABLE_ID: 'mqo292nskad9hpm'
         };
 
-        // Функция для определения, открыто ли в Telegram
-        function isInTelegramWebApp() {
-            // Проверяем несколько способов
-            return (
-                (window.Telegram && Telegram.WebApp) ||
-                (window.parent && window.parent.Telegram && window.parent.Telegram.WebApp) ||
-                navigator.userAgent.includes('Telegram') ||
-                window.location.hash.includes('tgWebApp') ||
-                document.referrer.includes('telegram') ||
-                window.name.includes('telegram')
-            );
+        // Функция для отладки
+        function debugLog(message) {
+            console.log(message);
+            const debugEl = document.getElementById('debugInfo');
+            if (debugEl) {
+                debugEl.innerHTML += message + '<br>';
+            }
         }
 
-        // Сохранить пользователя в NocoDB
+        // Основная функция определения Telegram WebApp
+        function detectTelegramWebApp() {
+            debugLog('🔍 Начинаем проверку платформы...');
+            
+            // Способ 1: Проверка глобального объекта Telegram
+            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+                debugLog('✅ Найден window.Telegram.WebApp');
+                return true;
+            }
+            
+            // Способ 2: Проверка в родительском окне
+            if (window.parent && typeof window.parent.Telegram !== 'undefined' && window.parent.Telegram.WebApp) {
+                debugLog('✅ Найден window.parent.Telegram.WebApp');
+                return true;
+            }
+            
+            // Способ 3: Проверка User Agent
+            if (navigator.userAgent.includes('Telegram')) {
+                debugLog('✅ Обнаружен Telegram в User Agent');
+                return true;
+            }
+            
+            // Способ 4: Проверка URL параметров (основной способ для GitHub Pages)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tgWebAppData = urlParams.get('tgWebAppData');
+            const tgWebAppStartParam = urlParams.get('tgWebAppStartParam');
+            
+            if (tgWebAppData || tgWebAppStartParam) {
+                debugLog('✅ Обнаружены Telegram параметры в URL');
+                return true;
+            }
+            
+            // Способ 5: Проверка hash параметров
+            if (window.location.hash.includes('tgWebApp')) {
+                debugLog('✅ Обнаружен Telegram hash в URL');
+                return true;
+            }
+            
+            debugLog('❌ Telegram WebApp не обнаружен');
+            return false;
+        }
+
+        // Получение данных пользователя из URL параметров
+        function getUserDataFromURL() {
+            debugLog('📡 Получаем данные из URL...');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const tgWebAppData = urlParams.get('tgWebAppData');
+            
+            if (tgWebAppData) {
+                try {
+                    // Пытаемся декодировать данные
+                    const decodedData = decodeURIComponent(tgWebAppData);
+                    const parsedData = JSON.parse(decodedData);
+                    debugLog('📊 Данные из URL: ' + JSON.stringify(parsedData));
+                    return parsedData.user || null;
+                } catch (e) {
+                    debugLog('❌ Ошибка парсинга данных: ' + e.message);
+                }
+            }
+            
+            // Альтернативный способ: пробуем получить из hash
+            if (window.location.hash) {
+                try {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    const hashData = hashParams.get('tgWebAppData');
+                    if (hashData) {
+                        const decodedData = decodeURIComponent(hashData);
+                        const parsedData = JSON.parse(decodedData);
+                        return parsedData.user || null;
+                    }
+                } catch (e) {
+                    debugLog('❌ Ошибка парсинга hash: ' + e.message);
+                }
+            }
+            
+            return null;
+        }
+
+        // Получение данных пользователя из Telegram WebApp API
+        function getUserDataFromTelegramAPI() {
+            debugLog('📡 Получаем данные из Telegram API...');
+            
+            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+                try {
+                    Telegram.WebApp.ready();
+                    Telegram.WebApp.expand();
+                    
+                    const user = Telegram.WebApp.initDataUnsafe?.user;
+                    debugLog('📊 Данные из Telegram API: ' + JSON.stringify(user));
+                    return user;
+                } catch (e) {
+                    debugLog('❌ Ошибка Telegram API: ' + e.message);
+                }
+            }
+            
+            return null;
+        }
+
+        // Сохранение пользователя в NocoDB
         async function saveUserToNocoDB(userData) {
             try {
+                debugLog('💾 Сохраняем пользователя в базу...');
+                
                 const response = await fetch(
                     `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records`,
                     {
@@ -97,16 +245,20 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                return await response.json();
+                const result = await response.json();
+                debugLog('✅ Пользователь сохранен: ' + JSON.stringify(result));
+                return result;
             } catch (error) {
-                console.error('Ошибка сохранения:', error);
+                debugLog('❌ Ошибка сохранения: ' + error.message);
                 throw error;
             }
         }
 
-        // Проверить существует ли пользователь по id_tg
+        // Проверка существования пользователя
         async function checkUserExists(userId) {
             try {
+                debugLog('🔍 Проверяем существование пользователя...');
+                
                 const response = await fetch(
                     `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records?where=(id_tg,eq,${userId})`,
                     {
@@ -121,98 +273,88 @@
                 }
 
                 const data = await response.json();
-                return data.list && data.list.length > 0;
+                const exists = data.list && data.list.length > 0;
+                debugLog(exists ? '✅ Пользователь существует' : '❌ Пользователь не существует');
+                return exists;
             } catch (error) {
-                console.error('Ошибка проверки:', error);
+                debugLog('❌ Ошибка проверки: ' + error.message);
                 return false;
             }
         }
 
-        // Получить данные пользователя из URL параметров (запасной вариант)
-        function getUserFromUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const tgWebAppData = urlParams.get('tgWebAppData');
-            
-            if (tgWebAppData) {
-                try {
-                    const decoded = decodeURIComponent(tgWebAppData);
-                    const data = JSON.parse(decoded);
-                    return data.user || null;
-                } catch (e) {
-                    console.error('Error parsing tgWebAppData:', e);
-                }
-            }
-            return null;
-        }
-
-        // Главная функция для Telegram WebApp
-        async function initTelegramApp() {
-            const statusElement = document.getElementById('status');
+        // Отображение информации о пользователе
+        function displayUserInfo(userData, isNewUser = false) {
             const userInfoElement = document.getElementById('userInfo');
-
-            try {
-                let telegramUser = null;
-                
-                // Пытаемся получить данные разными способами
-                if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
-                    Telegram.WebApp.ready();
-                    Telegram.WebApp.expand();
-                    telegramUser = Telegram.WebApp.initDataUnsafe.user;
-                } else {
-                    telegramUser = getUserFromUrlParams();
-                }
-
-                if (telegramUser) {
-                    // Показываем информацию о пользователе
-                    userInfoElement.innerHTML = `
-                        <div class="user-card">
-                            <p><strong>ID:</strong> ${telegramUser.id}</p>
-                            <p><strong>Имя:</strong> ${telegramUser.first_name} ${telegramUser.last_name || ''}</p>
-                            ${telegramUser.username ? `<p><strong>Username:</strong> @${telegramUser.username}</p>` : ''}
-                        </div>
-                    `;
-
-                    // Проверяем существует ли пользователь
-                    const userExists = await checkUserExists(telegramUser.id);
-
-                    if (userExists) {
-                        statusElement.textContent = '✅ Добро пожаловать снова!';
-                        statusElement.className = 'success';
-                    } else {
-                        // Сохраняем нового пользователя
-                        await saveUserToNocoDB(telegramUser);
-                        statusElement.textContent = '✅ Профиль сохранен в базе!';
-                        statusElement.className = 'success';
-                    }
-
-                } else {
-                    statusElement.textContent = '⚠️ Данные пользователя не доступны';
-                    statusElement.className = 'error';
-                    userInfoElement.innerHTML = '<p>Приложение работает, но данные Telegram не получены</p>';
-                }
-
-            } catch (error) {
-                statusElement.textContent = '❌ Ошибка соединения с базой';
-                statusElement.className = 'error';
-                console.error('Ошибка инициализации:', error);
-            }
-        }
-
-        // Функция для обычного браузера
-        function initRegularBrowser() {
             const statusElement = document.getElementById('status');
-            const userInfoElement = document.getElementById('userInfo');
-            
-            statusElement.textContent = '📱 Это Mini App для Telegram';
-            statusElement.className = 'error';
             
             userInfoElement.innerHTML = `
-                <p>Для работы приложения откройте его через Telegram бота</p>
-                <div style="margin-top: 20px;">
-                    <p><strong>Тест подключения к базе:</strong></p>
-                    <button class="btn" onclick="testConnection()">Проверить базу данных</button>
+                <div class="user-info">
+                    <div class="info-item">
+                        <span class="label">ID:</span>
+                        <span class="value">${userData.id}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Имя:</span>
+                        <span class="value">${userData.first_name} ${userData.last_name || ''}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Username:</span>
+                        <span class="value">${userData.username ? '@' + userData.username : 'не указан'}</span>
+                    </div>
                 </div>
             `;
+            
+            statusElement.textContent = isNewUser ? '✅ Новый пользователь сохранен!' : '✅ Добро пожаловать!';
+            statusElement.className = 'status success';
+            
+            // Показываем отладочную информацию
+            document.getElementById('debugInfo').style.display = 'block';
+        }
+
+        // Основная функция инициализации
+        async function initApp() {
+            debugLog('🚀 Запуск приложения...');
+            
+            const isTelegram = detectTelegramWebApp();
+            
+            if (isTelegram) {
+                debugLog('📱 Обнаружен Telegram Mini App');
+                
+                // Пробуем получить данные разными способами
+                let userData = getUserDataFromTelegramAPI();
+                
+                if (!userData) {
+                    userData = getUserDataFromURL();
+                }
+                
+                if (userData) {
+                    debugLog('👤 Данные пользователя получены');
+                    
+                    // Проверяем существование пользователя
+                    const userExists = await checkUserExists(userData.id);
+                    
+                    if (!userExists) {
+                        // Сохраняем нового пользователя
+                        await saveUserToNocoDB(userData);
+                        displayUserInfo(userData, true);
+                    } else {
+                        displayUserInfo(userData, false);
+                    }
+                } else {
+                    document.getElementById('status').textContent = '❌ Не удалось получить данные пользователя';
+                    document.getElementById('status').className = 'status error';
+                    document.getElementById('debugInfo').style.display = 'block';
+                }
+            } else {
+                debugLog('🌐 Обычный браузер');
+                document.getElementById('status').textContent = '📱 Откройте эту страницу через Telegram бота';
+                document.getElementById('status').className = 'status error';
+                document.getElementById('userInfo').innerHTML = `
+                    <p style="color: #666; margin: 15px 0;">Это приложение работает только внутри Telegram Mini App</p>
+                    <button class="btn" onclick="testConnection()">Тест подключения к базе</button>
+                `;
+                document.getElementById('debugInfo').style.display = 'block';
+            }
         }
 
         // Тест подключения к базе
@@ -233,31 +375,20 @@
                     alert('❌ Ошибка подключения к базе');
                 }
             } catch (error) {
-                alert('❌ Ошибка подключения к базе: ' + error.message);
+                alert('❌ Ошибка подключения: ' + error.message);
             }
         }
 
-        // Главная функция инициализации
-        function initApp() {
-            if (isInTelegramWebApp()) {
-                console.log('Запуск в Telegram WebApp');
-                initTelegramApp();
-            } else {
-                console.log('Запуск в обычном браузере');
-                initRegularBrowser();
-            }
-        }
-
-        // Запускаем при загрузке
+        // Запускаем при загрузке страницы
         document.addEventListener('DOMContentLoaded', initApp);
 
-        // Дополнительная проверка через 1 секунду (на случай асинхронной загрузки Telegram WebApp)
+        // Дополнительная проверка через 2 секунды (на случай если Telegram API загрузился позже)
         setTimeout(() => {
-            if (isInTelegramWebApp() && !document.querySelector('.user-card')) {
-                console.log('Повторная инициализация для Telegram');
-                initTelegramApp();
+            if (detectTelegramWebApp() && !document.querySelector('.user-info')) {
+                debugLog('🔄 Повторная инициализация...');
+                initApp();
             }
-        }, 1000);
+        }, 2000);
     </script>
 </body>
 </html>
