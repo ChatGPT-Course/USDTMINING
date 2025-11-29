@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Mini App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+        }
+        .user-card {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .loading { color: #ccc; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👋 Привет!</h1>
+        <p id="status" class="loading">Загружаем ваш профиль...</p>
+        <div id="userInfo"></div>
+    </div>
+
+    <script>
+        // Конфигурация NocoDB
+        const NOCODB_CONFIG = {
+            BASE_URL: 'https://app.nocodb.com',
+            API_TOKEN: 'EB8ueGhiFFEsnbjkn9wKg8WUfBE73XWPgXMuB6uH',
+            PROJECT_ID: 'wf52x8bf',
+            BASE_ID: 'p0ce98aizxqdmvg',
+            TABLE_ID: 'mqo292nskad9hpm'
+        };
+
+        // Сохранить пользователя в NocoDB
+        async function saveUserToNocoDB(userData) {
+            try {
+                const response = await fetch(
+                    `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'xc-token': NOCODB_CONFIG.API_TOKEN,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id_tg: userData.id,
+                            name: userData.first_name + (userData.last_name ? ' ' + userData.last_name : ''),
+                            username: userData.username || ''
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Ошибка сохранения:', error);
+                throw error;
+            }
+        }
+
+        // Проверить существует ли пользователь по id_tg
+        async function checkUserExists(userId) {
+            try {
+                const response = await fetch(
+                    `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records?where=(id_tg,eq,${userId})`,
+                    {
+                        headers: {
+                            'xc-token': NOCODB_CONFIG.API_TOKEN
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.list && data.list.length > 0;
+            } catch (error) {
+                console.error('Ошибка проверки:', error);
+                return false;
+            }
+        }
+
+        // Главная функция
+        async function initApp() {
+            const statusElement = document.getElementById('status');
+            const userInfoElement = document.getElementById('userInfo');
+
+            try {
+                // Проверяем, открыто ли в Telegram
+                if (window.Telegram && Telegram.WebApp) {
+                    Telegram.WebApp.ready();
+                    Telegram.WebApp.expand();
+
+                    const telegramUser = Telegram.WebApp.initDataUnsafe.user;
+                    
+                    if (telegramUser) {
+                        // Показываем информацию о пользователе
+                        userInfoElement.innerHTML = `
+                            <div class="user-card">
+                                <p><strong>ID:</strong> ${telegramUser.id}</p>
+                                <p><strong>Имя:</strong> ${telegramUser.first_name} ${telegramUser.last_name || ''}</p>
+                                ${telegramUser.username ? `<p><strong>Username:</strong> @${telegramUser.username}</p>` : ''}
+                            </div>
+                        `;
+
+                        // Проверяем существует ли пользователь
+                        const userExists = await checkUserExists(telegramUser.id);
+
+                        if (userExists) {
+                            statusElement.textContent = '✅ Добро пожаловать снова!';
+                            statusElement.className = 'success';
+                        } else {
+                            // Сохраняем нового пользователя
+                            await saveUserToNocoDB(telegramUser);
+                            statusElement.textContent = '✅ Профиль сохранен в базе!';
+                            statusElement.className = 'success';
+                        }
+
+                    } else {
+                        statusElement.textContent = '❌ Данные пользователя не доступны';
+                        statusElement.className = 'error';
+                    }
+
+                } else {
+                    statusElement.textContent = '📱 Откройте приложение в Telegram';
+                    statusElement.className = 'error';
+                    userInfoElement.innerHTML = '<p>Это Mini App для Telegram</p>';
+                }
+
+            } catch (error) {
+                statusElement.textContent = '❌ Ошибка соединения с базой';
+                statusElement.className = 'error';
+                console.error('Ошибка инициализации:', error);
+            }
+        }
+
+        // Запускаем при загрузке
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
