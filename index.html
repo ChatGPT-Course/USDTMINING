@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Mini App</title>
+    <title>Добавление пользователя в базу</title>
     <style>
         * {
             margin: 0;
@@ -24,84 +24,112 @@
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 400px;
+            max-width: 500px;
             width: 100%;
-        }
-        .avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            background: #667eea;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            color: white;
         }
         h1 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 22px;
+            text-align: center;
+            margin-bottom: 20px;
         }
-        .user-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            text-align: left;
+        .form-group {
+            margin-bottom: 20px;
         }
-        .info-item {
-            margin: 8px 0;
-        }
-        .label {
+        label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: bold;
             color: #333;
-            display: inline-block;
-            width: 120px;
         }
-        .value {
-            color: #666;
-        }
-        .status {
-            padding: 10px;
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
             border-radius: 8px;
-            margin: 15px 0;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
-        .loading {
-            background: #fff3cd;
-            color: #856404;
-        }
-        .success {
-            background: #d1edff;
-            color: #004085;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
+        input:focus {
+            outline: none;
+            border-color: #667eea;
         }
         .btn {
             background: #667eea;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 14px 20px;
             border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            margin: 5px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
             font-size: 14px;
+        }
+        .log-entry {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        .log-time {
+            color: #666;
+            font-size: 12px;
+        }
+        .log-success {
+            color: #28a745;
+        }
+        .log-error {
+            color: #dc3545;
+        }
+        .log-info {
+            color: #007bff;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="avatar">👤</div>
-        <h1>Telegram Profile</h1>
-        <div id="status" class="status loading">
-            Определяем платформу...
+        <h1>📝 Добавление пользователя в базу</h1>
+        
+        <form id="userForm">
+            <div class="form-group">
+                <label for="id_tg">ID пользователя Telegram:</label>
+                <input type="number" id="id_tg" name="id_tg" required placeholder="Введите числовой ID">
+            </div>
+            
+            <div class="form-group">
+                <label for="name">Имя пользователя:</label>
+                <input type="text" id="name" name="name" required placeholder="Введите имя и фамилию">
+            </div>
+            
+            <div class="form-group">
+                <label for="username">Username (необязательно):</label>
+                <input type="text" id="username" name="username" placeholder="@username">
+            </div>
+            
+            <button type="submit" class="btn" id="submitBtn">💾 Сохранить в базу</button>
+        </form>
+        
+        <div class="logs" id="logs">
+            <div class="log-entry log-info">
+                <span class="log-time" id="currentTime"></span> - Готов к работе
+            </div>
         </div>
-        <div id="userInfo"></div>
-        <div id="debugInfo" style="display: none; margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 12px; text-align: left;"></div>
     </div>
 
     <script>
@@ -112,152 +140,36 @@
             TABLE_ID: 'mqo292nskad9hpm'
         };
 
-        // Функция для отладки
-        function debugLog(message) {
-            console.log(message);
-            const debugEl = document.getElementById('debugInfo');
-            if (debugEl) {
-                debugEl.innerHTML += message + '<br>';
-            }
+        // Элементы DOM
+        const form = document.getElementById('userForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const logsContainer = document.getElementById('logs');
+        const currentTimeElement = document.getElementById('currentTime');
+
+        // Обновление времени
+        function updateTime() {
+            const now = new Date();
+            currentTimeElement.textContent = now.toLocaleTimeString();
         }
+        setInterval(updateTime, 1000);
+        updateTime();
 
-        // Основная функция определения Telegram WebApp
-        function detectTelegramWebApp() {
-            debugLog('🔍 Начинаем проверку платформы...');
-            
-            // Способ 1: Проверка глобального объекта Telegram
-            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
-                debugLog('✅ Найден window.Telegram.WebApp');
-                return true;
-            }
-            
-            // Способ 2: Проверка в родительском окне
-            if (window.parent && typeof window.parent.Telegram !== 'undefined' && window.parent.Telegram.WebApp) {
-                debugLog('✅ Найден window.parent.Telegram.WebApp');
-                return true;
-            }
-            
-            // Способ 3: Проверка User Agent
-            if (navigator.userAgent.includes('Telegram')) {
-                debugLog('✅ Обнаружен Telegram в User Agent');
-                return true;
-            }
-            
-            // Способ 4: Проверка URL параметров (основной способ для GitHub Pages)
-            const urlParams = new URLSearchParams(window.location.search);
-            const tgWebAppData = urlParams.get('tgWebAppData');
-            const tgWebAppStartParam = urlParams.get('tgWebAppStartParam');
-            
-            if (tgWebAppData || tgWebAppStartParam) {
-                debugLog('✅ Обнаружены Telegram параметры в URL');
-                return true;
-            }
-            
-            // Способ 5: Проверка hash параметров
-            if (window.location.hash.includes('tgWebApp')) {
-                debugLog('✅ Обнаружен Telegram hash в URL');
-                return true;
-            }
-            
-            debugLog('❌ Telegram WebApp не обнаружен');
-            return false;
-        }
-
-        // Получение данных пользователя из URL параметров
-        function getUserDataFromURL() {
-            debugLog('📡 Получаем данные из URL...');
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const tgWebAppData = urlParams.get('tgWebAppData');
-            
-            if (tgWebAppData) {
-                try {
-                    // Пытаемся декодировать данные
-                    const decodedData = decodeURIComponent(tgWebAppData);
-                    const parsedData = JSON.parse(decodedData);
-                    debugLog('📊 Данные из URL: ' + JSON.stringify(parsedData));
-                    return parsedData.user || null;
-                } catch (e) {
-                    debugLog('❌ Ошибка парсинга данных: ' + e.message);
-                }
-            }
-            
-            // Альтернативный способ: пробуем получить из hash
-            if (window.location.hash) {
-                try {
-                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                    const hashData = hashParams.get('tgWebAppData');
-                    if (hashData) {
-                        const decodedData = decodeURIComponent(hashData);
-                        const parsedData = JSON.parse(decodedData);
-                        return parsedData.user || null;
-                    }
-                } catch (e) {
-                    debugLog('❌ Ошибка парсинга hash: ' + e.message);
-                }
-            }
-            
-            return null;
-        }
-
-        // Получение данных пользователя из Telegram WebApp API
-        function getUserDataFromTelegramAPI() {
-            debugLog('📡 Получаем данные из Telegram API...');
-            
-            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
-                try {
-                    Telegram.WebApp.ready();
-                    Telegram.WebApp.expand();
-                    
-                    const user = Telegram.WebApp.initDataUnsafe?.user;
-                    debugLog('📊 Данные из Telegram API: ' + JSON.stringify(user));
-                    return user;
-                } catch (e) {
-                    debugLog('❌ Ошибка Telegram API: ' + e.message);
-                }
-            }
-            
-            return null;
-        }
-
-        // Сохранение пользователя в NocoDB
-        async function saveUserToNocoDB(userData) {
-            try {
-                debugLog('💾 Сохраняем пользователя в базу...');
-                
-                const response = await fetch(
-                    `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'xc-token': NOCODB_CONFIG.API_TOKEN,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            id_tg: userData.id,
-                            name: userData.first_name + (userData.last_name ? ' ' + userData.last_name : ''),
-                            username: userData.username || ''
-                        })
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                debugLog('✅ Пользователь сохранен: ' + JSON.stringify(result));
-                return result;
-            } catch (error) {
-                debugLog('❌ Ошибка сохранения: ' + error.message);
-                throw error;
-            }
+        // Добавление записи в лог
+        function addLog(message, type = 'info') {
+            const now = new Date();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `
+                <span class="log-time">${now.toLocaleTimeString()}</span> - ${message}
+            `;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
         // Проверка существования пользователя
         async function checkUserExists(userId) {
             try {
-                debugLog('🔍 Проверяем существование пользователя...');
+                addLog(`🔍 Проверяем существование пользователя с ID: ${userId}`, 'info');
                 
                 const response = await fetch(
                     `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records?where=(id_tg,eq,${userId})`,
@@ -274,91 +186,109 @@
 
                 const data = await response.json();
                 const exists = data.list && data.list.length > 0;
-                debugLog(exists ? '✅ Пользователь существует' : '❌ Пользователь не существует');
+                
+                if (exists) {
+                    addLog(`⚠️ Пользователь с ID ${userId} уже существует в базе`, 'error');
+                } else {
+                    addLog(`✅ Пользователь с ID ${userId} не найден, можно добавлять`, 'success');
+                }
+                
                 return exists;
             } catch (error) {
-                debugLog('❌ Ошибка проверки: ' + error.message);
+                addLog(`❌ Ошибка при проверке пользователя: ${error.message}`, 'error');
                 return false;
             }
         }
 
-        // Отображение информации о пользователе
-        function displayUserInfo(userData, isNewUser = false) {
-            const userInfoElement = document.getElementById('userInfo');
-            const statusElement = document.getElementById('status');
-            
-            userInfoElement.innerHTML = `
-                <div class="user-info">
-                    <div class="info-item">
-                        <span class="label">ID:</span>
-                        <span class="value">${userData.id}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Имя:</span>
-                        <span class="value">${userData.first_name} ${userData.last_name || ''}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Username:</span>
-                        <span class="value">${userData.username ? '@' + userData.username : 'не указан'}</span>
-                    </div>
-                </div>
-            `;
-            
-            statusElement.textContent = isNewUser ? '✅ Новый пользователь сохранен!' : '✅ Добро пожаловать!';
-            statusElement.className = 'status success';
-            
-            // Показываем отладочную информацию
-            document.getElementById('debugInfo').style.display = 'block';
-        }
-
-        // Основная функция инициализации
-        async function initApp() {
-            debugLog('🚀 Запуск приложения...');
-            
-            const isTelegram = detectTelegramWebApp();
-            
-            if (isTelegram) {
-                debugLog('📱 Обнаружен Telegram Mini App');
+        // Сохранение пользователя в NocoDB
+        async function saveUserToNocoDB(userData) {
+            try {
+                addLog(`💾 Отправляем данные пользователя в базу...`, 'info');
                 
-                // Пробуем получить данные разными способами
-                let userData = getUserDataFromTelegramAPI();
-                
-                if (!userData) {
-                    userData = getUserDataFromURL();
-                }
-                
-                if (userData) {
-                    debugLog('👤 Данные пользователя получены');
-                    
-                    // Проверяем существование пользователя
-                    const userExists = await checkUserExists(userData.id);
-                    
-                    if (!userExists) {
-                        // Сохраняем нового пользователя
-                        await saveUserToNocoDB(userData);
-                        displayUserInfo(userData, true);
-                    } else {
-                        displayUserInfo(userData, false);
+                const response = await fetch(
+                    `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'xc-token': NOCODB_CONFIG.API_TOKEN,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id_tg: parseInt(userData.id_tg),
+                            name: userData.name,
+                            username: userData.username || ''
+                        })
                     }
-                } else {
-                    document.getElementById('status').textContent = '❌ Не удалось получить данные пользователя';
-                    document.getElementById('status').className = 'status error';
-                    document.getElementById('debugInfo').style.display = 'block';
+                );
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
                 }
-            } else {
-                debugLog('🌐 Обычный браузер');
-                document.getElementById('status').textContent = '📱 Откройте эту страницу через Telegram бота';
-                document.getElementById('status').className = 'status error';
-                document.getElementById('userInfo').innerHTML = `
-                    <p style="color: #666; margin: 15px 0;">Это приложение работает только внутри Telegram Mini App</p>
-                    <button class="btn" onclick="testConnection()">Тест подключения к базе</button>
-                `;
-                document.getElementById('debugInfo').style.display = 'block';
+
+                const result = await response.json();
+                addLog(`✅ Пользователь успешно сохранен в базу!`, 'success');
+                addLog(`📋 ID записи в базе: ${result.Id}`, 'info');
+                return result;
+            } catch (error) {
+                addLog(`❌ Ошибка при сохранении: ${error.message}`, 'error');
+                throw error;
             }
         }
 
-        // Тест подключения к базе
-        async function testConnection() {
+        // Обработчик отправки формы
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            // Получаем данные формы
+            const formData = new FormData(form);
+            const userData = {
+                id_tg: formData.get('id_tg'),
+                name: formData.get('name'),
+                username: formData.get('username')
+            };
+
+            // Валидация
+            if (!userData.id_tg || !userData.name) {
+                addLog('❌ Заполните обязательные поля: ID и Имя', 'error');
+                return;
+            }
+
+            // Блокируем кнопку
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Сохраняем...';
+
+            try {
+                addLog('--- НАЧАЛО ПРОЦЕССА ДОБАВЛЕНИЯ ---', 'info');
+                
+                // Проверяем существование пользователя
+                const userExists = await checkUserExists(userData.id_tg);
+                
+                if (userExists) {
+                    addLog('❌ Операция прервана: пользователь уже существует', 'error');
+                } else {
+                    // Сохраняем пользователя
+                    await saveUserToNocoDB(userData);
+                    addLog('🎉 Пользователь успешно добавлен в базу!', 'success');
+                    
+                    // Очищаем форму
+                    form.reset();
+                }
+                
+            } catch (error) {
+                addLog(`💥 Критическая ошибка: ${error.message}`, 'error');
+            } finally {
+                // Разблокируем кнопку
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💾 Сохранить в базу';
+                addLog('--- ЗАВЕРШЕНИЕ ПРОЦЕССА ---', 'info');
+            }
+        });
+
+        // Тест подключения к базе при загрузке
+        window.addEventListener('load', async () => {
+            addLog('🔌 Проверяем подключение к базе данных...', 'info');
+            
             try {
                 const response = await fetch(
                     `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records?limit=1`,
@@ -370,25 +300,35 @@
                 );
                 
                 if (response.ok) {
-                    alert('✅ Подключение к базе успешно!');
+                    addLog('✅ Подключение к базе данных успешно!', 'success');
                 } else {
-                    alert('❌ Ошибка подключения к базе');
+                    addLog('❌ Ошибка подключения к базе данных', 'error');
+                addLog(`Код ошибки: ${response.status}`, 'error');
+                addLog('Проверьте API_TOKEN и TABLE_ID в настройках', 'error');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Ошибка подключения';
+                submitBtn.style.background = '#dc3545';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+        });
+
+        // Добавляем обработчик для Enter в полях формы
+        form.querySelectorAll('input').forEach(input => {
+            input.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (this.type !== 'submit') {
+                        const inputs = Array.from(form.querySelectorAll('input'));
+                        const index = inputs.indexOf(this);
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        } else {
+                            form.dispatchEvent(new Event('submit'));
+                        }
+                    }
                 }
-            } catch (error) {
-                alert('❌ Ошибка подключения: ' + error.message);
-            }
-        }
-
-        // Запускаем при загрузке страницы
-        document.addEventListener('DOMContentLoaded', initApp);
-
-        // Дополнительная проверка через 2 секунды (на случай если Telegram API загрузился позже)
-        setTimeout(() => {
-            if (detectTelegramWebApp() && !document.querySelector('.user-info')) {
-                debugLog('🔄 Повторная инициализация...');
-                initApp();
-            }
-        }, 2000);
+            });
+        });
     </script>
 </body>
 </html>
