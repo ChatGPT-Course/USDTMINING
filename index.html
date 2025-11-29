@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Добавление пользователя в базу</title>
+    <title>Управление базой данных</title>
     <style>
         * {
             margin: 0;
@@ -21,7 +21,7 @@
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
@@ -29,156 +29,214 @@
             text-align: center;
             margin-bottom: 20px;
         }
-        .form-group {
+        .controls {
+            display: flex;
+            gap: 10px;
             margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #667eea;
+            flex-wrap: wrap;
         }
         .btn {
             background: #667eea;
             color: white;
             border: none;
-            padding: 14px 20px;
+            padding: 12px 20px;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
-            width: 100%;
             transition: background 0.3s;
-            margin-bottom: 20px;
         }
         .btn:hover {
             background: #5a6fd8;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
         }
         .btn:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
-        .btn-test {
-            background: #28a745;
-            margin-bottom: 10px;
+        .table-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-x: auto;
         }
-        .btn-test:hover {
-            background: #218838;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f8f9fa;
         }
         .logs {
             background: #1a1a1a;
             border: 1px solid #333;
             border-radius: 8px;
             padding: 15px;
-            margin-top: 20px;
-            max-height: 400px;
+            max-height: 200px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             font-size: 14px;
             color: #fff;
         }
         .log-entry {
-            margin-bottom: 8px;
-            padding-bottom: 8px;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
             border-bottom: 1px solid #333;
-            white-space: pre-wrap;
-            word-wrap: break-word;
         }
         .log-time {
             color: #888;
-            font-size: 12px;
+            font-size: 11px;
+            margin-right: 10px;
         }
-        .log-success {
-            color: #4ade80;
-        }
-        .log-error {
-            color: #f87171;
-        }
-        .log-info {
-            color: #60a5fa;
-        }
-        .log-warning {
-            color: #fbbf24;
-        }
-        .log-debug {
-            color: #c084fc;
-        }
-        .config-info {
-            background: #f8f9fa;
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-info { color: #60a5fa; }
+        .log-warning { color: #fbbf24; }
+        .stats {
+            background: #e8f4fd;
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-left: 4px solid #667eea;
         }
-        .config-item {
-            margin: 5px 0;
-            font-family: 'Courier New', monospace;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🐛 Отладка добавления пользователя в NocoDB</h1>
+        <h1>🗃 Управление базой данных NocoDB</h1>
         
-        <div class="config-info">
-            <h3>Текущая конфигурация:</h3>
-            <div class="config-item">BASE_URL: <span id="configBaseUrl">https://app.nocodb.com</span></div>
-            <div class="config-item">TABLE_ID: <span id="configTableId">mqo292nskad9hpm</span></div>
-            <div class="config-item">API_TOKEN: <span id="configToken">EB8ueGhiFFEsnbjkn9wKg8WUfBE73XWPgXMuB6uH</span></div>
+        <div class="stats">
+            <strong>Cloudflare Worker:</strong> https://test.egorspirin10.workers.dev
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalRecords">-</div>
+                    <div class="stat-label">Всего записей</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="lastUpdate">-</div>
+                    <div class="stat-label">Последнее обновление</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="workerStatus">❓</div>
+                    <div class="stat-label">Статус Worker</div>
+                </div>
+            </div>
         </div>
 
-        <button class="btn btn-test" onclick="testConnection()">🔌 Тест подключения к базе</button>
-        
-        <form id="userForm">
-            <div class="form-group">
-                <label for="id_tg">ID пользователя Telegram (число):</label>
-                <input type="number" id="id_tg" name="id_tg" required placeholder="Пример: 123456789">
+        <div class="controls">
+            <button class="btn" onclick="loadTableData()" id="btnRefresh">
+                🔄 Обновить данные
+            </button>
+            <button class="btn btn-success" onclick="createRandomRecord()" id="btnCreate">
+                ➕ Создать случайную запись
+            </button>
+            <button class="btn" onclick="testConnection()" id="btnTest">
+                🔌 Проверка базы данных
+            </button>
+            <button class="btn btn-danger" onclick="clearLogs()" id="btnClearLogs">
+                🧹 Очистить логи
+            </button>
+        </div>
+
+        <div class="table-container">
+            <div id="tableLoading" style="text-align: center; padding: 20px; display: none;">
+                <div class="loading"></div> Загрузка данных...
             </div>
-            
-            <div class="form-group">
-                <label for="name">Имя пользователя:</label>
-                <input type="text" id="name" name="name" required placeholder="Пример: Иван Иванов">
+            <div id="tableContent">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>ID записи</th>
+                            <th>ID Telegram</th>
+                            <th>Имя</th>
+                            <th>Username</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Данные будут здесь -->
+                    </tbody>
+                </table>
             </div>
-            
-            <div class="form-group">
-                <label for="username">Username (необязательно):</label>
-                <input type="text" id="username" name="username" placeholder="Пример: ivanov">
-            </div>
-            
-            <button type="submit" class="btn" id="submitBtn">💾 Сохранить в базу</button>
-        </form>
-        
+        </div>
+
         <div class="logs" id="logs">
             <div class="log-entry log-info">
-                <span class="log-time" id="currentTime"></span> - 🚀 Инициализация отладки...
+                <span class="log-time" id="currentTime"></span> ✅ Система инициализирована
             </div>
         </div>
     </div>
 
     <script>
-        // Конфигурация NocoDB
-        const NOCODB_CONFIG = {
-            BASE_URL: 'https://app.nocodb.com',
-            API_TOKEN: 'EB8ueGhiFFEsnbjkn9wKg8WUfBE73XWPgXMuB6uH',
-            TABLE_ID: 'mqo292nskad9hpm'
-        };
+        // Конфигурация Cloudflare Worker
+        const WORKER_URL = 'https://test.egorspirin10.workers.dev';
 
         // Элементы DOM
-        const form = document.getElementById('userForm');
-        const submitBtn = document.getElementById('submitBtn');
         const logsContainer = document.getElementById('logs');
         const currentTimeElement = document.getElementById('currentTime');
+        const tableBody = document.getElementById('tableBody');
+        const tableLoading = document.getElementById('tableLoading');
+        const tableContent = document.getElementById('tableContent');
+        const totalRecordsElement = document.getElementById('totalRecords');
+        const lastUpdateElement = document.getElementById('lastUpdate');
+        const workerStatusElement = document.getElementById('workerStatus');
 
         // Обновление времени
         function updateTime() {
@@ -194,263 +252,182 @@
             const logEntry = document.createElement('div');
             logEntry.className = `log-entry log-${type}`;
             logEntry.innerHTML = `
-                <span class="log-time">${now.toLocaleTimeString()}</span> - ${message}
+                <span class="log-time">${now.toLocaleTimeString()}</span> ${message}
             `;
             logsContainer.appendChild(logEntry);
             logsContainer.scrollTop = logsContainer.scrollHeight;
-            
-            // Также выводим в консоль браузера
-            console.log(`[${type.toUpperCase()}] ${message}`);
         }
 
-        // Функция для тестирования подключения
-        async function testConnection() {
-            addLog('🔌 ЗАПУСК ТЕСТА ПОДКЛЮЧЕНИЯ К БАЗЕ', 'debug');
-            
-            const testUrl = `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records?limit=1`;
-            addLog(`📡 URL запроса: ${testUrl}`, 'debug');
-            addLog(`🔑 API Token: ${NOCODB_CONFIG.API_TOKEN}`, 'debug');
-
-            try {
-                addLog('🔄 Отправляем GET запрос...', 'info');
-                
-                const startTime = Date.now();
-                const response = await fetch(testUrl, {
-                    method: 'GET',
-                    headers: {
-                        'xc-token': NOCODB_CONFIG.API_TOKEN,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const endTime = Date.now();
-                
-                addLog(`⏱ Время ответа: ${endTime - startTime}ms`, 'info');
-                addLog(`📊 HTTP статус: ${response.status} ${response.statusText}`, 'info');
-                
-                // Выводим все заголовки ответа
-                addLog('📨 Заголовки ответа:', 'debug');
-                for (const [key, value] of response.headers.entries()) {
-                    addLog(`   ${key}: ${value}`, 'debug');
-                }
-
-                if (response.ok) {
-                    const data = await response.json();
-                    addLog('✅ ПОДКЛЮЧЕНИЕ УСПЕШНО!', 'success');
-                    addLog(`📊 Получено записей: ${data.list ? data.list.length : 0}`, 'success');
-                    addLog(`💾 Данные ответа: ${JSON.stringify(data, null, 2)}`, 'debug');
-                } else {
-                    const errorText = await response.text();
-                    addLog(`❌ ОШИБКА HTTP: ${response.status}`, 'error');
-                    addLog(`📄 Текст ошибки: ${errorText}`, 'error');
-                    
-                    if (response.status === 401) {
-                        addLog('🔐 Ошибка 401: Неверный API токен', 'error');
-                    } else if (response.status === 404) {
-                        addLog('🔍 Ошибка 404: Таблица не найдена', 'error');
-                    } else if (response.status === 403) {
-                        addLog('🚫 Ошибка 403: Доступ запрещен', 'error');
-                    }
-                }
-            } catch (error) {
-                addLog(`💥 КРИТИЧЕСКАЯ ОШИБКА: ${error.message}`, 'error');
-                addLog(`📂 Тип ошибки: ${error.name}`, 'error');
-                addLog(`🌐 CORS проблема: ${error.message.includes('CORS') ? 'ДА' : 'НЕТ'}`, 'error');
-                
-                if (error.message.includes('Failed to fetch')) {
-                    addLog('🔗 Проблема с сетевым подключением или CORS', 'error');
-                    addLog('💡 Решение: Попробуйте использовать CORS proxy или проверьте настройки NocoDB', 'warning');
-                }
-            }
+        // Очистка логов
+        function clearLogs() {
+            logsContainer.innerHTML = '';
+            addLog('✅ Логи очищены', 'success');
         }
 
-        // Проверка существования пользователя
-        async function checkUserExists(userId) {
-            const checkUrl = `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records?where=(id_tg,eq,${userId})`;
-            addLog(`🔍 Проверка пользователя ID: ${userId}`, 'info');
-            addLog(`📡 URL проверки: ${checkUrl}`, 'debug');
+        // Показать/скрыть загрузку таблицы
+        function setTableLoading(loading) {
+            tableLoading.style.display = loading ? 'block' : 'none';
+            tableContent.style.display = loading ? 'none' : 'block';
+        }
+
+        // Обновление статистики
+        function updateStats(recordCount) {
+            totalRecordsElement.textContent = recordCount || '0';
+            lastUpdateElement.textContent = new Date().toLocaleTimeString();
+        }
+
+        // Загрузка данных таблицы
+        async function loadTableData() {
+            setTableLoading(true);
+            addLog('📊 Загрузка данных таблицы...', 'info');
 
             try {
-                const response = await fetch(checkUrl, {
-                    headers: {
-                        'xc-token': NOCODB_CONFIG.API_TOKEN
-                    }
-                });
-
-                addLog(`📊 Статус проверки: ${response.status}`, 'info');
-
+                const response = await fetch(`${WORKER_URL}/api/users`);
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
                 }
 
                 const data = await response.json();
-                addLog(`📄 Ответ проверки: ${JSON.stringify(data, null, 2)}`, 'debug');
+                const records = data.list || [];
                 
-                const exists = data.list && data.list.length > 0;
+                // Очищаем таблицу
+                tableBody.innerHTML = '';
                 
-                if (exists) {
-                    addLog(`⚠️ Пользователь с ID ${userId} уже существует`, 'warning');
-                } else {
-                    addLog(`✅ Пользователь с ID ${userId} не найден`, 'success');
-                }
+                // Заполняем таблицу данными
+                records.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.Id || 'N/A'}</td>
+                        <td>${record.id_tg || 'N/A'}</td>
+                        <td>${record.name || 'N/A'}</td>
+                        <td>${record.username ? '@' + record.username : 'N/A'}</td>
+                        <td>
+                            <button class="btn" onclick="deleteRecord(${record.Id})" style="padding: 5px 10px; font-size: 12px;">
+                                🗑 Удалить
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                updateStats(records.length);
+                addLog(`✅ Загружено записей: ${records.length}`, 'success');
+                workerStatusElement.textContent = '✅';
                 
-                return exists;
             } catch (error) {
-                addLog(`❌ Ошибка при проверке: ${error.message}`, 'error');
-                return false;
+                addLog(`❌ Ошибка загрузки: ${error.message}`, 'error');
+                workerStatusElement.textContent = '❌';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #dc3545;">Ошибка загрузки данных</td></tr>';
+            } finally {
+                setTableLoading(false);
             }
         }
 
-        // Сохранение пользователя в NocoDB
-        async function saveUserToNocoDB(userData) {
-            const saveUrl = `${NOCODB_CONFIG.BASE_URL}/api/v2/tables/${NOCODB_CONFIG.TABLE_ID}/records`;
+        // Создание случайной записи
+        async function createRandomRecord() {
+            const btnCreate = document.getElementById('btnCreate');
+            btnCreate.disabled = true;
+            btnCreate.innerHTML = '⏳ Создание...';
+
+            // Генерация случайных данных
+            const randomId = Math.floor(Math.random() * 1000000) + 1000;
+            const names = ['Иван Иванов', 'Петр Петров', 'Мария Сидорова', 'Анна Ковалева', 'Сергей Смирнов'];
+            const usernames = ['ivanov', 'petrov', 'sidorova', 'kovaleva', 'smirnov'];
             
-            addLog('💾 НАЧИНАЕМ СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ', 'debug');
-            addLog(`📡 URL сохранения: ${saveUrl}`, 'debug');
-            addLog(`📦 Данные для отправки: ${JSON.stringify(userData, null, 2)}`, 'debug');
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            const randomUsername = usernames[Math.floor(Math.random() * usernames.length)];
 
-            const requestBody = {
-                id_tg: parseInt(userData.id_tg),
-                name: userData.name,
-                username: userData.username || ''
-            };
-
-            addLog(`📤 Тело запроса: ${JSON.stringify(requestBody, null, 2)}`, 'debug');
+            addLog(`🎲 Создание записи: ID=${randomId}, Имя=${randomName}`, 'info');
 
             try {
-                const startTime = Date.now();
-                const response = await fetch(saveUrl, {
+                const response = await fetch(`${WORKER_URL}/api/users`, {
                     method: 'POST',
                     headers: {
-                        'xc-token': NOCODB_CONFIG.API_TOKEN,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify({
+                        id_tg: randomId,
+                        name: randomName,
+                        username: randomUsername
+                    })
                 });
-                const endTime = Date.now();
-
-                addLog(`⏱ Время ответа: ${endTime - startTime}ms`, 'info');
-                addLog(`📊 HTTP статус: ${response.status} ${response.statusText}`, 'info');
-
-                // Логируем заголовки ответа
-                addLog('📨 Заголовки ответа:', 'debug');
-                for (const [key, value] of response.headers.entries()) {
-                    addLog(`   ${key}: ${value}`, 'debug');
-                }
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    addLog(`❌ ОШИБКА СЕРВЕРА: ${response.status}`, 'error');
-                    addLog(`📄 Текст ошибки: ${errorText}`, 'error');
-                    throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
                 }
 
                 const result = await response.json();
-                addLog('✅ ПОЛЬЗОВАТЕЛЬ УСПЕШНО СОХРАНЕН!', 'success');
-                addLog(`📋 Результат: ${JSON.stringify(result, null, 2)}`, 'debug');
-                addLog(`🆔 ID записи в базе: ${result.Id}`, 'success');
-                return result;
-
+                addLog(`✅ Запись создана! ID: ${result.Id}`, 'success');
+                
+                // Обновляем таблицу
+                setTimeout(loadTableData, 500);
+                
             } catch (error) {
-                addLog(`💥 ОШИБКА СОХРАНЕНИЯ: ${error.message}`, 'error');
-                
-                if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-                    addLog('🌐 Проблема с сетью или CORS политикой', 'error');
-                    addLog('💡 Попробуйте использовать CORS proxy:', 'warning');
-                    addLog('   https://cors-anywhere.herokuapp.com/', 'warning');
-                }
-                
-                throw error;
+                addLog(`❌ Ошибка создания: ${error.message}`, 'error');
+            } finally {
+                btnCreate.disabled = false;
+                btnCreate.innerHTML = '➕ Создать случайную запись';
             }
         }
 
-        // Обработчик отправки формы
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            addLog('', 'info');
-            addLog('🚀🚀🚀 НАЧАЛО ПРОЦЕССА ДОБАВЛЕНИЯ ПОЛЬЗОВАТЕЛЯ 🚀🚀🚀', 'debug');
-            
-            // Получаем данные формы
-            const formData = new FormData(form);
-            const userData = {
-                id_tg: formData.get('id_tg'),
-                name: formData.get('name'),
-                username: formData.get('username')
-            };
+        // Удаление записи
+        async function deleteRecord(recordId) {
+            if (!confirm('Удалить эту запись?')) return;
 
-            addLog(`📝 Получены данные формы: ${JSON.stringify(userData, null, 2)}`, 'info');
-
-            // Валидация
-            if (!userData.id_tg || !userData.name) {
-                addLog('❌ ОШИБКА ВАЛИДАЦИИ: Заполните обязательные поля (ID и Имя)', 'error');
-                return;
-            }
-
-            // Блокируем кнопку
-            submitBtn.disabled = true;
-            submitBtn.textContent = '🔄 Сохраняем...';
+            addLog(`🗑 Удаление записи ID: ${recordId}`, 'warning');
 
             try {
-                // Проверяем существование пользователя
-                addLog('🔍 ШАГ 1: Проверка существования пользователя', 'info');
-                const userExists = await checkUserExists(userData.id_tg);
-                
-                if (userExists) {
-                    addLog('❌ ОПЕРАЦИЯ ПРЕРВАНА: Пользователь уже существует', 'error');
-                } else {
-                    addLog('✅ Пользователь не существует, продолжаем...', 'success');
-                    
-                    // Сохраняем пользователя
-                    addLog('💾 ШАГ 2: Сохранение пользователя в базу', 'info');
-                    await saveUserToNocoDB(userData);
-                    addLog('🎉 ПОЛЬЗОВАТЕЛЬ УСПЕШНО ДОБАВЛЕН!', 'success');
-                    
-                    // Очищаем форму
-                    form.reset();
-                    addLog('📝 Форма очищена', 'info');
-                }
+                // Для удаления нам нужно добавить endpoint в Worker
+                // Пока просто покажем сообщение
+                addLog('⚠️ Функция удаления требует настройки в Worker', 'warning');
                 
             } catch (error) {
-                addLog(`💥 КРИТИЧЕСКАЯ ОШИБКА ПРОЦЕССА: ${error.message}`, 'error');
-            } finally {
-                // Разблокируем кнопку
-                submitBtn.disabled = false;
-                submitBtn.textContent = '💾 Сохранить в базу';
-                addLog('--- ЗАВЕРШЕНИЕ ПРОЦЕССА ---', 'info');
+                addLog(`❌ Ошибка удаления: ${error.message}`, 'error');
             }
-        });
+        }
 
-        // Автоматический тест при загрузке
+        // Тест подключения
+        async function testConnection() {
+            const btnTest = document.getElementById('btnTest');
+            btnTest.disabled = true;
+            btnTest.innerHTML = '🔌 Проверка...';
+
+            addLog('🔍 Проверка подключения к Worker...', 'info');
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${WORKER_URL}/api/users/check?id=test`);
+                const endTime = Date.now();
+
+                if (response.ok) {
+                    addLog(`✅ Подключение активно (${endTime - startTime}ms)`, 'success');
+                    workerStatusElement.textContent = '✅';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                addLog(`❌ Ошибка подключения: ${error.message}`, 'error');
+                workerStatusElement.textContent = '❌';
+            } finally {
+                btnTest.disabled = false;
+                btnTest.innerHTML = '🔌 Проверка базы данных';
+            }
+        }
+
+        // Инициализация при загрузке
         window.addEventListener('load', () => {
-            addLog('📄 Страница загружена', 'info');
-            addLog('🔧 Конфигурация NocoDB:', 'debug');
-            addLog(`   BASE_URL: ${NOCODB_CONFIG.BASE_URL}`, 'debug');
-            addLog(`   TABLE_ID: ${NOCODB_CONFIG.TABLE_ID}`, 'debug');
-            addLog(`   API_TOKEN: ${NOCODB_CONFIG.API_TOKEN}`, 'debug');
+            addLog('🚀 Запуск системы управления базой', 'info');
             
-            // Автоматически запускаем тест подключения
+            // Автоматически загружаем данные при старте
             setTimeout(() => {
+                loadTableData();
                 testConnection();
             }, 1000);
         });
 
-        // Обработчики для Enter
-        form.querySelectorAll('input').forEach(input => {
-            input.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    if (this.type !== 'submit') {
-                        const inputs = Array.from(form.querySelectorAll('input'));
-                        const index = inputs.indexOf(this);
-                        if (index < inputs.length - 1) {
-                            inputs[index + 1].focus();
-                        } else {
-                            form.dispatchEvent(new Event('submit'));
-                        }
-                    }
-                }
-            });
-        });
+        // Автообновление каждые 30 секунд
+        setInterval(loadTableData, 30000);
     </script>
 </body>
 </html>
